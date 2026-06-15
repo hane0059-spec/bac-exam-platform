@@ -1,19 +1,14 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { Tajawal, Reem_Kufi } from "next/font/google";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 
-const tajawal = Tajawal({
+// Cairo — خطّ عربي رسمي واضح، يُستخدم للنصّ والعناوين معاً.
+// متغيّر CSS واحد ليسهُل تبديله لاحقاً من إعدادات الموقع (لوحة المدير).
+const cairo = Cairo({
   subsets: ["arabic", "latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-tajawal",
-  display: "swap",
-});
-
-const reemKufi = Reem_Kufi({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-reem",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-cairo",
   display: "swap",
 });
 
@@ -28,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={`${tajawal.variable} ${reemKufi.variable}`}>
+    <html lang="ar" dir="rtl" className={cairo.variable}>
       <body>{children}</body>
     </html>
   );

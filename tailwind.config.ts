@@ -5,8 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-tajawal)", "system-ui", "sans-serif"],
-        display: ["var(--font-reem)", "var(--font-tajawal)", "serif"],
+        sans: ["var(--font-cairo)", "system-ui", "sans-serif"],
+        display: ["var(--font-cairo)", "system-ui", "sans-serif"],
       },
       colors: {
         ink: "#16302B",
