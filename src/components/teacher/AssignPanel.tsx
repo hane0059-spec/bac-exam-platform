@@ -3,6 +3,7 @@
 // إسناد/إلغاء إسناد اختبار لطلاب المدرّس، مع موعد استحقاق اختياري.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatDateTime } from "@/lib/datetime";
 
 export interface AssignStudent {
   id: string;
@@ -128,7 +129,8 @@ export default function AssignPanel({
                   )}
                   {s.dueDate && (
                     <span className="text-ink/50">
-                      الاستحقاق: {new Date(s.dueDate).toLocaleString("ar")}
+                      الاستحقاق:{" "}
+                      <bdi dir="ltr">{formatDateTime(s.dueDate)}</bdi>
                     </span>
                   )}
                   {s.statusLabel && (

@@ -4,13 +4,7 @@
 // عند دخول وقت البدء أو انتهاء الإتاحة (دون تحديث يدوي).
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-
-function fmt(iso: string): string {
-  return new Date(iso).toLocaleString("ar", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
+import { formatDateTime } from "@/lib/datetime";
 
 function human(ms: number): string {
   const sec = Math.max(0, Math.floor(ms / 1000));
@@ -80,9 +74,27 @@ export default function QuizCountdown({
 
   return (
     <div className="mt-1 space-y-0.5 rounded-lg bg-ink/5 px-3 py-2 text-xs">
-      {from && <div className="text-ink/60">يبدأ: {fmt(from)}</div>}
-      {until && <div className="text-ink/60">ينتهي: {fmt(until)}</div>}
-      {status && <div className={`font-medium ${status.cls}`}>{status.text}</div>}
+      {from && (
+        <div className="text-ink/60">
+          يبدأ:{" "}
+          <bdi dir="ltr" className="inline-block">
+            {formatDateTime(from)}
+          </bdi>
+        </div>
+      )}
+      {until && (
+        <div className="text-ink/60">
+          ينتهي:{" "}
+          <bdi dir="ltr" className="inline-block">
+            {formatDateTime(until)}
+          </bdi>
+        </div>
+      )}
+      {status && (
+        <div className={`font-medium ${status.cls}`}>
+          <bdi>{status.text}</bdi>
+        </div>
+      )}
     </div>
   );
 }
