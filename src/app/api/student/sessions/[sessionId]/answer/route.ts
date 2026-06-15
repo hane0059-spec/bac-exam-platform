@@ -151,20 +151,24 @@ export async function POST(
     });
   }
 
-  // كشف التصحيح الفوري بعد الإرسال.
-  const reveal = {
-    isCorrect,
-    scoreEarned,
-    points,
-    explanation: q.explanation ?? null,
-    correctOptions:
-      q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE"
-        ? q.options
-            .filter((o) => o.isCorrect)
-            .map((o) => ({ id: o.id, label: o.label, content: o.content }))
-        : [],
-    acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],
-  };
+  // كشف التصحيح الفوري فقط إن لم يكن وضع الكشف «في نهاية الاختبار».
+  // في وضع «end» لا تُرسَل أي بيانات تصحيح للمتصفّح أثناء الأداء.
+  const reveal =
+    settings.revealAnswers === "end"
+      ? null
+      : {
+          isCorrect,
+          scoreEarned,
+          points,
+          explanation: q.explanation ?? null,
+          correctOptions:
+            q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE"
+              ? q.options
+                  .filter((o) => o.isCorrect)
+                  .map((o) => ({ id: o.id, label: o.label, content: o.content }))
+              : [],
+          acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],
+        };
 
   if (finished) {
     return NextResponse.json({ reveal, finished: true });

@@ -166,6 +166,19 @@ export default function QuizRunner({
       await loadResult(sessionId);
       return;
     }
+    // وضع «الكشف في النهاية»: لا تصحيح فوري — تقدّم مباشرةً.
+    if (!data.reveal) {
+      if (data.finished) {
+        await loadResult(sessionId);
+      } else {
+        setQuestion(data.next as Question);
+        setSelected("");
+        setText("");
+        setReveal(null);
+        setPhase("question");
+      }
+      return;
+    }
     setReveal(data.reveal as Reveal);
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
