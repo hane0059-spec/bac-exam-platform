@@ -69,7 +69,17 @@ export default async function EditQuizPage({
         >
           ← اختباراتي
         </Link>
-        <h2 className="mt-2 font-display text-xl font-bold">تكوين الاختبار</h2>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-xl font-bold">تكوين الاختبار</h2>
+          {quiz.status === "PUBLISHED" && (
+            <Link
+              href={`/teacher/quizzes/${quiz.id}/assign`}
+              className="btn-primary"
+            >
+              إسناد للطلاب ←
+            </Link>
+          )}
+        </div>
       </div>
       <QuizBuilder
         quizId={quiz.id}
