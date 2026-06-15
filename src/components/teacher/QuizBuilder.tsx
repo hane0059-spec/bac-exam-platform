@@ -271,6 +271,7 @@ export default function QuizBuilder({
             </label>
             <input
               type="datetime-local"
+              lang="en-GB"
               className="field"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
@@ -282,6 +283,7 @@ export default function QuizBuilder({
             </label>
             <input
               type="datetime-local"
+              lang="en-GB"
               className="field"
               value={until}
               onChange={(e) => setUntil(e.target.value)}

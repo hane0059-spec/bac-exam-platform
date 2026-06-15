@@ -81,6 +81,7 @@ export default function AssignPanel({
           </label>
           <input
             type="datetime-local"
+            lang="en-GB"
             className="field"
             value={due}
             onChange={(e) => setDue(e.target.value)}
