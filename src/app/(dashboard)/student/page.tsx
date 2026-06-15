@@ -1,4 +1,5 @@
 // src/app/(dashboard)/student/page.tsx
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
@@ -10,10 +11,12 @@ export default async function StudentDashboard() {
   return (
     <DashboardShell session={session}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <PlaceholderCard
-          title="اختباراتي"
-          description="عرض الاختبارات المُسنَدة إليك والبدء بأدائها."
-        />
+        <Link href="/student/quizzes" className="card p-5 transition hover:border-primary/40">
+          <h3 className="mb-2 font-display text-lg font-semibold">اختباراتي</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            عرض الاختبارات المُسنَدة إليك والبدء بأدائها.
+          </p>
+        </Link>
         <PlaceholderCard
           title="نتائجي"
           description="مراجعة درجاتك وإجاباتك بعد التصحيح الفوري."
