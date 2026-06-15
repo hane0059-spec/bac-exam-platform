@@ -1,0 +1,441 @@
+// prisma/schema.prisma
+// BacExam Platform — Database Schema
+// PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+  MATCHING
+  FILL_BLANK
+  DIAGRAM_LABEL
+  CALCULATION
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum QuizMode {
+  LINEAR
+  ADAPTIVE
+  PRACTICE
+  TIMED_EXAM
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NodeType {
+  START
+  QUESTION
+  BRANCH
+  END
+}
+
+enum EdgeCondition {
+  CORRECT
+  INCORRECT
+  ALWAYS
+  SCORE_GTE
+  SCORE_LTE
+  OPTION_SELECTED
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  TIMED_OUT
+}
+
+// ─────────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  gender       Gender
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  phone        String?
+  avatarUrl    String?  @map("avatar_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  studentProfile     StudentProfile?
+  teacherProfile     TeacherProfile?
+  teacherSubjects    TeacherSubject[]
+  teacherEnrollments StudentEnrollment[] @relation("TeacherEnrollments")
+  studentEnrollments StudentEnrollment[] @relation("StudentEnrollments")
+  createdQuestions   Question[]
+  createdQuizzes     Quiz[]
+  examSessions       ExamSession[]
+  assignments        QuizAssignment[]    @relation("StudentAssignments")
+  givenAssignments   QuizAssignment[]    @relation("TeacherAssignments")
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id             String     @id @default(uuid())
+  userId         String     @unique @map("user_id")
+  user           User       @relation(fields: [userId], references: [id])
+  studentCode    String     @unique @map("student_code")
+  gradeLevelId   String     @map("grade_level_id")
+  gradeLevel     GradeLevel @relation(fields: [gradeLevelId], references: [id])
+  parentPhone    String?    @map("parent_phone")
+  enrollmentYear Int        @map("enrollment_year")
+
+  @@map("student_profiles")
+}
+
+model TeacherProfile {
+  id            String  @id @default(uuid())
+  userId        String  @unique @map("user_id")
+  user          User    @relation(fields: [userId], references: [id])
+  employeeCode  String  @unique @map("employee_code")
+  qualification String?
+  bio           String?
+
+  @@map("teacher_profiles")
+}
+
+// ─────────────────────────────────────────────
+// ACADEMIC STRUCTURE
+// ─────────────────────────────────────────────
+
+model GradeLevel {
+  id             String           @id @default(uuid())
+  name           String           // "بكالوريا علمي"
+  code           String           @unique // "BAC_SCI"
+  orderNum       Int              @map("order_num")
+  subjects       Subject[]
+  studentProfiles StudentProfile[]
+
+  @@map("grade_levels")
+}
+
+model Subject {
+  id           String     @id @default(uuid())
+  name         String     // "الفيزياء والكيمياء"
+  code         String     @unique // "PHYS_CHEM"
+  gradeLevelId String     @map("grade_level_id")
+  gradeLevel   GradeLevel @relation(fields: [gradeLevelId], references: [id])
+  description  String?
+  iconUrl      String?    @map("icon_url")
+  color        String?    // HEX color
+  isActive     Boolean    @default(true) @map("is_active")
+
+  chapters        Chapter[]
+  teacherSubjects TeacherSubject[]
+  enrollments     StudentEnrollment[]
+  questions       Question[]
+  quizzes         Quiz[]
+
+  @@map("subjects")
+}
+
+model TeacherSubject {
+  id           String  @id @default(uuid())
+  teacherId    String  @map("teacher_id")
+  teacher      User    @relation(fields: [teacherId], references: [id])
+  subjectId    String  @map("subject_id")
+  subject      Subject @relation(fields: [subjectId], references: [id])
+  academicYear String  @map("academic_year") // "2024-2025"
+
+  @@unique([teacherId, subjectId, academicYear])
+  @@map("teacher_subjects")
+}
+
+model StudentEnrollment {
+  id           String   @id @default(uuid())
+  studentId    String   @map("student_id")
+  student      User     @relation("StudentEnrollments", fields: [studentId], references: [id])
+  teacherId    String   @map("teacher_id")
+  teacher      User     @relation("TeacherEnrollments", fields: [teacherId], references: [id])
+  subjectId    String   @map("subject_id")
+  subject      Subject  @relation(fields: [subjectId], references: [id])
+  academicYear String   @map("academic_year")
+  enrolledAt   DateTime @default(now()) @map("enrolled_at")
+  isActive     Boolean  @default(true) @map("is_active")
+
+  @@map("student_enrollments")
+}
+
+// ─────────────────────────────────────────────
+// QUESTION BANK
+// ─────────────────────────────────────────────
+
+model Chapter {
+  id          String    @id @default(uuid())
+  subjectId   String    @map("subject_id")
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  title       String
+  orderNum    Int       @map("order_num")
+  description String?
+  concepts    Concept[]
+  questions   Question[]
+
+  @@map("chapters")
+}
+
+model Concept {
+  id          String    @id @default(uuid())
+  chapterId   String    @map("chapter_id")
+  chapter     Chapter   @relation(fields: [chapterId], references: [id])
+  title       String
+  description String?
+  parentId    String?   @map("parent_id")
+  parent      Concept?  @relation("ConceptHierarchy", fields: [parentId], references: [id])
+  children    Concept[] @relation("ConceptHierarchy")
+  questions   Question[]
+  performance StudentConceptPerformance[]
+
+  @@map("concepts")
+}
+
+model Question {
+  id              String       @id @default(uuid())
+  creatorId       String       @map("creator_id")
+  creator         User         @relation(fields: [creatorId], references: [id])
+  subjectId       String       @map("subject_id")
+  subject         Subject      @relation(fields: [subjectId], references: [id])
+  chapterId       String?      @map("chapter_id")
+  chapter         Chapter?     @relation(fields: [chapterId], references: [id])
+  conceptId       String?      @map("concept_id")
+  concept         Concept?     @relation(fields: [conceptId], references: [id])
+  type            QuestionType
+  content         String
+  contentHtml     String?      @map("content_html")
+  mediaUrls       Json?        @map("media_urls") // [{type, url, alt}]
+  difficulty      Difficulty   @default(MEDIUM)
+  estimatedTime   Int          @default(60) @map("estimated_time") // seconds
+  points          Decimal      @default(1) @db.Decimal(5, 2)
+  tags            String[]
+  explanation     String?
+  explanationHtml String?      @map("explanation_html")
+  acceptedAnswers String[]     @map("accepted_answers") // for SHORT_ANSWER
+  isActive        Boolean      @default(true) @map("is_active")
+  isPublic        Boolean      @default(false) @map("is_public")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  options         QuestionOption[]
+  matchingPairs   QuestionMatchingPair[]
+  quizNodes       QuizNode[]
+  studentAnswers  StudentAnswer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id          String   @id @default(uuid())
+  questionId  String   @map("question_id")
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label       String   // 'أ', 'ب', 'ج', 'د'
+  content     String
+  contentHtml String?  @map("content_html")
+  mediaUrl    String?  @map("media_url")
+  isCorrect   Boolean  @map("is_correct")
+  orderNum    Int      @map("order_num")
+  explanation String?
+
+  selectedInAnswers StudentAnswer[] @relation("SelectedOptions")
+
+  @@map("question_options")
+}
+
+model QuestionMatchingPair {
+  id         String   @id @default(uuid())
+  questionId String   @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  leftItem   String   @map("left_item")
+  rightItem  String   @map("right_item")
+  orderNum   Int      @map("order_num")
+
+  @@map("question_matching_pairs")
+}
+
+// ─────────────────────────────────────────────
+// QUIZZES & TREE
+// ─────────────────────────────────────────────
+
+model Quiz {
+  id            String     @id @default(uuid())
+  creatorId     String     @map("creator_id")
+  creator       User       @relation(fields: [creatorId], references: [id])
+  subjectId     String     @map("subject_id")
+  subject       Subject    @relation(fields: [subjectId], references: [id])
+  title         String
+  description   String?
+  mode          QuizMode   @default(LINEAR)
+  status        QuizStatus @default(DRAFT)
+  startNodeId   String?    @map("start_node_id")
+  settings      Json       @default("{}") // { timeLimit, maxAttempts, ... }
+  availableFrom DateTime?  @map("available_from")
+  availableUntil DateTime? @map("available_until")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  nodes       QuizNode[]
+  edges       QuizEdge[]
+  sessions    ExamSession[]
+  assignments QuizAssignment[]
+
+  @@map("quizzes")
+}
+
+model QuizNode {
+  id         String   @id @default(uuid())
+  quizId     String   @map("quiz_id")
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionId String?  @map("question_id")
+  question   Question? @relation(fields: [questionId], references: [id])
+  nodeType   NodeType @map("node_type")
+  pointsOverride Decimal? @db.Decimal(5, 2) @map("points_override")
+  positionX  Float    @default(0) @map("position_x")
+  positionY  Float    @default(0) @map("position_y")
+  metadata   Json?
+
+  outgoingEdges QuizEdge[]    @relation("SourceNode")
+  incomingEdges QuizEdge[]    @relation("TargetNode")
+  sessions      ExamSession[] @relation("CurrentNode")
+  studentAnswers StudentAnswer[]
+
+  @@map("quiz_nodes")
+}
+
+model QuizEdge {
+  id              String        @id @default(uuid())
+  quizId          String        @map("quiz_id")
+  quiz            Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  sourceNodeId    String        @map("source_node_id")
+  sourceNode      QuizNode      @relation("SourceNode", fields: [sourceNodeId], references: [id])
+  targetNodeId    String        @map("target_node_id")
+  targetNode      QuizNode      @relation("TargetNode", fields: [targetNodeId], references: [id])
+  conditionType   EdgeCondition @map("condition_type")
+  conditionValue  Json?         @map("condition_value") // { optionId, score }
+  label           String?
+  priority        Int           @default(0) // لترتيب تقييم الشروط
+
+  @@map("quiz_edges")
+}
+
+model QuizAssignment {
+  id         String    @id @default(uuid())
+  quizId     String    @map("quiz_id")
+  quiz       Quiz      @relation(fields: [quizId], references: [id])
+  studentId  String?   @map("student_id")
+  student    User?     @relation("StudentAssignments", fields: [studentId], references: [id])
+  teacherId  String?   @map("teacher_id")
+  teacher    User?     @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  dueDate    DateTime? @map("due_date")
+
+  @@map("quiz_assignments")
+}
+
+// ─────────────────────────────────────────────
+// EXAM SESSIONS
+// ─────────────────────────────────────────────
+
+model ExamSession {
+  id               String        @id @default(uuid())
+  studentId        String        @map("student_id")
+  student          User          @relation(fields: [studentId], references: [id])
+  quizId           String        @map("quiz_id")
+  quiz             Quiz          @relation(fields: [quizId], references: [id])
+  status           SessionStatus @default(IN_PROGRESS)
+  currentNodeId    String?       @map("current_node_id")
+  currentNode      QuizNode?     @relation("CurrentNode", fields: [currentNodeId], references: [id])
+  pathTaken        String[]      @map("path_taken") // array of node UUIDs
+  startedAt        DateTime      @default(now()) @map("started_at")
+  completedAt      DateTime?     @map("completed_at")
+  timeSpent        Int           @default(0) @map("time_spent") // seconds
+  totalScore       Decimal       @default(0) @db.Decimal(6, 2) @map("total_score")
+  maxPossibleScore Decimal       @default(0) @db.Decimal(6, 2) @map("max_possible_score")
+  percentage       Decimal       @default(0) @db.Decimal(5, 2)
+  attemptNumber    Int           @default(1) @map("attempt_number")
+  deviceInfo       Json?         @map("device_info")
+  ipAddress        String?       @map("ip_address")
+
+  answers StudentAnswer[]
+
+  @@map("exam_sessions")
+}
+
+model StudentAnswer {
+  id                String         @id @default(uuid())
+  sessionId         String         @map("session_id")
+  session           ExamSession    @relation(fields: [sessionId], references: [id])
+  questionId        String         @map("question_id")
+  question          Question       @relation(fields: [questionId], references: [id])
+  nodeId            String         @map("node_id")
+  node              QuizNode       @relation(fields: [nodeId], references: [id])
+  selectedOptions   QuestionOption[] @relation("SelectedOptions")
+  textAnswer        String?        @map("text_answer")
+  isCorrect         Boolean        @map("is_correct")
+  scoreEarned       Decimal        @default(0) @db.Decimal(5, 2) @map("score_earned")
+  timeSpent         Int            @default(0) @map("time_spent") // seconds
+  hintUsed          Boolean        @default(false) @map("hint_used")
+  answeredAt        DateTime       @default(now()) @map("answered_at")
+
+  @@map("student_answers")
+}
+
+// ─────────────────────────────────────────────
+// ANALYTICS
+// ─────────────────────────────────────────────
+
+model StudentConceptPerformance {
+  id            String   @id @default(uuid())
+  studentId     String   @map("student_id")
+  conceptId     String   @map("concept_id")
+  concept       Concept  @relation(fields: [conceptId], references: [id])
+  subjectId     String   @map("subject_id")
+  totalAttempts Int      @default(0) @map("total_attempts")
+  correctCount  Int      @default(0) @map("correct_count")
+  masteryScore  Decimal  @default(0) @db.Decimal(5, 2) @map("mastery_score")
+  lastPracticed DateTime? @map("last_practiced")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, conceptId])
+  @@map("student_concept_performance")
+}
