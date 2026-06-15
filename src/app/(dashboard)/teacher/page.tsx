@@ -35,10 +35,15 @@ export default async function TeacherDashboard() {
           title="الإسناد"
           description="إسناد الاختبارات المنشورة لطلابك."
         />
-        <PlaceholderCard
-          title="طلابي"
-          description="إدارة حسابات الطلاب الذين أنشأتهم ومتابعتهم."
-        />
+        <Link
+          href="/teacher/students"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">طلابي</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            إنشاء حسابات الطلاب وتسجيلهم في موادّك وإدارتهم.
+          </p>
+        </Link>
         <PlaceholderCard
           title="المتابعة والتصحيح"
           description="مراجعة نتائج الطلاب وتصحيح الأسئلة المقالية."

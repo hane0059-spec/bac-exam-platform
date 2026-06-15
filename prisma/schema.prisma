@@ -95,10 +95,13 @@ model User {
   phone        String?
   avatarUrl    String?  @map("avatar_url")
   isActive     Boolean  @default(true) @map("is_active")
+  createdById  String?  @map("created_by_id") // المدرّس المُنشئ للحساب (للطلاب)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
+  createdBy          User?    @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers       User[]   @relation("UserCreator")
   studentProfile     StudentProfile?
   teacherProfile     TeacherProfile?
   teacherSubjects    TeacherSubject[]
