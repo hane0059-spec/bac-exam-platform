@@ -10,7 +10,7 @@ import {
   parseSettings,
   isExpired,
   finalizeSession,
-  nextQuestionNodeId,
+  nextUnansweredNodeId,
   loadSanitizedQuestion,
   countQuestionNodes,
 } from "@/lib/exam";
@@ -117,10 +117,7 @@ export async function POST(
   const scoreEarned = isCorrect ? points : 0;
 
   // عقدة السؤال التالية (أو النهاية).
-  const nextNode = await nextQuestionNodeId(exam.quizId, nodeId);
-  const finished = nextNode === null;
-
-  // كتابة الإجابة وتحديث الجلسة في معاملة واحدة.
+  // كتابة الإجابة وتسجيل المسار في معاملة واحدة.
   await prisma.$transaction([
     prisma.studentAnswer.create({
       data: {
@@ -137,15 +134,21 @@ export async function POST(
     }),
     prisma.examSession.update({
       where: { id: exam.id },
-      data: {
-        currentNodeId: nextNode,
-        pathTaken: { push: nodeId },
-      },
+      data: { pathTaken: { push: nodeId } },
     }),
   ]);
 
+  // السؤال غير المُجاب التالي (يلتفّ للأسئلة المتخطّاة في آخر الاختبار).
+  const nextNode = await nextUnansweredNodeId(exam.quizId, exam.id, nodeId);
+  const finished = nextNode === null;
+
   if (finished) {
     await finalizeSession(exam.id, "COMPLETED");
+  } else {
+    await prisma.examSession.update({
+      where: { id: exam.id },
+      data: { currentNodeId: nextNode },
+    });
   }
 
   // كشف التصحيح الفوري بعد الإرسال.

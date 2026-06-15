@@ -99,6 +99,7 @@ export default function QuizRunner({
   const [nextQuestion, setNextQuestion] = useState<Question | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [result, setResult] = useState<ResultData | null>(null);
+  const [skipNote, setSkipNote] = useState("");
   const submitting = useRef(false);
 
   const startedFeedback = phase === "feedback";
@@ -143,6 +144,7 @@ export default function QuizRunner({
   const submit = useCallback(async () => {
     if (submitting.current || !question) return;
     submitting.current = true;
+    setSkipNote("");
     const optionIds = selected ? [selected] : [];
     const res = await fetch(`/api/student/sessions/${sessionId}/answer`, {
       method: "POST",
@@ -182,6 +184,37 @@ export default function QuizRunner({
     setText("");
     setPhase("question");
   }, [pendingFinish, nextQuestion, sessionId, loadResult]);
+
+  const skip = useCallback(async () => {
+    if (submitting.current || !question) return;
+    submitting.current = true;
+    setSkipNote("");
+    const res = await fetch(`/api/student/sessions/${sessionId}/skip`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nodeId: question.nodeId }),
+    });
+    const data = await res.json();
+    submitting.current = false;
+    if (!res.ok) {
+      setError(data.error ?? "تعذّر التخطّي.");
+      setPhase("error");
+      return;
+    }
+    if (data.expired) {
+      await loadResult(sessionId);
+      return;
+    }
+    if (data.sameNode) {
+      setSkipNote("هذا آخر سؤال متبقٍّ — أجب عنه لإنهاء الاختبار.");
+      return;
+    }
+    setQuestion(data.next as Question);
+    setSelected("");
+    setText("");
+    setReveal(null);
+    setPhase("question");
+  }, [question, sessionId, loadResult]);
 
   // المؤقّت العرضي — يتناقص كل ثانية أثناء عرض السؤال.
   useEffect(() => {
@@ -287,7 +320,9 @@ export default function QuizRunner({
                     onChange={() => setSelected(o.id)}
                     className="accent-primary"
                   />
-                  <span className="font-medium text-ink/80">{o.label}.</span>
+                  {o.label !== o.content && (
+                    <span className="font-medium text-ink/80">{o.label}.</span>
+                  )}
                   <span>{o.content}</span>
                 </label>
               ))}
@@ -296,13 +331,32 @@ export default function QuizRunner({
         </div>
 
         {!startedFeedback && (
-          <button
-            onClick={submit}
-            disabled={!canSubmit}
-            className="btn-primary"
-          >
-            إرسال الإجابة
-          </button>
+          <div className="space-y-2">
+            {skipNote && (
+              <p className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
+                {skipNote}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={submit}
+                disabled={!canSubmit}
+                className="btn-primary"
+              >
+                إرسال الإجابة
+              </button>
+              <button
+                onClick={skip}
+                type="button"
+                className="rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5"
+              >
+                تخطٍّ مؤقّت
+              </button>
+            </div>
+            <p className="text-xs text-ink/50">
+              التخطّي ينقلك للسؤال التالي، وتعود للأسئلة المتخطّاة في آخر الاختبار.
+            </p>
+          </div>
         )}
 
         {startedFeedback && reveal && (
@@ -428,7 +482,8 @@ function ResultView({ result }: { result: ResultData }) {
                         : "text-ink/70"
                     }`}
                   >
-                    {o.label}. {o.content}
+                    {o.label !== o.content && `${o.label}. `}
+                    {o.content}
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابتك"}
                   </li>

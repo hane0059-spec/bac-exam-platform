@@ -101,6 +101,39 @@ export async function nextQuestionNodeId(
   return walkToQuestion(quizId, start);
 }
 
+/**
+ * عقدة السؤال غير المُجاب التالية بترتيب العرض، مع الالتفاف للبداية:
+ * تبحث بعد العقدة الحالية ثم تلتفّ — فالأسئلة المتخطّاة تُؤجَّل لآخر الاختبار.
+ * excludeCurrent=true يستبعد العقدة الحالية (للتخطّي قبل تسجيل إجابة).
+ * يُعيد null حين لا تبقى أسئلة غير مُجابة.
+ */
+export async function nextUnansweredNodeId(
+  quizId: string,
+  sessionId: string,
+  fromNodeId: string,
+  excludeCurrent = false
+): Promise<string | null> {
+  const qNodes = await prisma.quizNode.findMany({
+    where: { quizId, nodeType: "QUESTION" },
+    orderBy: { positionX: "asc" },
+    select: { id: true },
+  });
+  const answeredRows = await prisma.studentAnswer.findMany({
+    where: { sessionId },
+    select: { nodeId: true },
+  });
+  const answered = new Set(answeredRows.map((a) => a.nodeId));
+  const ids = qNodes.map((n) => n.id);
+  const idx = ids.indexOf(fromNodeId);
+  const ordered =
+    idx >= 0 ? [...ids.slice(idx + 1), ...ids.slice(0, idx + 1)] : ids;
+  for (const id of ordered) {
+    if (excludeCurrent && id === fromNodeId) continue;
+    if (!answered.has(id)) return id;
+  }
+  return null;
+}
+
 /** يتبع الحوافّ حتى يصل لعقدة سؤال، أو null عند النهاية/الانقطاع. */
 async function walkToQuestion(
   quizId: string,
