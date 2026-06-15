@@ -20,10 +20,17 @@ export default async function TeacherDashboard() {
             إنشاء أسئلتك الخاصة وتصفيتها حسب المادة.
           </p>
         </Link>
-        <PlaceholderCard
-          title="تكوين الاختبارات"
-          description="بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر."
-        />
+        <Link
+          href="/teacher/quizzes"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            تكوين الاختبارات
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر.
+          </p>
+        </Link>
         <PlaceholderCard
           title="الإسناد"
           description="إسناد الاختبارات المنشورة لطلابك."
