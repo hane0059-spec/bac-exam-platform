@@ -1,4 +1,5 @@
 // src/app/(dashboard)/teacher/page.tsx
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
@@ -10,10 +11,15 @@ export default async function TeacherDashboard() {
   return (
     <DashboardShell session={session}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <PlaceholderCard
-          title="بنك الأسئلة"
-          description="إنشاء أسئلتك الخاصة وتصفيتها حسب المادة."
-        />
+        <Link
+          href="/teacher/questions"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">بنك الأسئلة</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            إنشاء أسئلتك الخاصة وتصفيتها حسب المادة.
+          </p>
+        </Link>
         <PlaceholderCard
           title="تكوين الاختبارات"
           description="بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر."
