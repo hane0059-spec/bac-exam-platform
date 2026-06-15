@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/datetime";
+import DateTimeField from "@/components/DateTimeField";
 
 export interface AssignStudent {
   id: string;
@@ -79,13 +80,7 @@ export default function AssignPanel({
           <label className="mb-1 block text-sm font-medium">
             موعد الاستحقاق (اختياري، يُطبَّق عند الإسناد)
           </label>
-          <input
-            type="datetime-local"
-            lang="en-GB"
-            className="field"
-            value={due}
-            onChange={(e) => setDue(e.target.value)}
-          />
+          <DateTimeField value={due} onChange={setDue} />
         </div>
         <button
           onClick={() => assign(unassigned.map((s) => s.id))}

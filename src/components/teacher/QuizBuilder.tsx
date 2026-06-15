@@ -3,6 +3,7 @@
 // باني الاختبار: بيانات + إعدادات + نافذة توقيت + اختيار/ترتيب أسئلة + تجاوز علامة + نشر.
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import DateTimeField from "@/components/DateTimeField";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
@@ -269,25 +270,13 @@ export default function QuizBuilder({
             <label className="mb-1 block text-sm font-medium">
               متاح من (اختياري)
             </label>
-            <input
-              type="datetime-local"
-              lang="en-GB"
-              className="field"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
+            <DateTimeField value={from} onChange={setFrom} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">
               متاح حتى (اختياري)
             </label>
-            <input
-              type="datetime-local"
-              lang="en-GB"
-              className="field"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
-            />
+            <DateTimeField value={until} onChange={setUntil} />
           </div>
         </div>
       </div>
