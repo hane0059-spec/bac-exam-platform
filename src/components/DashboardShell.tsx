@@ -2,6 +2,7 @@
 import type { SessionData } from "@/lib/auth";
 import { roleLabel, welcome } from "@/lib/gender";
 import LogoutButton from "./LogoutButton";
+import TextSizeControl from "./TextSizeControl";
 
 export default function DashboardShell({
   session,
@@ -16,7 +17,7 @@ export default function DashboardShell({
   return (
     <div className="min-h-screen">
       <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-bold text-white">
               ع
@@ -28,7 +29,10 @@ export default function DashboardShell({
               </p>
             </div>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-2">
+            <TextSizeControl />
+            <LogoutButton />
+          </div>
         </div>
       </header>
 

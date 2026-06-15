@@ -24,7 +24,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
-      <body>{children}</body>
+      <body>
+        {/* تطبيق حجم النصّ المحفوظ قبل أول رسم لتفادي وميض التغيير. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var s=localStorage.getItem('bac-text-scale');if(s){document.documentElement.style.fontSize=(parseFloat(s)*100)+'%';}}catch(e){}})();",
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
