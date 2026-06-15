@@ -94,7 +94,8 @@ export async function POST(
       status: { in: ["COMPLETED", "TIMED_OUT"] },
     },
   });
-  if (finishedCount >= settings.maxAttempts) {
+  const maxAllowed = settings.maxAttempts + assignment.extraAttempts;
+  if (finishedCount >= maxAllowed) {
     return NextResponse.json(
       { error: "استنفدت عدد المحاولات المسموح بها" },
       { status: 403 }

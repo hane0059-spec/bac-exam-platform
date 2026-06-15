@@ -275,14 +275,16 @@ export async function listStudentQuizzes(
       ? Math.max(...finished.map((s) => Number(s.percentage)))
       : null;
 
+    const effectiveMax = settings.maxAttempts + a.extraAttempts;
+
     let state: QuizState;
     if (inProgress) state = "in_progress";
-    else if (!open || finished.length >= settings.maxAttempts)
+    else if (!open || finished.length >= effectiveMax)
       state = finished.length > 0 ? "completed" : "locked";
     else state = finished.length > 0 ? "completed" : "not_started";
 
     const canStart =
-      open && (inProgress || finished.length < settings.maxAttempts);
+      open && (inProgress || finished.length < effectiveMax);
 
     return {
       quizId: a.quizId,
@@ -290,7 +292,7 @@ export async function listStudentQuizzes(
       description: a.quiz.description,
       questionCount: a.quiz.nodes.length,
       timeLimitSec: settings.timeLimitSec,
-      maxAttempts: settings.maxAttempts,
+      maxAttempts: effectiveMax,
       attemptsUsed: finished.length,
       dueDate: a.dueDate,
       availableFrom: a.quiz.availableFrom,

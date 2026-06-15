@@ -14,6 +14,8 @@ export interface AssignStudent {
   assigned: boolean;
   dueDate: string | null;
   statusLabel: string | null; // حالة الأداء إن وُجدت
+  attemptsUsed: number;
+  effectiveMax: number; // حدّ المحاولات + الإضافية
 }
 
 export default function AssignPanel({
@@ -62,6 +64,31 @@ export default function AssignPanel({
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
       setError(d.error ?? "تعذّر إلغاء الإسناد.");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function attempts(studentId: string, action: "grant" | "reset") {
+    if (
+      action === "reset" &&
+      !confirm("تصفير محاولات الطالب؟ ستُحذف نتيجته ومراجعته السابقة لهذا الاختبار.")
+    )
+      return;
+    setError("");
+    setBusy(true);
+    const res = await fetch(
+      `/api/teacher/quizzes/${quizId}/assignments/attempts`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId, action }),
+      }
+    );
+    setBusy(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّر تنفيذ العملية.");
       return;
     }
     router.refresh();
@@ -132,16 +159,41 @@ export default function AssignPanel({
                   {s.statusLabel && (
                     <span className="text-primary-dark">{s.statusLabel}</span>
                   )}
+                  {s.assigned && (
+                    <span className="text-ink/50">
+                      المحاولات: {s.attemptsUsed} / {s.effectiveMax}
+                    </span>
+                  )}
                 </div>
               </div>
               {s.assigned ? (
-                <button
-                  onClick={() => unassign(s.id)}
-                  disabled={busy}
-                  className="text-sm text-red-500 hover:underline disabled:opacity-50"
-                >
-                  إلغاء الإسناد
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  {s.attemptsUsed > 0 && (
+                    <>
+                      <button
+                        onClick={() => attempts(s.id, "grant")}
+                        disabled={busy}
+                        className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white disabled:opacity-50"
+                      >
+                        منح محاولة
+                      </button>
+                      <button
+                        onClick={() => attempts(s.id, "reset")}
+                        disabled={busy}
+                        className="text-sm text-gold hover:underline disabled:opacity-50"
+                      >
+                        تصفير
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => unassign(s.id)}
+                    disabled={busy}
+                    className="text-sm text-red-500 hover:underline disabled:opacity-50"
+                  >
+                    إلغاء الإسناد
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={() => assign([s.id])}
