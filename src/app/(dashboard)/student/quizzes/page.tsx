@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DashboardShell from "@/components/DashboardShell";
+import QuizCountdown from "@/components/student/QuizCountdown";
 import { listStudentQuizzes, type StudentQuizListItem } from "@/lib/exam";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +77,14 @@ export default async function StudentQuizzesPage() {
                     <li>أفضل نتيجة: {q.bestPercentage}%</li>
                   )}
                 </ul>
+                {(q.availableFrom || q.availableUntil) && (
+                  <div className="mb-4">
+                    <QuizCountdown
+                      from={q.availableFrom?.toISOString() ?? null}
+                      until={q.availableUntil?.toISOString() ?? null}
+                    />
+                  </div>
+                )}
                 <div className="mt-auto">
                   {q.canStart ? (
                     <Link
@@ -88,7 +97,7 @@ export default async function StudentQuizzesPage() {
                     <span className="block text-center text-sm text-ink/50">
                       انتهت محاولاتك
                     </span>
-                  ) : (
+                  ) : q.availableFrom || q.availableUntil ? null : (
                     <span className="block text-center text-sm text-ink/50">
                       غير متاح الآن
                     </span>

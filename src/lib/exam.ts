@@ -202,6 +202,8 @@ export interface StudentQuizListItem {
   maxAttempts: number;
   attemptsUsed: number;
   dueDate: Date | null;
+  availableFrom: Date | null;
+  availableUntil: Date | null;
   state: QuizState;
   canStart: boolean;
   bestPercentage: number | null;
@@ -258,6 +260,8 @@ export async function listStudentQuizzes(
       maxAttempts: settings.maxAttempts,
       attemptsUsed: finished.length,
       dueDate: a.dueDate,
+      availableFrom: a.quiz.availableFrom,
+      availableUntil: a.quiz.availableUntil,
       state,
       canStart,
       bestPercentage,
