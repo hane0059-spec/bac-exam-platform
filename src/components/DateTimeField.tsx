@@ -41,9 +41,16 @@ export default function DateTimeField({
 }) {
   const [p, setP] = useState<Parts>(() => toParts(value));
 
-  // مزامنة مع القيمة الخارجية إن تغيّرت.
+  // مزامنة مع القيمة الخارجية؛ وعند الفراغ تُعبَّأ السنة والشهر من تاريخ النظام
+  // افتراضياً (قابلة للتغيير)، فلا يبقى للمدرّس سوى إدخال اليوم والوقت.
   useEffect(() => {
-    setP(toParts(value));
+    const parts = toParts(value);
+    if (!value) {
+      const now = new Date();
+      parts.y = String(now.getFullYear());
+      parts.mo = String(now.getMonth() + 1);
+    }
+    setP(parts);
   }, [value]);
 
   function update(patch: Partial<Parts>) {
