@@ -128,6 +128,7 @@ model StudentProfile {
   address        String?
   parentPhone    String?    @map("parent_phone")
   enrollmentYear Int        @map("enrollment_year")
+  isExternal     Boolean    @default(false) @map("is_external") // طالب مستورَد خارجياً
 
   @@map("student_profiles")
 }
