@@ -32,17 +32,22 @@ export async function GET(
   if (!student) {
     return NextResponse.json({ error: "الطالب غير موجود" }, { status: 404 });
   }
+  const p = student.studentProfile;
   return NextResponse.json({
     student: {
       id: student.id,
-      email: student.email,
+      email: student.email ?? "",
       firstName: student.firstName,
       lastName: student.lastName,
       gender: student.gender,
       isActive: student.isActive,
-      studentCode: student.studentProfile?.studentCode ?? "",
-      gradeLevelId: student.studentProfile?.gradeLevelId ?? "",
-      parentPhone: student.studentProfile?.parentPhone ?? "",
+      studentPhone: student.phone ?? "",
+      studentCode: p?.studentCode ?? "",
+      gradeLevelId: p?.gradeLevelId ?? "",
+      fatherName: p?.fatherName ?? "",
+      motherName: p?.motherName ?? "",
+      address: p?.address ?? "",
+      parentPhone: p?.parentPhone ?? "",
       enrolledSubjectIds: student.studentEnrollments.map((e) => e.subjectId),
     },
   });
@@ -74,6 +79,7 @@ export async function PATCH(
     );
   }
   const d = parsed.data;
+  const email = d.email ? d.email.toLowerCase() : null;
 
   const grade = await prisma.gradeLevel.findUnique({
     where: { id: d.gradeLevelId },
@@ -82,17 +88,35 @@ export async function PATCH(
   if (!grade) {
     return NextResponse.json({ error: "صفّ غير صالح" }, { status: 400 });
   }
+  // تفرّد البريد (مع استثناء الطالب نفسه).
+  if (email) {
+    const other = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (other && other.id !== params.id) {
+      return NextResponse.json(
+        { error: "البريد الإلكتروني مستخدَم سابقاً" },
+        { status: 409 }
+      );
+    }
+  }
 
   await prisma.user.update({
     where: { id: params.id },
     data: {
+      email,
       firstName: d.firstName,
       lastName: d.lastName,
       gender: d.gender,
       isActive: d.isActive,
+      phone: d.studentPhone || null,
       studentProfile: {
         update: {
           gradeLevelId: d.gradeLevelId,
+          fatherName: d.fatherName,
+          motherName: d.motherName || null,
+          address: d.address || null,
           parentPhone: d.parentPhone || null,
         },
       },

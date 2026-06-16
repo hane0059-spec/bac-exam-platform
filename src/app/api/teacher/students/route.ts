@@ -1,10 +1,15 @@
 // src/app/api/teacher/students/route.ts
 // GET: قائمة طلاب المدرّس (من إنشائه). POST: إنشاء حساب طالب وتسجيله في مادة.
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession, teacherTeachesSubject } from "@/lib/teacher";
-import { studentCreateSchema, academicYearFor } from "@/lib/teacherStudents";
+import {
+  studentCreateSchema,
+  academicYearFor,
+  nextStudentCode,
+} from "@/lib/teacherStudents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,7 +65,7 @@ export async function POST(req: Request) {
     );
   }
   const d = parsed.data;
-  const email = d.email.toLowerCase();
+  const email = d.email ? d.email.toLowerCase() : null;
 
   // الملكية: المادة ضمن مواد المدرّس.
   if (!(await teacherTeachesSubject(session.sub, d.subjectId))) {
@@ -69,7 +74,6 @@ export async function POST(req: Request) {
       { status: 403 }
     );
   }
-  // صحّة الصفّ.
   const grade = await prisma.gradeLevel.findUnique({
     where: { id: d.gradeLevelId },
     select: { id: true },
@@ -77,21 +81,13 @@ export async function POST(req: Request) {
   if (!grade) {
     return NextResponse.json({ error: "صفّ غير صالح" }, { status: 400 });
   }
-  // تفرّد البريد ورمز الطالب.
-  if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
-    return NextResponse.json(
-      { error: "البريد الإلكتروني مستخدَم سابقاً" },
-      { status: 409 }
-    );
-  }
+  // تفرّد البريد عند وجوده فقط.
   if (
-    await prisma.studentProfile.findUnique({
-      where: { studentCode: d.studentCode },
-      select: { id: true },
-    })
+    email &&
+    (await prisma.user.findUnique({ where: { email }, select: { id: true } }))
   ) {
     return NextResponse.json(
-      { error: "رمز الطالب مستخدَم سابقاً" },
+      { error: "البريد الإلكتروني مستخدَم سابقاً" },
       { status: 409 }
     );
   }
@@ -99,35 +95,55 @@ export async function POST(req: Request) {
   const academicYear = await academicYearFor(session.sub, d.subjectId);
   const passwordHash = await bcrypt.hash(d.password, 10);
 
-  const created = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      role: "STUDENT",
-      gender: d.gender,
-      firstName: d.firstName,
-      lastName: d.lastName,
-      createdById: session.sub,
-      studentProfile: {
-        create: {
-          studentCode: d.studentCode,
-          gradeLevelId: d.gradeLevelId,
-          parentPhone: d.parentPhone || null,
-          enrollmentYear: d.enrollmentYear,
-        },
-      },
-      studentEnrollments: {
-        create: [
-          {
-            teacherId: session.sub,
-            subjectId: d.subjectId,
-            academicYear,
+  // محاولة الإنشاء مع توليد رمز تسلسلي، وإعادة المحاولة عند تزامن نادر.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const studentCode = await nextStudentCode();
+    try {
+      const created = await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          role: "STUDENT",
+          gender: d.gender,
+          firstName: d.firstName,
+          lastName: d.lastName,
+          phone: d.studentPhone || null,
+          createdById: session.sub,
+          studentProfile: {
+            create: {
+              studentCode,
+              gradeLevelId: d.gradeLevelId,
+              fatherName: d.fatherName,
+              motherName: d.motherName || null,
+              address: d.address || null,
+              parentPhone: d.parentPhone || null,
+              enrollmentYear: d.enrollmentYear,
+            },
           },
-        ],
-      },
-    },
-    select: { id: true },
-  });
-
-  return NextResponse.json({ id: created.id }, { status: 201 });
+          studentEnrollments: {
+            create: [
+              { teacherId: session.sub, subjectId: d.subjectId, academicYear },
+            ],
+          },
+        },
+        select: { id: true },
+      });
+      return NextResponse.json({ id: created.id }, { status: 201 });
+    } catch (e) {
+      // تصادم رمز الطالب الفريد → أعد التوليد. غير ذلك → اخرج.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002" &&
+        Array.isArray(e.meta?.target) &&
+        (e.meta?.target as string[]).some((t) => t.includes("student_code"))
+      ) {
+        continue;
+      }
+      throw e;
+    }
+  }
+  return NextResponse.json(
+    { error: "تعذّر توليد رمز فريد، حاول مجدداً" },
+    { status: 500 }
+  );
 }

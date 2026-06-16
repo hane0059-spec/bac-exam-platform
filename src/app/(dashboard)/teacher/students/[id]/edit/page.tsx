@@ -56,11 +56,15 @@ export default async function EditStudentPage({
   const initial: StudentInitial = {
     firstName: student.firstName,
     lastName: student.lastName,
+    fatherName: student.studentProfile?.fatherName ?? "",
+    motherName: student.studentProfile?.motherName ?? "",
     gender: student.gender as "MALE" | "FEMALE",
     gradeLevelId: student.studentProfile?.gradeLevelId ?? gradeLevels[0]?.id ?? "",
+    address: student.studentProfile?.address ?? "",
+    studentPhone: student.phone ?? "",
     parentPhone: student.studentProfile?.parentPhone ?? "",
     isActive: student.isActive,
-    email: student.email,
+    email: student.email ?? "",
     studentCode: student.studentProfile?.studentCode ?? "",
   };
 

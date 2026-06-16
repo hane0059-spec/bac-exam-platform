@@ -1,6 +1,7 @@
 "use client";
 // src/components/teacher/StudentForm.tsx
-// نموذج إنشاء/تعديل بيانات طالب. الجنس إلزامي.
+// نموذج إنشاء/تعديل بيانات طالب. الجنس واسم الأب إجباريان؛ البريد اختياري؛
+// رمز الطالب يُولَّد تلقائياً (غير قابل للتعديل).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -11,8 +12,12 @@ interface Option {
 export interface StudentInitial {
   firstName: string;
   lastName: string;
+  fatherName: string;
+  motherName: string;
   gender: "MALE" | "FEMALE";
   gradeLevelId: string;
+  address: string;
+  studentPhone: string;
   parentPhone: string;
   isActive: boolean;
   email: string;
@@ -38,13 +43,16 @@ export default function StudentForm({
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState(initial?.firstName ?? "");
   const [lastName, setLastName] = useState(initial?.lastName ?? "");
+  const [fatherName, setFatherName] = useState(initial?.fatherName ?? "");
+  const [motherName, setMotherName] = useState(initial?.motherName ?? "");
   const [gender, setGender] = useState<"MALE" | "FEMALE">(
     initial?.gender ?? "MALE"
   );
-  const [studentCode, setStudentCode] = useState(initial?.studentCode ?? "");
   const [gradeLevelId, setGradeLevelId] = useState(
     initial?.gradeLevelId ?? gradeLevels[0]?.id ?? ""
   );
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [studentPhone, setStudentPhone] = useState(initial?.studentPhone ?? "");
   const [parentPhone, setParentPhone] = useState(initial?.parentPhone ?? "");
   const [enrollmentYear, setEnrollmentYear] = useState(
     new Date().getFullYear()
@@ -56,10 +64,26 @@ export default function StudentForm({
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  function copyParentToStudent() {
+    setStudentPhone(parentPhone);
+  }
+
   async function submit() {
     setError("");
     setSaved(false);
     setBusy(true);
+    const common = {
+      email,
+      firstName,
+      lastName,
+      fatherName,
+      motherName,
+      gender,
+      gradeLevelId,
+      address,
+      studentPhone,
+      parentPhone,
+    };
     const url =
       mode === "create"
         ? "/api/teacher/students"
@@ -67,18 +91,12 @@ export default function StudentForm({
     const payload =
       mode === "create"
         ? {
-            email,
+            ...common,
             password,
-            firstName,
-            lastName,
-            gender,
-            studentCode,
-            gradeLevelId,
-            parentPhone,
             enrollmentYear: Number(enrollmentYear),
             subjectId,
           }
-        : { firstName, lastName, gender, gradeLevelId, parentPhone, isActive };
+        : { ...common, isActive };
     const res = await fetch(url, {
       method: mode === "create" ? "POST" : "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -101,23 +119,21 @@ export default function StudentForm({
 
   return (
     <div className="card max-w-2xl space-y-4 p-6">
+      {mode === "edit" && initial && (
+        <p className="text-sm text-ink/50">
+          رمز الطالب: <span className="font-medium text-ink/80">{initial.studentCode}</span>
+        </p>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-sm font-medium">الاسم الأول</label>
-          <input
-            className="field"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">الاسم الأخير</label>
-          <input
-            className="field"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-        </div>
+        <Field label="الاسم الأول" value={firstName} onChange={setFirstName} />
+        <Field label="الاسم الأخير" value={lastName} onChange={setLastName} />
+        <Field label="اسم الأب" value={fatherName} onChange={setFatherName} />
+        <Field
+          label="اسم الأم (اختياري)"
+          value={motherName}
+          onChange={setMotherName}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -148,89 +164,30 @@ export default function StudentForm({
         </div>
       </div>
 
-      {mode === "create" ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                البريد الإلكتروني
-              </label>
-              <input
-                type="email"
-                dir="ltr"
-                className="field"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">كلمة السرّ</label>
-              <input
-                type="text"
-                dir="ltr"
-                className="field"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="6 أحرف على الأقل"
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium">رمز الطالب</label>
-              <input
-                className="field"
-                value={studentCode}
-                onChange={(e) => setStudentCode(e.target.value)}
-                placeholder="مثال: S-1002"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                سنة التسجيل
-              </label>
-              <input
-                type="number"
-                className="field"
-                value={enrollmentYear}
-                onChange={(e) => setEnrollmentYear(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">المادة</label>
-              <select
-                className="field"
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-              >
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              البريد (غير قابل للتعديل)
-            </label>
-            <input className="field opacity-60" dir="ltr" value={email} disabled />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">رمز الطالب</label>
-            <input className="field opacity-60" value={studentCode} disabled />
-          </div>
-        </div>
-      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field
+          label="البريد الإلكتروني (اختياري)"
+          value={email}
+          onChange={setEmail}
+          dir="ltr"
+          type="email"
+        />
+        {mode === "create" && (
+          <Field
+            label="كلمة السرّ"
+            value={password}
+            onChange={setPassword}
+            dir="ltr"
+            type="text"
+            placeholder="6 أحرف على الأقل"
+          />
+        )}
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">
-            هاتف ولي الأمر (اختياري)
+            هاتف ولي الأمر
           </label>
           <input
             dir="ltr"
@@ -239,20 +196,71 @@ export default function StudentForm({
             onChange={(e) => setParentPhone(e.target.value)}
           />
         </div>
-        {mode === "edit" && (
-          <div className="flex items-end">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="accent-primary"
-              />
-              الحساب مُفعّل
-            </label>
-          </div>
-        )}
+        <div>
+          <label className="mb-1 flex items-center justify-between text-sm font-medium">
+            <span>هاتف الطالب</span>
+            <button
+              type="button"
+              onClick={copyParentToStudent}
+              className="text-xs text-primary hover:underline"
+            >
+              نفس هاتف ولي الأمر
+            </button>
+          </label>
+          <input
+            dir="ltr"
+            className="field"
+            value={studentPhone}
+            onChange={(e) => setStudentPhone(e.target.value)}
+          />
+        </div>
       </div>
+
+      <Field
+        label="العنوان (اختياري)"
+        value={address}
+        onChange={setAddress}
+      />
+
+      {mode === "create" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">سنة التسجيل</label>
+            <input
+              type="number"
+              className="field"
+              value={enrollmentYear}
+              onChange={(e) => setEnrollmentYear(Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">المادة</label>
+            <select
+              className="field"
+              value={subjectId}
+              onChange={(e) => setSubjectId(e.target.value)}
+            >
+              {subjects.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {mode === "edit" && (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+            className="accent-primary"
+          />
+          الحساب مُفعّل
+        </label>
+      )}
 
       {error && (
         <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
@@ -274,6 +282,36 @@ export default function StudentForm({
           رجوع
         </button>
       </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  dir,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  dir?: "ltr" | "rtl";
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium">{label}</label>
+      <input
+        type={type}
+        dir={dir}
+        className="field"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }

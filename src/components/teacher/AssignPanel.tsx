@@ -31,9 +31,24 @@ export default function AssignPanel({
   const [due, setDue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const dueIso = () => (due ? new Date(due).toISOString() : null);
   const unassigned = students.filter((s) => !s.assigned);
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  async function assignSelected() {
+    const ids = unassigned.map((s) => s.id).filter((id) => selected.has(id));
+    await assign(ids);
+    setSelected(new Set());
+  }
 
   async function assign(ids: string[]) {
     if (ids.length === 0) return;
@@ -110,6 +125,13 @@ export default function AssignPanel({
           <DateTimeField value={due} onChange={setDue} />
         </div>
         <button
+          onClick={assignSelected}
+          disabled={busy || !published || selected.size === 0}
+          className="rounded-xl border border-primary px-5 py-3 font-medium text-primary transition hover:bg-primary-light disabled:opacity-50"
+        >
+          إسناد المحدّدين ({selected.size})
+        </button>
+        <button
           onClick={() => assign(unassigned.map((s) => s.id))}
           disabled={busy || !published || unassigned.length === 0}
           className="btn-primary"
@@ -133,7 +155,18 @@ export default function AssignPanel({
               key={s.id}
               className="card flex flex-wrap items-center justify-between gap-3 p-4"
             >
-              <div>
+              <div className="flex items-center gap-3">
+                {!s.assigned && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(s.id)}
+                    onChange={() => toggleSelect(s.id)}
+                    disabled={!published}
+                    className="accent-primary"
+                    aria-label={`اختيار ${s.name}`}
+                  />
+                )}
+                <div>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{s.name}</span>
                   <span className="text-xs text-ink/40">
@@ -164,6 +197,7 @@ export default function AssignPanel({
                       المحاولات: {s.attemptsUsed} / {s.effectiveMax}
                     </span>
                   )}
+                </div>
                 </div>
               </div>
               {s.assigned ? (

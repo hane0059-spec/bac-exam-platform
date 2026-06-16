@@ -4,7 +4,7 @@
 import { useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -50,19 +50,17 @@ export default function LoginPage() {
         <div className="card p-7">
           <div className="space-y-5">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
-                البريد الإلكتروني
+              <label htmlFor="identifier" className="mb-1.5 block text-sm font-medium">
+                البريد أو رمز الطالب أو الاسم
               </label>
               <input
-                id="email"
-                type="email"
-                inputMode="email"
+                id="identifier"
+                type="text"
                 autoComplete="username"
-                dir="ltr"
-                className="field text-right"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                className="field"
+                placeholder="name@example.com أو S-1002 أو الاسم الكامل"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               />
             </div>

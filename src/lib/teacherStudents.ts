@@ -1,5 +1,5 @@
 // src/lib/teacherStudents.ts
-// منطق إدارة المدرّس لطلابه: الحراسة (المُنشئ فقط) والتحقّق من المُدخلات.
+// منطق إدارة المدرّس لطلابه: الحراسة (المُنشئ فقط)، توليد رمز الطالب، والتحقّق.
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
@@ -31,16 +31,40 @@ export async function academicYearFor(
   return `${y}-${y + 1}`;
 }
 
+/** رمز طالب تسلسلي فريد: التالي بعد الأكبر الحالي (S-1002 ...). */
+export async function nextStudentCode(): Promise<string> {
+  const codes = await prisma.studentProfile.findMany({
+    select: { studentCode: true },
+  });
+  let max = 1000;
+  for (const { studentCode } of codes) {
+    const m = studentCode.match(/(\d+)/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n > max) max = n;
+    }
+  }
+  return `S-${max + 1}`;
+}
+
 const genderEnum = z.enum(["MALE", "FEMALE"]);
+// بريد اختياري: السلسلة الفارغة تُعامَل كغياب.
+const optionalEmail = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.string().trim().email("بريد إلكتروني غير صالح").optional()
+);
 
 export const studentCreateSchema = z.object({
-  email: z.string().trim().email("بريد إلكتروني غير صالح"),
+  email: optionalEmail,
   password: z.string().min(6, "كلمة السر 6 أحرف على الأقل"),
   firstName: z.string().trim().min(1, "الاسم الأول مطلوب"),
   lastName: z.string().trim().min(1, "الاسم الأخير مطلوب"),
+  fatherName: z.string().trim().min(1, "اسم الأب مطلوب"),
+  motherName: z.string().trim().optional(),
   gender: genderEnum,
-  studentCode: z.string().trim().min(1, "رمز الطالب مطلوب"),
   gradeLevelId: z.string().min(1, "الصفّ مطلوب"),
+  address: z.string().trim().optional(),
+  studentPhone: z.string().trim().optional(),
   parentPhone: z.string().trim().optional(),
   enrollmentYear: z
     .number()
@@ -52,10 +76,15 @@ export const studentCreateSchema = z.object({
 });
 
 export const studentUpdateSchema = z.object({
+  email: optionalEmail,
   firstName: z.string().trim().min(1, "الاسم الأول مطلوب"),
   lastName: z.string().trim().min(1, "الاسم الأخير مطلوب"),
+  fatherName: z.string().trim().min(1, "اسم الأب مطلوب"),
+  motherName: z.string().trim().optional(),
   gender: genderEnum,
   gradeLevelId: z.string().min(1, "الصفّ مطلوب"),
+  address: z.string().trim().optional(),
+  studentPhone: z.string().trim().optional(),
   parentPhone: z.string().trim().optional(),
   isActive: z.boolean().default(true),
 });

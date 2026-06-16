@@ -86,7 +86,7 @@ enum SessionStatus {
 
 model User {
   id           String   @id @default(uuid())
-  email        String   @unique
+  email        String?  @unique
   passwordHash String   @map("password_hash")
   role         Role
   gender       Gender
@@ -123,6 +123,9 @@ model StudentProfile {
   studentCode    String     @unique @map("student_code")
   gradeLevelId   String     @map("grade_level_id")
   gradeLevel     GradeLevel @relation(fields: [gradeLevelId], references: [id])
+  fatherName     String?    @map("father_name")
+  motherName     String?    @map("mother_name")
+  address        String?
   parentPhone    String?    @map("parent_phone")
   enrollmentYear Int        @map("enrollment_year")
 
