@@ -22,10 +22,15 @@ export default async function AdminDashboard() {
             استيراد قائمة طلاب من CSV/Excel وإسناد اختبار منشور لهم.
           </p>
         </Link>
-        <PlaceholderCard
-          title="المستخدمون"
-          description="إنشاء وإدارة حسابات المدراء والمدرّسين والطلاب."
-        />
+        <Link
+          href="/admin/users"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">المستخدمون</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            إنشاء وإدارة حسابات المدراء والمدرّسين وربط المواد.
+          </p>
+        </Link>
         <PlaceholderCard
           title="المواد والصفوف"
           description="إدارة الصفوف الدراسية والمواد وربط المدرّسين بها."
