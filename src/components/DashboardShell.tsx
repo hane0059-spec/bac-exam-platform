@@ -1,6 +1,7 @@
 // src/components/DashboardShell.tsx
-import type { SessionData } from "@/lib/auth";
+import Link from "next/link";
 import { roleLabel, welcome } from "@/lib/gender";
+import { dashboardPath, type SessionData } from "@/lib/auth";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
 
@@ -18,7 +19,11 @@ export default function DashboardShell({
     <div className="min-h-screen">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <div className="flex items-center gap-3">
+          <Link
+            href={dashboardPath(session.role)}
+            className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-ink/5"
+            title="الصفحة الرئيسية"
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-bold text-white">
               ع
             </div>
@@ -28,8 +33,14 @@ export default function DashboardShell({
                 {fullName}
               </p>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
+            <Link
+              href={dashboardPath(session.role)}
+              className="rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+            >
+              الرئيسية
+            </Link>
             <TextSizeControl />
             <LogoutButton />
           </div>
