@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DashboardShell from "@/components/DashboardShell";
 import QuizCountdown from "@/components/student/QuizCountdown";
+import JoinByCode from "@/components/student/JoinByCode";
 import { listStudentQuizzes, type StudentQuizListItem } from "@/lib/exam";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,8 @@ export default async function StudentQuizzesPage() {
           ← العودة للوحة
         </Link>
       </div>
+
+      <JoinByCode />
 
       {quizzes.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">

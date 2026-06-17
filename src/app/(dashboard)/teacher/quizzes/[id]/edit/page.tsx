@@ -80,6 +80,15 @@ export default async function EditQuizPage({
             </Link>
           )}
         </div>
+        {quiz.status === "PUBLISHED" && quiz.accessCode && (
+          <p className="mt-2 inline-block rounded-xl bg-primary-light px-3 py-1.5 text-sm text-primary-dark">
+            رمز الاختبار للدخول:{" "}
+            <span className="font-bold" dir="ltr">
+              {quiz.accessCode}
+            </span>{" "}
+            — يدخله الطالب في «اختباراتي» للانضمام.
+          </p>
+        )}
       </div>
       <QuizBuilder
         quizId={quiz.id}

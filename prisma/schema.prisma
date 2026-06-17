@@ -314,6 +314,7 @@ model Quiz {
   description   String?
   mode          QuizMode   @default(LINEAR)
   status        QuizStatus @default(DRAFT)
+  accessCode    String?    @unique @map("access_code") // رمز تسلسلي للدخول للاختبار
   startNodeId   String?    @map("start_node_id")
   settings      Json       @default("{}") // { timeLimit, maxAttempts, ... }
   availableFrom DateTime?  @map("available_from")

@@ -2,9 +2,10 @@
 // POST: نشر الاختبار أو إلغاء نشره.
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
-import { ownedQuiz } from "@/lib/teacherQuiz";
+import { ownedQuiz, nextAccessCode } from "@/lib/teacherQuiz";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,11 +46,36 @@ export async function POST(
         { status: 422 }
       );
     }
-    await prisma.quiz.update({
-      where: { id: quiz.id },
-      data: { status: "PUBLISHED" },
-    });
-    return NextResponse.json({ status: "PUBLISHED" });
+    // توليد رمز تسلسلي فريد عند أوّل نشر (يثبت بعدها).
+    if (quiz.accessCode) {
+      await prisma.quiz.update({
+        where: { id: quiz.id },
+        data: { status: "PUBLISHED" },
+      });
+      return NextResponse.json({ status: "PUBLISHED", accessCode: quiz.accessCode });
+    }
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = await nextAccessCode();
+      try {
+        await prisma.quiz.update({
+          where: { id: quiz.id },
+          data: { status: "PUBLISHED", accessCode: code },
+        });
+        return NextResponse.json({ status: "PUBLISHED", accessCode: code });
+      } catch (e) {
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === "P2002"
+        ) {
+          continue;
+        }
+        throw e;
+      }
+    }
+    return NextResponse.json(
+      { error: "تعذّر توليد رمز فريد، حاول مجدداً" },
+      { status: 500 }
+    );
   }
 
   // إلغاء النشر: ممكن فقط إن لم توجد جلسات.

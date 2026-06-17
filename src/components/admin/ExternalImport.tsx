@@ -59,7 +59,7 @@ export default function ExternalImport({
   quizzes: Quiz[];
   grades: Grade[];
 }) {
-  const [quizId, setQuizId] = useState(quizzes[0]?.id ?? "");
+  const [quizId, setQuizId] = useState("");
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -112,22 +112,19 @@ export default function ExternalImport({
 
   return (
     <div className="space-y-5">
-      {quizzes.length === 0 ? (
-        <div className="card p-8 text-center text-ink/60">
-          لا توجد اختبارات منشورة لإسنادها بعد.
-        </div>
-      ) : (
+      {
         <div className="card space-y-4 p-6">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium">
-                الاختبار المنشور
+                الإسناد (اختياري)
               </label>
               <select
                 className="field"
                 value={quizId}
                 onChange={(e) => setQuizId(e.target.value)}
               >
+                <option value="">— بدون إسناد (يدخلون برمز الاختبار) —</option>
                 {quizzes.map((q) => (
                   <option key={q.id} value={q.id}>
                     {q.title} — {q.teacherName} ({q.subjectName})
@@ -199,10 +196,10 @@ export default function ExternalImport({
           )}
 
           <button onClick={submit} disabled={busy} className="btn-primary">
-            {busy ? "جارٍ الاستيراد…" : "استيراد وإسناد"}
+            {busy ? "جارٍ الاستيراد…" : "استيراد"}
           </button>
         </div>
-      )}
+      }
 
       {result && (
         <div className="space-y-4">

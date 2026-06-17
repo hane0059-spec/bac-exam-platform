@@ -30,21 +30,26 @@ export async function POST(req: Request) {
   const file = form.get("file");
   const quizId = String(form.get("quizId") ?? "");
   const defaultGradeId = String(form.get("defaultGradeId") ?? "");
-  if (!(file instanceof Blob) || !quizId || !defaultGradeId) {
+  if (!(file instanceof Blob) || !defaultGradeId) {
     return NextResponse.json(
-      { error: "الملف والاختبار والصفّ الافتراضي مطلوبة" },
+      { error: "الملف والصفّ الافتراضي مطلوبان" },
       { status: 400 }
     );
   }
   const filename = (file as File).name ?? "upload.csv";
 
-  // الاختبار منشور؛ نسجّل الإسناد باسم مدرّسه.
-  const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
-  if (!quiz || quiz.status !== "PUBLISHED") {
-    return NextResponse.json(
-      { error: "اختر اختباراً منشوراً" },
-      { status: 400 }
-    );
+  // الإسناد اختياري: إن اختير اختبار وجب أن يكون منشوراً (يُسنَد باسم مدرّسه).
+  // وإلا تُنشأ الحسابات فقط، ويدخل الطلاب لاحقاً برمز الاختبار.
+  let quiz: { id: string; creatorId: string; title: string } | null = null;
+  if (quizId) {
+    const q = await prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!q || q.status !== "PUBLISHED") {
+      return NextResponse.json(
+        { error: "الاختبار المختار غير منشور" },
+        { status: 400 }
+      );
+    }
+    quiz = { id: q.id, creatorId: q.creatorId, title: q.title };
   }
   const grades = await prisma.gradeLevel.findMany({
     select: { id: true, name: true, code: true },
@@ -111,7 +116,7 @@ export async function POST(req: Request) {
     if (email) {
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
-        await assignIfNeeded(quiz.id, existing.id, quiz.creatorId);
+        if (quiz) await assignIfNeeded(quiz.id, existing.id, quiz.creatorId);
         reused.push({ name: fullName, identifier: email });
         continue;
       }
@@ -149,13 +154,15 @@ export async function POST(req: Request) {
           },
           select: { id: true },
         });
-        await prisma.quizAssignment.create({
-          data: {
-            quizId: quiz.id,
-            studentId: user.id,
-            teacherId: quiz.creatorId,
-          },
-        });
+        if (quiz) {
+          await prisma.quizAssignment.create({
+            data: {
+              quizId: quiz.id,
+              studentId: user.id,
+              teacherId: quiz.creatorId,
+            },
+          });
+        }
         created.push({
           name: fullName,
           studentCode,
@@ -179,7 +186,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({
-    quizTitle: quiz.title,
+    quizTitle: quiz ? quiz.title : "بدون إسناد (دخول بالرمز)",
     created,
     reused,
     errors,

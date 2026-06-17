@@ -53,6 +53,20 @@ export type QuizSaveInput = z.infer<typeof quizSaveSchema>;
 // الملكية
 // ─────────────────────────────────────────────
 
+/** رمز اختبار تسلسلي فريد: التالي بعد الأكبر الحالي (يبدأ من 1001). */
+export async function nextAccessCode(): Promise<string> {
+  const quizzes = await prisma.quiz.findMany({
+    where: { accessCode: { not: null } },
+    select: { accessCode: true },
+  });
+  let max = 1000;
+  for (const { accessCode } of quizzes) {
+    const n = parseInt(accessCode ?? "", 10);
+    if (!Number.isNaN(n) && n > max) max = n;
+  }
+  return String(max + 1);
+}
+
 export async function ownedQuiz(teacherId: string, quizId: string) {
   const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
   if (!quiz || quiz.creatorId !== teacherId) return null;
