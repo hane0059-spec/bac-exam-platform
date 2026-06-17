@@ -42,7 +42,23 @@ export async function parseStudentsFile(
   const wb = new ExcelJS.Workbook();
   let ws: ExcelJS.Worksheet;
   if (filename.toLowerCase().endsWith(".csv")) {
-    ws = await wb.csv.read(Readable.from(buffer));
+    // إزالة BOM واكتشاف الفاصل (فاصلة أو فاصلة منقوطة كما يحفظ إكسل العربي).
+    let csvBuf = buffer;
+    if (
+      csvBuf.length >= 3 &&
+      csvBuf[0] === 0xef &&
+      csvBuf[1] === 0xbb &&
+      csvBuf[2] === 0xbf
+    ) {
+      csvBuf = csvBuf.subarray(3);
+    }
+    const firstLine = csvBuf.toString("utf8").split(/\r?\n/, 1)[0] ?? "";
+    const semis = (firstLine.match(/;/g) || []).length;
+    const commas = (firstLine.match(/,/g) || []).length;
+    const delimiter = semis > commas ? ";" : ",";
+    ws = await wb.csv.read(Readable.from(csvBuf), {
+      parserOptions: { delimiter },
+    });
   } else {
     // cast: تباين بين Buffer في @types/node و exceljs.
     await wb.xlsx.load(buffer as unknown as ArrayBuffer);
