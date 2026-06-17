@@ -1,9 +1,9 @@
 // src/app/api/admin/external-import/export/route.ts
-// POST: توليد ملف Excel ببيانات دخول الطلاب المستوردين لتوزيعها. (المدير حصراً.)
+// POST: توليد ملف Excel ببيانات دخول الطلاب المستوردين لتوزيعها. (مدير أو مدرّس.)
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import ExcelJS from "exceljs";
-import { getAdminSession } from "@/lib/admin";
+import { getSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,8 +22,8 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await getAdminSession();
-  if (!session) {
+  const session = await getSession();
+  if (!session || (session.role !== "ADMIN" && session.role !== "TEACHER")) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
   }
   let raw: unknown;

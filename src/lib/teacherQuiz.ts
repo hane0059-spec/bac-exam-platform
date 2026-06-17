@@ -23,6 +23,7 @@ export const quizSaveSchema = z
   .object({
     title: z.string().trim().min(1, "عنوان الاختبار مطلوب"),
     description: z.string().trim().optional(),
+    allowCodeJoin: z.boolean().default(false),
     settings: settingsSchema,
     availableFrom: z.string().datetime().nullable().optional(),
     availableUntil: z.string().datetime().nullable().optional(),

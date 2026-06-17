@@ -114,6 +114,8 @@ export default async function EditQuizPage({
           availableUntil: quiz.availableUntil
             ? quiz.availableUntil.toISOString()
             : null,
+          accessCode: quiz.accessCode,
+          allowCodeJoin: quiz.allowCodeJoin,
         }}
       />
     </DashboardShell>

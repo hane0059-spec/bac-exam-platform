@@ -39,6 +39,13 @@ export async function POST(req: Request) {
       { status: 404 }
     );
   }
+  // الانضمام بالرمز يجب أن يكون مفعّلاً لهذا الاختبار.
+  if (!quiz.allowCodeJoin) {
+    return NextResponse.json(
+      { error: "الانضمام بالرمز غير مُتاح لهذا الاختبار" },
+      { status: 403 }
+    );
+  }
   if (!isWithinWindow(quiz.availableFrom, quiz.availableUntil)) {
     return NextResponse.json(
       { error: "هذا الاختبار خارج نافذة الإتاحة حالياً" },

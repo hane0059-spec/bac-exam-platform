@@ -26,6 +26,8 @@ export interface QuizBuilderInitial {
   revealAnswers: "immediate" | "end";
   availableFrom: string | null;
   availableUntil: string | null;
+  accessCode: string | null;
+  allowCodeJoin: boolean;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -64,6 +66,7 @@ export default function QuizBuilder({
 
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description);
+  const [codeJoin, setCodeJoin] = useState(initial.allowCodeJoin);
   const [noLimit, setNoLimit] = useState(initial.timeLimitSec === null);
   const [minutes, setMinutes] = useState(
     initial.timeLimitSec ? Math.round(initial.timeLimitSec / 60) : 10
@@ -127,6 +130,7 @@ export default function QuizBuilder({
       body: JSON.stringify({
         title,
         description,
+        allowCodeJoin: codeJoin,
         settings: {
           timeLimitSec: noLimit ? null : Math.max(1, Math.round(minutes * 60)),
           maxAttempts,
@@ -279,6 +283,34 @@ export default function QuizBuilder({
             <DateTimeField value={until} onChange={setUntil} />
           </div>
         </div>
+      </div>
+
+      {/* الوصول بالرمز (قابل للتعديل دائماً) */}
+      <div className="card space-y-2 p-5">
+        <h3 className="font-display font-semibold">الوصول بالرمز</h3>
+        {initial.accessCode ? (
+          <p className="text-sm">
+            رمز الاختبار:{" "}
+            <span className="font-bold" dir="ltr">
+              {initial.accessCode}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-ink/50">يُولَّد الرمز عند نشر الاختبار.</p>
+        )}
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={codeJoin}
+            onChange={(e) => setCodeJoin(e.target.checked)}
+            className="accent-primary"
+          />
+          السماح للطلاب بالانضمام عبر الرمز
+        </label>
+        <p className="text-xs text-ink/50">
+          عند الإيقاف لا يعمل الرمز ويصل الطلاب عبر الإسناد فقط. فعّله للاختبارات
+          المفتوحة وأغلقه متى شئت (يُحفظ بزرّ «حفظ»).
+        </p>
       </div>
 
       {/* الأسئلة المختارة */}

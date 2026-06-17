@@ -55,10 +55,13 @@ function downloadCsv(filename: string, rows: string[][]) {
 export default function ExternalImport({
   quizzes,
   grades,
+  endpoint = "/api/admin/external-import",
 }: {
-  quizzes: Quiz[];
+  quizzes?: Quiz[];
   grades: Grade[];
+  endpoint?: string;
 }) {
+  const showQuizSelect = Array.isArray(quizzes);
   const [quizId, setQuizId] = useState("");
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -76,9 +79,9 @@ export default function ExternalImport({
     setBusy(true);
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("quizId", quizId);
+    if (showQuizSelect) fd.append("quizId", quizId);
     fd.append("defaultGradeId", gradeId);
-    const res = await fetch("/api/admin/external-import", {
+    const res = await fetch(endpoint, {
       method: "POST",
       body: fd,
     });
@@ -115,23 +118,25 @@ export default function ExternalImport({
       {
         <div className="card space-y-4 p-6">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                الإسناد (اختياري)
-              </label>
-              <select
-                className="field"
-                value={quizId}
-                onChange={(e) => setQuizId(e.target.value)}
-              >
-                <option value="">— بدون إسناد (يدخلون برمز الاختبار) —</option>
-                {quizzes.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.title} — {q.teacherName} ({q.subjectName})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {showQuizSelect && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  الإسناد (اختياري)
+                </label>
+                <select
+                  className="field"
+                  value={quizId}
+                  onChange={(e) => setQuizId(e.target.value)}
+                >
+                  <option value="">— بدون إسناد (يدخلون برمز الاختبار) —</option>
+                  {quizzes!.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.title} — {q.teacherName} ({q.subjectName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-sm font-medium">
                 الصفّ الافتراضي (عند غياب عمود الصفّ)

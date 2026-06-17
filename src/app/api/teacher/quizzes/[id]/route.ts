@@ -46,6 +46,7 @@ export async function PATCH(
   const metaData = {
     title: data.title,
     description: data.description || null,
+    allowCodeJoin: data.allowCodeJoin,
     availableFrom: data.availableFrom ? new Date(data.availableFrom) : null,
     availableUntil: data.availableUntil ? new Date(data.availableUntil) : null,
   };

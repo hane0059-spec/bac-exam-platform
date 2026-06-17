@@ -10,6 +10,7 @@ import DashboardShell from "@/components/DashboardShell";
 import AssignPanel, {
   type AssignStudent,
 } from "@/components/teacher/AssignPanel";
+import ExternalImport from "@/components/admin/ExternalImport";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,11 @@ export default async function AssignQuizPage({
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
 
+  const gradeLevels = await prisma.gradeLevel.findMany({
+    select: { id: true, name: true },
+    orderBy: { orderNum: "asc" },
+  });
+
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
@@ -116,6 +122,20 @@ export default async function AssignQuizPage({
         published={quiz.status === "PUBLISHED"}
         students={students}
       />
+
+      <div className="mt-8">
+        <h3 className="mb-2 font-display text-lg font-bold">
+          إسناد خارجي (من ملف)
+        </h3>
+        <p className="mb-3 text-sm text-ink/60">
+          استورد قائمة طلاب من ملف (CSV/Excel) وأسنِد لهم هذا الاختبار مباشرةً —
+          تُنشأ حساباتهم وتُوزَّع بياناتهم. يتطلّب أن يكون الاختبار منشوراً.
+        </p>
+        <ExternalImport
+          grades={gradeLevels}
+          endpoint={`/api/teacher/quizzes/${quiz.id}/external-import`}
+        />
+      </div>
     </DashboardShell>
   );
 }
