@@ -153,13 +153,24 @@ export default function ExternalImport({
               الإجباري: الاسم الأول، الأخير، اسم الأب، الجنس (ذكر/أنثى). الباقي
               اختياري. كلمة السرّ تُولَّد تلقائياً إن تُركت فارغة.
             </p>
-            <button
-              type="button"
-              onClick={() => downloadCsv("template_students.csv", [HEADERS])}
-              className="mt-2 text-primary hover:underline"
-            >
-              تنزيل قالب فارغ
-            </button>
+            <div className="mt-2 flex flex-wrap gap-4">
+              <a
+                href="/student_import_template.xlsx"
+                className="text-primary hover:underline"
+              >
+                تنزيل قالب Excel (مُوصى)
+              </a>
+              <button
+                type="button"
+                onClick={() => downloadCsv("template_students.csv", [HEADERS])}
+                className="text-primary hover:underline"
+              >
+                تنزيل قالب CSV
+              </button>
+            </div>
+            <p className="mt-1 text-ink/50">
+              ننصح بقالب Excel لتفادي مشاكل ترميز CSV العربية.
+            </p>
           </div>
 
           {error && (

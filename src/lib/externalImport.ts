@@ -22,6 +22,23 @@ export const TEMPLATE_HEADERS = [
 
 const COLS = TEMPLATE_HEADERS.length;
 
+/** فكّ ترميز نصّ CSV: UTF-8 إن صحّ، وإلا Windows-1256 (ANSI العربي). */
+function decodeCsv(buf: Buffer): string {
+  let b = buf;
+  if (b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf) {
+    b = b.subarray(3); // إزالة BOM
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(b);
+  } catch {
+    try {
+      return new TextDecoder("windows-1256").decode(buf);
+    } catch {
+      return buf.toString("utf8");
+    }
+  }
+}
+
 function cellText(value: ExcelJS.CellValue): string {
   if (value == null) return "";
   if (typeof value === "object") {
@@ -42,21 +59,20 @@ export async function parseStudentsFile(
   const wb = new ExcelJS.Workbook();
   let ws: ExcelJS.Worksheet;
   if (filename.toLowerCase().endsWith(".csv")) {
-    // إزالة BOM واكتشاف الفاصل (فاصلة أو فاصلة منقوطة كما يحفظ إكسل العربي).
-    let csvBuf = buffer;
-    if (
-      csvBuf.length >= 3 &&
-      csvBuf[0] === 0xef &&
-      csvBuf[1] === 0xbb &&
-      csvBuf[2] === 0xbf
-    ) {
-      csvBuf = csvBuf.subarray(3);
-    }
-    const firstLine = csvBuf.toString("utf8").split(/\r?\n/, 1)[0] ?? "";
+    // فكّ الترميز (UTF-8 أو Windows-1256 الذي يحفظه إكسل العربي).
+    const text = decodeCsv(buffer);
+    // اكتشاف الفاصل: Tab أو فاصلة منقوطة أو فاصلة.
+    const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+    const tabs = (firstLine.match(/\t/g) || []).length;
     const semis = (firstLine.match(/;/g) || []).length;
     const commas = (firstLine.match(/,/g) || []).length;
-    const delimiter = semis > commas ? ";" : ",";
-    ws = await wb.csv.read(Readable.from(csvBuf), {
+    const delimiter =
+      tabs >= semis && tabs >= commas && tabs > 0
+        ? "\t"
+        : semis > commas
+        ? ";"
+        : ",";
+    ws = await wb.csv.read(Readable.from(Buffer.from(text, "utf8")), {
       parserOptions: { delimiter },
     });
   } else {
