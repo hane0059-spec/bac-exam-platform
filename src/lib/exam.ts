@@ -304,6 +304,104 @@ export async function listStudentQuizzes(
   });
 }
 
+// ─────────────────────────────────────────────
+// مراجعة الجلسة (مشتركة بين نتيجة الطالب ومتابعة المدرّس)
+// ─────────────────────────────────────────────
+
+export interface SessionReviewItem {
+  index: number;
+  type: string;
+  content: string;
+  points: number;
+  scoreEarned: number;
+  isCorrect: boolean;
+  answered: boolean;
+  explanation: string | null;
+  textAnswer: string | null;
+  acceptedAnswers: string[];
+  options: {
+    id: string;
+    label: string;
+    content: string;
+    isCorrect: boolean;
+    selected: boolean;
+  }[];
+}
+
+export interface SessionReview {
+  quizTitle: string;
+  studentName: string;
+  status: string;
+  totalScore: number;
+  maxPossibleScore: number;
+  percentage: number;
+  items: SessionReviewItem[];
+}
+
+/** يبني مراجعة جلسة كاملةً (دون فحص ملكية — يتولّاه المنادي). */
+export async function getSessionReview(
+  sessionId: string
+): Promise<SessionReview | null> {
+  const exam = await prisma.examSession.findUnique({
+    where: { id: sessionId },
+    include: {
+      quiz: { select: { title: true } },
+      student: { select: { firstName: true, lastName: true } },
+    },
+  });
+  if (!exam) return null;
+
+  const qNodes = await prisma.quizNode.findMany({
+    where: { quizId: exam.quizId, nodeType: "QUESTION" },
+    orderBy: { positionX: "asc" },
+    include: {
+      question: { include: { options: { orderBy: { orderNum: "asc" } } } },
+    },
+  });
+  const answers = await prisma.studentAnswer.findMany({
+    where: { sessionId: exam.id },
+    include: { selectedOptions: { select: { id: true } } },
+  });
+  const answerByNode = new Map(answers.map((a) => [a.nodeId, a]));
+
+  const items: SessionReviewItem[] = qNodes.map((n, i) => {
+    const q = n.question!;
+    const ans = answerByNode.get(n.id);
+    const selectedIds = new Set(ans?.selectedOptions.map((o) => o.id) ?? []);
+    return {
+      index: i + 1,
+      type: q.type,
+      content: q.content,
+      points: Number(n.pointsOverride ?? q.points),
+      scoreEarned: ans ? Number(ans.scoreEarned) : 0,
+      isCorrect: ans?.isCorrect ?? false,
+      answered: Boolean(ans),
+      explanation: q.explanation ?? null,
+      textAnswer: ans?.textAnswer ?? null,
+      acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],
+      options: q.options.map((o) => ({
+        id: o.id,
+        label: o.label,
+        content: o.content,
+        isCorrect: o.isCorrect,
+        selected: selectedIds.has(o.id),
+      })),
+    };
+  });
+
+  return {
+    quizTitle: exam.quiz.title,
+    studentName: exam.student
+      ? `${exam.student.firstName} ${exam.student.lastName}`
+      : "",
+    status: exam.status,
+    totalScore: Number(exam.totalScore),
+    maxPossibleScore: Number(exam.maxPossibleScore),
+    percentage: Number(exam.percentage),
+    items,
+  };
+}
+
 export async function finalizeSession(
   sessionId: string,
   status: "COMPLETED" | "TIMED_OUT"

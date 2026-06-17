@@ -44,10 +44,17 @@ export default async function TeacherDashboard() {
             إنشاء حسابات الطلاب وتسجيلهم في موادّك وإدارتهم.
           </p>
         </Link>
-        <PlaceholderCard
-          title="المتابعة والتصحيح"
-          description="مراجعة نتائج الطلاب وتصحيح الأسئلة المقالية."
-        />
+        <Link
+          href="/teacher/results"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            المتابعة والنتائج
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            مراجعة نتائج الطلاب ودرجاتهم وإجاباتهم.
+          </p>
+        </Link>
       </div>
     </DashboardShell>
   );
