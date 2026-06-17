@@ -91,6 +91,25 @@ export default function ExternalImport({
     setResult(data as Result);
   }
 
+  async function exportCredentials(rows: Created[]) {
+    const res = await fetch("/api/admin/external-import/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows }),
+    });
+    if (!res.ok) {
+      setError("تعذّر تصدير بيانات الدخول.");
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "student_credentials.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-5">
       {quizzes.length === 0 ? (
@@ -202,20 +221,10 @@ export default function ExternalImport({
               <div className="mb-3 flex items-center justify-between">
                 <h4 className="font-medium">حسابات أُنشئت (بيانات الدخول)</h4>
                 <button
-                  onClick={() =>
-                    downloadCsv("credentials.csv", [
-                      ["الاسم", "رمز الطالب", "كلمة السرّ", "البريد"],
-                      ...result.created.map((c) => [
-                        c.name,
-                        c.studentCode,
-                        c.password,
-                        c.email,
-                      ]),
-                    ])
-                  }
+                  onClick={() => exportCredentials(result.created)}
                   className="text-sm text-primary hover:underline"
                 >
-                  تنزيل بيانات الدخول CSV
+                  تنزيل بيانات الدخول (Excel)
                 </button>
               </div>
               <div className="overflow-x-auto">
