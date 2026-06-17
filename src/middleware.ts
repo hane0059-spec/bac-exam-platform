@@ -37,8 +37,11 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // المسارات المحمية حسب الدور.
-  const match = ROLE_PREFIX.find((r) => pathname.startsWith(r.prefix));
+  // المسارات المحمية حسب الدور (مطابقة على حدّ المقطع لا مجرّد البادئة،
+  // حتى لا يُعتبر مثل "/student_import_template.xlsx" مسارَ طالب).
+  const match = ROLE_PREFIX.find(
+    (r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/")
+  );
   if (match) {
     if (!session) {
       return NextResponse.redirect(new URL("/login", req.url));
@@ -55,6 +58,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // استثناء ملفات النظام والـ API والأصول الثابتة.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // استثناء الـ API وملفات النظام وأي مسار يحوي امتداداً (أصول public).
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
