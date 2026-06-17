@@ -62,10 +62,21 @@ export async function parseStudentsFile(
   return rows;
 }
 
+// محارف اتجاه/عرض صفري قد تلتصق عند النسخ من نصّ عربي.
+const BIDI_MARKS = /[​-‏‪-‮⁦-⁩﻿]/g;
+const TASHKEEL = /[ً-ْٰـ]/g;
+
 export function parseGender(v: string): "MALE" | "FEMALE" | null {
-  const s = v.trim().toLowerCase();
-  if (["ذكر", "ذ", "male", "m", "1"].includes(s)) return "MALE";
-  if (["أنثى", "انثى", "أ", "ا", "female", "f", "2"].includes(s)) return "FEMALE";
+  const s = v
+    .replace(BIDI_MARKS, "")
+    .replace(TASHKEEL, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ى/g, "ي");
+  if (!s) return null;
+  if (s.includes("ذكر") || ["male", "m", "1", "ذ"].includes(s)) return "MALE";
+  if (s.includes("انث") || ["female", "f", "2", "ا"].includes(s)) return "FEMALE";
   return null;
 }
 
