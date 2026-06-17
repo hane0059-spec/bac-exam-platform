@@ -31,10 +31,17 @@ export default async function AdminDashboard() {
             إنشاء وإدارة حسابات المدراء والمدرّسين وربط المواد.
           </p>
         </Link>
-        <PlaceholderCard
-          title="المواد والصفوف"
-          description="إدارة الصفوف الدراسية والمواد وربط المدرّسين بها."
-        />
+        <Link
+          href="/admin/academics"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            المواد والصفوف
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            إنشاء الصفوف والمواد (وربط المدرّسين من «المستخدمون»).
+          </p>
+        </Link>
         <PlaceholderCard
           title="البنك العام للأسئلة"
           description="الإشراف على بنك الأسئلة المشترك بين المدرّسين."
