@@ -18,6 +18,26 @@ export async function createNotification(params: {
   });
 }
 
+/** إنشاء عدّة إشعارات دفعةً واحدة (مثل إسناد لعدّة طلاب). */
+export async function createNotifications(
+  items: {
+    userId: string;
+    type: string;
+    message: string;
+    linkUrl?: string | null;
+  }[],
+): Promise<void> {
+  if (items.length === 0) return;
+  await prisma.notification.createMany({
+    data: items.map((i) => ({
+      userId: i.userId,
+      type: i.type,
+      message: i.message,
+      linkUrl: i.linkUrl ?? null,
+    })),
+  });
+}
+
 export function unreadCount(userId: string): Promise<number> {
   return prisma.notification.count({ where: { userId, isRead: false } });
 }

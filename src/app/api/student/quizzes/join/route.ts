@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getStudentSession, isWithinWindow } from "@/lib/exam";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,15 @@ export async function POST(req: Request) {
         studentId: session.sub,
         teacherId: quiz.creatorId,
       },
+    });
+    // إشعار المدرّس بانضمام طالب جديد بالرمز.
+    await createNotification({
+      userId: quiz.creatorId,
+      type: "JOINED",
+      message: `انضمّ ${session.firstName} ${session.lastName} إلى اختبارك «${quiz.title}» بالرمز`,
+      linkUrl: quiz.isFileBased
+        ? `/teacher/file-exams/${quiz.id}/submissions`
+        : `/teacher/quizzes/${quiz.id}/results`,
     });
   }
 

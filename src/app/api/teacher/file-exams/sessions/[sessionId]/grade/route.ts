@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { gradeFileSchema, parseFileExamSettings } from "@/lib/fileExam";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, createNotifications } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +25,7 @@ export async function POST(
       needsGrading: true,
       studentId: true,
       quizId: true,
+      student: { select: { firstName: true, lastName: true } },
       quiz: {
         select: {
           creatorId: true,
@@ -78,7 +79,7 @@ export async function POST(
     },
   });
 
-  // إشعار الطالب عند أوّل تصحيح فقط (لا يتكرّر عند التعديل).
+  // إشعار الطالب وأولياء أمره عند أوّل تصحيح فقط (لا يتكرّر عند التعديل).
   if (exam.needsGrading) {
     await createNotification({
       userId: exam.studentId,
@@ -86,6 +87,20 @@ export async function POST(
       message: `تم تصحيح اختبارك «${exam.quiz.title}» — ${percentage}%`,
       linkUrl: `/student/quizzes/${exam.quizId}`,
     });
+
+    const parents = await prisma.parentLink.findMany({
+      where: { studentId: exam.studentId },
+      select: { parentId: true },
+    });
+    const childName = `${exam.student.firstName} ${exam.student.lastName}`;
+    await createNotifications(
+      parents.map((p) => ({
+        userId: p.parentId,
+        type: "GRADED",
+        message: `تم تصحيح اختبار ${childName} «${exam.quiz.title}» — ${percentage}%`,
+        linkUrl: `/parent/students/${exam.studentId}`,
+      })),
+    );
   }
 
   return NextResponse.json({ ok: true });

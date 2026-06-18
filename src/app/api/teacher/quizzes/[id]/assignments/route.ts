@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { ownedQuiz } from "@/lib/teacherQuiz";
+import { createNotifications } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,6 +96,17 @@ export async function POST(
             },
           });
     })
+  );
+
+  // إشعار الطلاب المُسنَد إليهم حديثاً فقط (لا عند تحديث الموعد).
+  const newStudents = targets.filter((id) => !existingByStudent.has(id));
+  await createNotifications(
+    newStudents.map((studentId) => ({
+      userId: studentId,
+      type: "ASSIGNED",
+      message: `أُسنِد إليك اختبار «${quiz.title}»`,
+      linkUrl: `/student/quizzes/${quiz.id}`,
+    })),
   );
 
   return NextResponse.json({ assigned: targets.length });
