@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import UserForm, { type UserInitial } from "@/components/admin/UserForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
+import { isSuperAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,10 @@ export default async function EditUserPage({
   });
   if (!user || user.role === "STUDENT") notFound();
 
+  const canManageAdmins = await isSuperAdmin(session.sub);
+  // إدارة حسابات المدراء للمدير العام فقط.
+  if (user.role === "ADMIN" && !canManageAdmins) notFound();
+
   const subjects = await prisma.subject.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" },
@@ -42,6 +47,7 @@ export default async function EditUserPage({
     isActive: user.isActive,
     qualification: user.teacherProfile?.qualification ?? "",
     subjectIds: user.teacherSubjects.map((t) => t.subjectId),
+    isSuperAdmin: user.isSuperAdmin,
   };
 
   return (
@@ -60,6 +66,7 @@ export default async function EditUserPage({
           userId={user.id}
           subjects={subjects}
           initial={initial}
+          canManageAdmins={canManageAdmins}
         />
         <PasswordResetForm endpoint={`/api/admin/users/${user.id}/password`} />
       </div>

@@ -38,6 +38,7 @@ export default async function AdminUsersPage({
       gender: true,
       email: true,
       isActive: true,
+      isSuperAdmin: true,
     },
   });
 
@@ -84,6 +85,8 @@ export default async function AdminUsersPage({
                     </span>
                     <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs text-ink/60">
                       {roleLabel(u.role as Role, u.gender as "MALE" | "FEMALE")}
+                      {u.role === "ADMIN" &&
+                        (u.isSuperAdmin ? " عام" : " تنفيذي")}
                     </span>
                     {!u.isActive && (
                       <span className="rounded-full bg-ink/10 px-2 py-0.5 text-xs text-ink/50">

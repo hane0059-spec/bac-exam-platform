@@ -53,7 +53,7 @@ async function main() {
   // المدير
   await prisma.user.upsert({
     where: { email: "admin@example.com" },
-    update: {},
+    update: { isSuperAdmin: true },
     create: {
       email: "admin@example.com",
       passwordHash: passwords.admin,
@@ -61,6 +61,7 @@ async function main() {
       gender: Gender.MALE,
       firstName: "أحمد",
       lastName: "بن صالح",
+      isSuperAdmin: true,
     },
   });
 

@@ -2,7 +2,7 @@
 // PATCH: تعديل حساب مدرّس/مدير (بيانات/تفعيل/مواد). (المدير حصراً.)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/admin";
+import { getAdminSession, isSuperAdmin } from "@/lib/admin";
 import { userUpdateSchema, currentAcademicYear } from "@/lib/adminUsers";
 
 export const runtime = "nodejs";
@@ -44,13 +44,28 @@ export async function PATCH(
   const d = parsed.data;
   const email = d.email ? d.email.toLowerCase() : null;
 
-  // منع المدير من إيقاف حسابه.
-  if (target.id === session.sub && !d.isActive) {
+  // إدارة حسابات المدراء للمدير العام فقط.
+  const actorIsSuper = await isSuperAdmin(session.sub);
+  if (target.role === "ADMIN" && !actorIsSuper) {
     return NextResponse.json(
-      { error: "لا يمكنك إيقاف حسابك" },
+      { error: "إدارة حسابات المدراء متاحة للمدير العام فقط" },
+      { status: 403 }
+    );
+  }
+  // منع المدير من إيقاف حسابه أو إزالة صلاحيته العليا.
+  if (target.id === session.sub && !d.isActive) {
+    return NextResponse.json({ error: "لا يمكنك إيقاف حسابك" }, { status: 400 });
+  }
+  if (target.id === session.sub && target.isSuperAdmin && !d.isSuperAdmin) {
+    return NextResponse.json(
+      { error: "لا يمكنك إزالة صلاحيتك كمدير عام" },
       { status: 400 }
     );
   }
+  const newSuper =
+    target.role === "ADMIN" && actorIsSuper
+      ? d.isSuperAdmin
+      : target.isSuperAdmin;
   if (email) {
     const other = await prisma.user.findUnique({
       where: { email },
@@ -85,6 +100,7 @@ export async function PATCH(
         gender: d.gender,
         email,
         isActive: d.isActive,
+        isSuperAdmin: target.role === "ADMIN" ? newSuper : false,
         ...(isTeacher
           ? {
               teacherProfile: {

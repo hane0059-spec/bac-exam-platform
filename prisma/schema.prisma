@@ -95,7 +95,8 @@ model User {
   phone        String?
   avatarUrl    String?  @map("avatar_url")
   isActive     Boolean  @default(true) @map("is_active")
-  createdById  String?  @map("created_by_id") // المدرّس المُنشئ للحساب (للطلاب)
+  isSuperAdmin Boolean  @default(false) @map("is_super_admin") // مدير عام (صلاحية كاملة)
+  createdById  String?  @map("created_by_id") // المُنشئ للحساب
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

@@ -17,6 +17,7 @@ export interface UserInitial {
   isActive: boolean;
   qualification: string;
   subjectIds: string[];
+  isSuperAdmin: boolean;
 }
 
 export default function UserForm({
@@ -24,16 +25,19 @@ export default function UserForm({
   userId,
   subjects,
   initial,
+  canManageAdmins,
 }: {
   mode: "create" | "edit";
   userId?: string;
   subjects: Subject[];
   initial?: UserInitial;
+  canManageAdmins: boolean;
 }) {
   const router = useRouter();
   const [role, setRole] = useState<"TEACHER" | "ADMIN">(
     initial?.role ?? "TEACHER"
   );
+  const [superAdmin, setSuperAdmin] = useState(initial?.isSuperAdmin ?? false);
   const [firstName, setFirstName] = useState(initial?.firstName ?? "");
   const [lastName, setLastName] = useState(initial?.lastName ?? "");
   const [gender, setGender] = useState<"MALE" | "FEMALE">(
@@ -54,6 +58,12 @@ export default function UserForm({
   const [busy, setBusy] = useState(false);
 
   const isTeacher = role === "TEACHER";
+  const roleOptions: ["TEACHER" | "ADMIN", string][] = canManageAdmins
+    ? [
+        ["TEACHER", "مدرّس"],
+        ["ADMIN", "مدير"],
+      ]
+    : [["TEACHER", "مدرّس"]];
 
   function toggleSubject(id: string) {
     setSubjectIds((prev) =>
@@ -78,6 +88,7 @@ export default function UserForm({
             password,
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
+            isSuperAdmin: role === "ADMIN" ? superAdmin : false,
           }
         : {
             firstName,
@@ -87,6 +98,7 @@ export default function UserForm({
             isActive,
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
+            isSuperAdmin: role === "ADMIN" ? superAdmin : false,
           };
     const res = await fetch(url, {
       method: mode === "create" ? "POST" : "PATCH",
@@ -114,12 +126,7 @@ export default function UserForm({
         <div>
           <label className="mb-1 block text-sm font-medium">نوع الحساب</label>
           <div className="flex gap-2">
-            {(
-              [
-                ["TEACHER", "مدرّس"],
-                ["ADMIN", "مدير"],
-              ] as const
-            ).map(([v, label]) => (
+            {roleOptions.map(([v, label]) => (
               <button
                 key={v}
                 type="button"
@@ -135,6 +142,18 @@ export default function UserForm({
             ))}
           </div>
         </div>
+      )}
+
+      {role === "ADMIN" && canManageAdmins && (
+        <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={superAdmin}
+            onChange={(e) => setSuperAdmin(e.target.checked)}
+            className="accent-primary"
+          />
+          مدير عام (صلاحية كاملة على المدراء والإعدادات)
+        </label>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">

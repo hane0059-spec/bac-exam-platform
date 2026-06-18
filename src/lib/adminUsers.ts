@@ -18,6 +18,7 @@ export const userCreateSchema = z.object({
   password: z.string().min(6, "كلمة السر 6 أحرف على الأقل"),
   qualification: z.string().trim().optional(),
   subjectIds: z.array(z.string().min(1)).default([]),
+  isSuperAdmin: z.boolean().default(false),
 });
 
 export const userUpdateSchema = z.object({
@@ -28,6 +29,7 @@ export const userUpdateSchema = z.object({
   isActive: z.boolean().default(true),
   qualification: z.string().trim().optional(),
   subjectIds: z.array(z.string().min(1)).default([]),
+  isSuperAdmin: z.boolean().default(false),
 });
 
 export const passwordSchema = z.object({

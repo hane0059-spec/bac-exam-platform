@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/admin";
+import { getAdminSession, isSuperAdmin } from "@/lib/admin";
 import { passwordSchema } from "@/lib/adminUsers";
 
 export const runtime = "nodejs";
@@ -23,6 +23,12 @@ export async function POST(
   });
   if (!target || target.role === "STUDENT") {
     return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
+  }
+  if (target.role === "ADMIN" && !(await isSuperAdmin(session.sub))) {
+    return NextResponse.json(
+      { error: "إعادة كلمة سرّ مدير متاحة للمدير العام فقط" },
+      { status: 403 }
+    );
   }
 
   let raw: unknown;

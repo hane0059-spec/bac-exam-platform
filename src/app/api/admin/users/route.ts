@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/admin";
+import { getAdminSession, isSuperAdmin } from "@/lib/admin";
 import {
   userCreateSchema,
   nextEmployeeCode,
@@ -34,6 +34,15 @@ export async function POST(req: Request) {
   }
   const d = parsed.data;
   const email = d.email ? d.email.toLowerCase() : null;
+
+  // إنشاء حساب مدير متاح للمدير العام فقط.
+  const actorIsSuper = await isSuperAdmin(session.sub);
+  if (d.role === "ADMIN" && !actorIsSuper) {
+    return NextResponse.json(
+      { error: "إنشاء حساب مدير متاح للمدير العام فقط" },
+      { status: 403 }
+    );
+  }
 
   if (
     email &&
@@ -67,6 +76,7 @@ export async function POST(req: Request) {
       gender: d.gender,
       firstName: d.firstName,
       lastName: d.lastName,
+      isSuperAdmin: d.role === "ADMIN" && actorIsSuper ? d.isSuperAdmin : false,
       createdById: session.sub,
       ...(d.role === "TEACHER"
         ? {
