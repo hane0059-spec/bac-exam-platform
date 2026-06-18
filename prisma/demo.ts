@@ -456,12 +456,11 @@ async function main() {
   const mixedAfter = await prisma.examSession.findUniqueOrThrow({
     where: { id: mixedSession },
   });
-  // ملاحظة: المنصّة تُعيد حساب الجلسة ثنائياً (isCorrect × العلامة)، فالدرجة
-  // الجزئية المخزّنة في الإجابة (4/5) لا تنعكس على نسبة الجلسة → 100%.
+  // القصير 2/2 + المقالي الجزئي 4/5 = 6 من 7 ≈ 85.71% (دعم الدرجة الجزئية).
   assert(
-    "إعادة الحساب ثنائية بعد التصحيح اليدوي",
-    Number(mixedAfter.percentage) === 100,
-    `الإجابة 4/5 لكن نسبة الجلسة ${Number(mixedAfter.percentage)}% (لا تدعم الجزئي)`,
+    "إعادة الحساب تدعم الدرجة الجزئية",
+    Math.abs(Number(mixedAfter.percentage) - 85.71) < 0.1,
+    `${Number(mixedAfter.percentage)}%`,
   );
 
   // سيناريو 4: كرم (student3) يؤدّي اختبار الفيزياء.
@@ -639,6 +638,7 @@ async function recomputeTree(sessionId: string) {
     answers.map((a) => ({
       points: Number(a.node.pointsOverride ?? a.question.points),
       isCorrect: a.isCorrect,
+      earned: Number(a.scoreEarned),
     })),
   );
   await prisma.examSession.update({

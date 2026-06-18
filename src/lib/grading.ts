@@ -88,6 +88,9 @@ export function gradeShortAnswer(
 export interface ScorableItem {
   points: number; // علامة السؤال (بعد أي تجاوز)
   isCorrect: boolean;
+  // الدرجة الفعلية المكتسبة (تدعم الجزئي، مثل 4 من 5 للمقالي). تُحصَر في [0, points].
+  // عند غيابها: ثنائي = isCorrect ? points : 0 (توافق رجعي).
+  earned?: number;
   isCancelled?: boolean; // سؤال مُلغى يُستبعد من البسط والمقام معاً
 }
 
@@ -107,7 +110,13 @@ export function computeScore(items: readonly ScorableItem[]): ScoreResult {
   for (const item of items) {
     if (item.isCancelled) continue;
     max += item.points;
-    if (item.isCorrect) earned += item.points;
+    const got =
+      item.earned != null
+        ? Math.min(Math.max(0, item.earned), item.points) // درجة جزئية محصورة
+        : item.isCorrect
+          ? item.points
+          : 0;
+    earned += got;
   }
   const percentage = max > 0 ? Math.round((earned / max) * 10000) / 100 : 0;
   return { earned, max, percentage };

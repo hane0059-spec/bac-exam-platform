@@ -423,15 +423,19 @@ export async function finalizeSession(
   });
   const answers = await prisma.studentAnswer.findMany({
     where: { sessionId },
-    select: { nodeId: true, isCorrect: true },
+    select: { nodeId: true, isCorrect: true, scoreEarned: true },
   });
-  const correctByNode = new Map(answers.map((a) => [a.nodeId, a.isCorrect]));
+  const ansByNode = new Map(answers.map((a) => [a.nodeId, a]));
 
   const score = computeScore(
-    qNodes.map((n) => ({
-      points: Number(n.pointsOverride ?? n.question?.points ?? 0),
-      isCorrect: correctByNode.get(n.id) ?? false,
-    }))
+    qNodes.map((n) => {
+      const a = ansByNode.get(n.id);
+      return {
+        points: Number(n.pointsOverride ?? n.question?.points ?? 0),
+        isCorrect: a?.isCorrect ?? false,
+        earned: a ? Number(a.scoreEarned) : 0,
+      };
+    })
   );
 
   const timeSpent = Math.floor(

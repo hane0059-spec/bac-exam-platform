@@ -129,4 +129,31 @@ describe("computeScore — نسبة من الأسئلة الصالحة", () => {
     ]);
     expect(r.percentage).toBe(66.67);
   });
+
+  it("يدعم الدرجة الجزئية عبر earned (مقالي 4 من 5)", () => {
+    const r = computeScore([
+      { points: 2, isCorrect: true, earned: 2 }, // قصير صحيح كامل
+      { points: 5, isCorrect: true, earned: 4 }, // مقالي جزئي 4/5
+    ]);
+    expect(r.earned).toBe(6);
+    expect(r.max).toBe(7);
+    expect(r.percentage).toBe(85.71);
+  });
+
+  it("يحصر earned ضمن [0, points]", () => {
+    const r = computeScore([
+      { points: 5, isCorrect: true, earned: 9 }, // يتجاوز → يُحصَر بـ5
+      { points: 3, isCorrect: false, earned: -2 }, // سالب → 0
+    ]);
+    expect(r.earned).toBe(5);
+    expect(r.max).toBe(8);
+  });
+
+  it("يبقى ثنائياً عند غياب earned (توافق رجعي)", () => {
+    const r = computeScore([
+      { points: 4, isCorrect: true },
+      { points: 4, isCorrect: false },
+    ]);
+    expect(r.earned).toBe(4);
+  });
 });

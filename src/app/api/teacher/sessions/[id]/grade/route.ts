@@ -68,17 +68,21 @@ export async function POST(
     });
   }
 
-  // إعادة حساب درجة الجلسة من جميع الإجابات الحالية.
+  // إعادة حساب درجة الجلسة من الدرجات الفعلية (تدعم الجزئي: 4 من 5 للمقالي).
   const answers = await prisma.studentAnswer.findMany({
     where: { sessionId: exam.id },
-    select: { nodeId: true, isCorrect: true },
+    select: { nodeId: true, isCorrect: true, scoreEarned: true },
   });
-  const correctByNode = new Map(answers.map((a) => [a.nodeId, a.isCorrect]));
+  const ansByNode = new Map(answers.map((a) => [a.nodeId, a]));
   const score = computeScore(
-    qNodes.map((n) => ({
-      points: pointsByNode.get(n.id) ?? 0,
-      isCorrect: correctByNode.get(n.id) ?? false,
-    }))
+    qNodes.map((n) => {
+      const a = ansByNode.get(n.id);
+      return {
+        points: pointsByNode.get(n.id) ?? 0,
+        isCorrect: a?.isCorrect ?? false,
+        earned: a ? Number(a.scoreEarned) : 0,
+      };
+    })
   );
   await prisma.examSession.update({
     where: { id: exam.id },
