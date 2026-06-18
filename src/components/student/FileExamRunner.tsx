@@ -3,6 +3,7 @@
 // أداء اختبار ورقي: عرض ملف الاختبار، رفع صور الإجابة، الإرسال، وعرض النتيجة.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ImageUploadField from "@/components/ImageUploadField";
 
 interface Upload {
   id: string;
@@ -80,19 +81,19 @@ export default function FileExamRunner({
     router.refresh();
   }
 
+  // يرمي عند الفشل ليُظهر ImageUploadField رسالة الخطأ ويُبقي المعاينة.
   async function addPage(file: File) {
-    if (!sessionId) return;
-    setBusy(true);
-    setError("");
+    if (!sessionId) throw new Error("لا جلسة.");
     const fd = new FormData();
     fd.append("file", file);
     const res = await fetch(
       `/api/student/file-exams/sessions/${sessionId}/upload`,
       { method: "POST", body: fd },
     );
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) return setError(data.error ?? "تعذّر الرفع.");
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? "تعذّر الرفع.");
+    }
     router.refresh();
   }
 
@@ -205,26 +206,13 @@ export default function FileExamRunner({
             <p className="text-sm text-ink/50">لم ترفع صوراً بعد.</p>
           )}
 
-          <div>
-            <label className="mb-1 block text-sm text-ink/60">
-              أضف صورة صفحة (يمكن إضافة عدّة صفحات)
-            </label>
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              capture="environment"
-              disabled={busy}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) addPage(f);
-                e.target.value = "";
-              }}
-              className="block text-sm"
-            />
-            <p className="mt-1 text-xs text-ink/40">
-              صورة واضحة لورقتك — JPG/PNG/PDF حتى 3 ميغابايت لكل صفحة.
-            </p>
-          </div>
+          <ImageUploadField
+            onUpload={addPage}
+            label="أضف صورة صفحة (يمكن إضافة عدّة صفحات)"
+            hint="صوّر ورقتك بوضوح وإضاءة جيّدة — تُضغط تلقائياً قبل الرفع."
+            capture
+            disabled={busy}
+          />
 
           <button
             onClick={submit}

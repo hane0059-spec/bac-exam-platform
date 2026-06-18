@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ImageUploadField from "@/components/ImageUploadField";
 
 function toLocal(iso: string | null): string {
   if (!iso) return "";
@@ -78,8 +79,8 @@ export default function FileExamManager({
     router.refresh();
   }
 
+  // يرمي عند الفشل ليُظهر ImageUploadField الخطأ ويُبقي المعاينة.
   async function uploadFile(file: File) {
-    setBusy(true);
     setError("");
     setMsg("");
     const fd = new FormData();
@@ -88,11 +89,9 @@ export default function FileExamManager({
       method: "POST",
       body: fd,
     });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
     if (!res.ok) {
-      setError(data.error ?? "تعذّر الرفع.");
-      return;
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? "تعذّر الرفع.");
     }
     flash("تم رفع الملف.");
     router.refresh();
@@ -180,20 +179,14 @@ export default function FileExamManager({
         ) : (
           <p className="text-sm text-ink/50">لا ملف بعد — ارفع ملف الاختبار.</p>
         )}
-        <input
-          type="file"
-          accept="image/*,application/pdf"
+        <ImageUploadField
+          onUpload={uploadFile}
+          label="رفع/استبدال ملف الاختبار"
+          hint="JPG/PNG/PDF حتى 3 م.ب — تُضغط الصور تلقائياً مع الحفاظ على الوضوح."
+          maxDim={2200}
+          quality={0.82}
           disabled={busy}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) uploadFile(f);
-            e.target.value = "";
-          }}
-          className="block text-sm"
         />
-        <p className="text-xs text-ink/40">
-          الحد الأقصى 3 ميغابايت — JPG/PNG/WebP/PDF.
-        </p>
       </div>
 
       {/* البيانات */}
