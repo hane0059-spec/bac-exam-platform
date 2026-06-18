@@ -84,10 +84,24 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        <PlaceholderCard
-          title="البنك العام للأسئلة"
-          description="الإشراف على بنك الأسئلة المشترك بين المدرّسين."
-        />
+        {ctx.isSuper ? (
+          <Link
+            href="/admin/questions"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              البنك العام للأسئلة
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              تصفّح أسئلة كل المؤسّسات (قراءة فقط) بفلترة ومادة ونوع.
+            </p>
+          </Link>
+        ) : (
+          <PlaceholderCard
+            title="البنك العام للأسئلة"
+            description="الإشراف على بنك الأسئلة المشترك بين المدرّسين."
+          />
+        )}
         <PlaceholderCard
           title="الإعدادات"
           description="ضبط الخط والثيم وإعدادات المنصة العامة."
