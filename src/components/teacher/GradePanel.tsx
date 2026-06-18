@@ -12,6 +12,7 @@ export interface GradeItem {
   points: number;
   scoreEarned: number;
   isCorrect: boolean;
+  needsReview: boolean;
   textAnswer: string | null;
   acceptedAnswers: string[];
   explanation: string | null;
@@ -86,9 +87,12 @@ export default function GradePanel({
 
   return (
     <div className="card border-r-4 border-r-gold p-5">
-      <h3 className="mb-3 font-display font-semibold text-gold">
-        إجابات بانتظار التصحيح ({items.length})
+      <h3 className="mb-1 font-display font-semibold text-gold">
+        تصحيح القصيرة والمقالية ({items.length})
       </h3>
+      <p className="mb-3 text-xs text-ink/50">
+        يمكنك تعديل أي درجة لاحقاً — التصحيح غير نهائي.
+      </p>
       <div className="space-y-4">
         {items.map((it) => {
           const g = grades.get(it.nodeId)!;
@@ -96,9 +100,20 @@ export default function GradePanel({
             it.acceptedAnswers[0] ?? it.explanation ?? null;
           return (
             <div key={it.nodeId} className="rounded-xl border border-line p-3">
-              <p className="font-medium">
-                {it.index}. {it.content}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-medium">
+                  {it.index}. {it.content}
+                </p>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                    it.needsReview
+                      ? "bg-gold/15 text-gold"
+                      : "bg-primary-light text-primary-dark"
+                  }`}
+                >
+                  {it.needsReview ? "بانتظار" : "مُصحَّحة"}
+                </span>
+              </div>
               <p className="mt-2 text-sm">
                 إجابة الطالب:{" "}
                 <span className="text-ink/80">{it.textAnswer || "—"}</span>

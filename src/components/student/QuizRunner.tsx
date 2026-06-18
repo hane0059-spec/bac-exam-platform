@@ -40,6 +40,7 @@ interface ResultItem {
   scoreEarned: number;
   isCorrect: boolean;
   answered: boolean;
+  needsReview: boolean;
   explanation: string | null;
   textAnswer: string | null;
   acceptedAnswers: string[];
@@ -474,17 +475,35 @@ function FeedbackCard({
 
 function ResultView({ result }: { result: ResultData }) {
   const pct = result.percentage;
-  const tone =
-    pct >= 50 ? "text-primary-dark" : "text-red-600";
+  const tone = pct >= 50 ? "text-primary-dark" : "text-red-600";
+  const pending = result.items.some((it) => it.needsReview);
   return (
     <div className="space-y-5">
       <div className="card p-6 text-center">
-        <p className="text-ink/60">نتيجتك في «{result.quizTitle}»</p>
-        <p className={`my-2 font-display text-5xl font-bold ${tone}`}>{pct}%</p>
-        <p className="text-sm text-ink/60">
-          {result.totalScore} من {result.maxPossibleScore} نقطة
-          {result.status === "TIMED_OUT" && " · انتهى الوقت"}
-        </p>
+        <p className="text-ink/60">«{result.quizTitle}»</p>
+        {pending ? (
+          <>
+            <p className="my-3 font-display text-2xl font-bold text-gold">
+              تمّ تسليم إجاباتك ✓
+            </p>
+            <p className="text-sm leading-relaxed text-ink/70">
+              يحتوي اختبارك أسئلة تحتاج تصحيح المدرّس.{" "}
+              <span className="font-bold">نتيجتك غير نهائية</span> وستظهر بعد
+              اعتماد المدرّس للتصحيح. لا داعي للقلق.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-ink/60">نتيجتك</p>
+            <p className={`my-2 font-display text-5xl font-bold ${tone}`}>
+              {pct}%
+            </p>
+            <p className="text-sm text-ink/60">
+              {result.totalScore} من {result.maxPossibleScore} نقطة
+              {result.status === "TIMED_OUT" && " · انتهى الوقت"}
+            </p>
+          </>
+        )}
       </div>
 
       <h3 className="font-display text-lg font-bold">المراجعة</h3>
@@ -493,22 +512,32 @@ function ResultView({ result }: { result: ResultData }) {
           <div
             key={it.index}
             className={`card border-r-4 p-4 ${
-              it.isCorrect ? "border-r-primary" : "border-r-red-500"
+              it.needsReview
+                ? "border-r-gold"
+                : it.isCorrect
+                ? "border-r-primary"
+                : "border-r-red-500"
             }`}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
               <p className="font-medium leading-relaxed">
                 {it.index}. {it.content}
               </p>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                  it.isCorrect
-                    ? "bg-primary text-white"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {it.isCorrect ? "صحيحة" : "خاطئة"}
-              </span>
+              {it.needsReview ? (
+                <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
+                  بانتظار التصحيح
+                </span>
+              ) : (
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                    it.isCorrect
+                      ? "bg-primary text-white"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {it.isCorrect ? "صحيحة" : "خاطئة"}
+                </span>
+              )}
             </div>
 
             {it.options.length > 0 ? (

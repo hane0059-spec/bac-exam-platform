@@ -1,5 +1,5 @@
 // src/app/(dashboard)/admin/users/page.tsx
-// المدير: قائمة المستخدمين مع تصفية بالدور.
+// المدير: قائمة المستخدمين بتصفية بالدور والمؤسّسة وترقيم صفحات.
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +10,7 @@ import type { Role } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 30;
 const FILTERS = [
   { key: "", label: "الكل" },
   { key: "TEACHER", label: "المدرّسون" },
@@ -20,31 +21,59 @@ const FILTERS = [
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { role?: string };
+  searchParams: { role?: string; schoolId?: string; page?: string };
 }) {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   const session = ctx.session;
 
-  const roleFilter = searchParams.role;
-  const users = await prisma.user.findMany({
-    where: {
-      ...(roleFilter ? { role: roleFilter as Role } : {}),
-      // مدير المدرسة يرى مستخدمي مؤسّسته فقط.
-      ...(ctx.isSchoolManager ? { schoolId: ctx.schoolId } : {}),
-    },
-    orderBy: [{ role: "asc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      gender: true,
-      email: true,
-      isActive: true,
-      isSuperAdmin: true,
-    },
-  });
+  const roleFilter = searchParams.role ?? "";
+  // المدير العام يفلتر بالمؤسّسة؛ مدير المدرسة محصور بمؤسّسته.
+  const schoolFilter = ctx.isSchoolManager
+    ? ctx.schoolId
+    : searchParams.schoolId || undefined;
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
+
+  const where = {
+    ...(roleFilter ? { role: roleFilter as Role } : {}),
+    ...(schoolFilter ? { schoolId: schoolFilter } : {}),
+  };
+
+  const [total, users, schools] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      orderBy: [{ role: "asc" }, { createdAt: "desc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        gender: true,
+        email: true,
+        isActive: true,
+        isSuperAdmin: true,
+      },
+    }),
+    ctx.isSuper
+      ? prisma.school.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
+      : Promise.resolve([]),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const qs = (over: Record<string, string>) => {
+    const q = new URLSearchParams();
+    if (roleFilter) q.set("role", roleFilter);
+    if (!ctx.isSchoolManager && searchParams.schoolId)
+      q.set("schoolId", searchParams.schoolId);
+    for (const [k, v] of Object.entries(over)) {
+      if (v) q.set(k, v);
+      else q.delete(k);
+    }
+    return `/admin/users${q.toString() ? `?${q}` : ""}`;
+  };
 
   return (
     <DashboardShell session={session}>
@@ -55,13 +84,13 @@ export default async function AdminUsersPage({
         </Link>
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={f.key ? `/admin/users?role=${f.key}` : "/admin/users"}
+            href={qs({ role: f.key, page: "" })}
             className={`rounded-full px-3 py-1 text-sm ${
-              (roleFilter ?? "") === f.key
+              roleFilter === f.key
                 ? "bg-primary text-white"
                 : "bg-ink/5 text-ink/70 hover:bg-primary-light"
             }`}
@@ -70,6 +99,36 @@ export default async function AdminUsersPage({
           </Link>
         ))}
       </div>
+
+      {ctx.isSuper && schools.length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          <Link
+            href={qs({ schoolId: "", page: "" })}
+            className={`rounded-full px-3 py-1 text-sm ${
+              !searchParams.schoolId
+                ? "bg-gold/20 text-gold"
+                : "bg-ink/5 text-ink/60 hover:bg-gold/10"
+            }`}
+          >
+            كل المؤسّسات
+          </Link>
+          {schools.map((s) => (
+            <Link
+              key={s.id}
+              href={qs({ schoolId: s.id, page: "" })}
+              className={`rounded-full px-3 py-1 text-sm ${
+                searchParams.schoolId === s.id
+                  ? "bg-gold/20 text-gold"
+                  : "bg-ink/5 text-ink/60 hover:bg-gold/10"
+              }`}
+            >
+              {s.name}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <p className="mb-3 text-sm text-ink/50">{total} مستخدم</p>
 
       {users.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">لا مستخدمون.</div>
@@ -90,7 +149,7 @@ export default async function AdminUsersPage({
                     <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs text-ink/60">
                       {roleLabel(u.role as Role, u.gender as "MALE" | "FEMALE")}
                       {u.role === "ADMIN" &&
-                        (u.isSuperAdmin ? " عام" : " تنفيذي")}
+                        (u.isSuperAdmin ? " عام" : " مؤسّسة")}
                     </span>
                     {!u.isActive && (
                       <span className="rounded-full bg-ink/10 px-2 py-0.5 text-xs text-ink/50">
@@ -117,6 +176,28 @@ export default async function AdminUsersPage({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-5 flex items-center justify-center gap-3 text-sm">
+          {page > 1 ? (
+            <Link href={qs({ page: String(page - 1) })} className="text-primary hover:underline">
+              ← السابق
+            </Link>
+          ) : (
+            <span className="text-ink/30">← السابق</span>
+          )}
+          <span className="text-ink/60">
+            صفحة {page} من {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link href={qs({ page: String(page + 1) })} className="text-primary hover:underline">
+              التالي →
+            </Link>
+          ) : (
+            <span className="text-ink/30">التالي →</span>
+          )}
         </div>
       )}
     </DashboardShell>

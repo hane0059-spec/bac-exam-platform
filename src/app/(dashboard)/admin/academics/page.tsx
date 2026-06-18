@@ -2,8 +2,8 @@
 // المدير: إدارة الصفوف والمواد (قوائم قابلة للتحرير + إنشاء).
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import AcademicsManager from "@/components/admin/AcademicsManager";
 import AcademicsLists from "@/components/admin/AcademicsLists";
@@ -11,9 +11,10 @@ import AcademicsLists from "@/components/admin/AcademicsLists";
 export const dynamic = "force-dynamic";
 
 export default async function AdminAcademicsPage() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (session.role !== "ADMIN") redirect("/");
+  const ctx = await getAdminContext();
+  if (!ctx) redirect("/login");
+  if (!ctx.isSuper) redirect("/admin"); // البنية على مستوى المنصّة — للمدير العام
+  const session = ctx.session;
 
   const [grades, subjects] = await Promise.all([
     prisma.gradeLevel.findMany({

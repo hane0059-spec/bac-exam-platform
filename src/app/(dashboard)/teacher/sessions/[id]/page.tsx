@@ -47,7 +47,9 @@ export default async function TeacherSessionReviewPage({
         <GradePanel
           sessionId={params.id}
           items={review.items
-            .filter((it) => it.needsReview)
+            .filter(
+              (it) => it.type === "SHORT_ANSWER" || it.type === "ESSAY"
+            )
             .map((it) => ({
               nodeId: it.nodeId,
               index: it.index,
@@ -56,6 +58,7 @@ export default async function TeacherSessionReviewPage({
               points: it.points,
               scoreEarned: it.scoreEarned,
               isCorrect: it.isCorrect,
+              needsReview: it.needsReview,
               textAnswer: it.textAnswer,
               acceptedAnswers: it.acceptedAnswers,
               explanation: it.explanation,

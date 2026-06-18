@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/admin";
+import { getAdminContext } from "@/lib/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,9 +18,9 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  const ctx = await getAdminContext();
+  if (!ctx || !ctx.isSuper) {
+    return NextResponse.json({ error: "متاح للمدير العام فقط" }, { status: 403 });
   }
   const grade = await prisma.gradeLevel.findUnique({ where: { id: params.id } });
   if (!grade) {
@@ -58,9 +58,9 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  const ctx = await getAdminContext();
+  if (!ctx || !ctx.isSuper) {
+    return NextResponse.json({ error: "متاح للمدير العام فقط" }, { status: 403 });
   }
   const [subjects, students] = await Promise.all([
     prisma.subject.count({ where: { gradeLevelId: params.id } }),
