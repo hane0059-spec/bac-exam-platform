@@ -171,6 +171,7 @@ model Subject {
   color        String?    // HEX color
   isActive     Boolean    @default(true) @map("is_active")
 
+  units           Unit[]
   chapters        Chapter[]
   teacherSubjects TeacherSubject[]
   enrollments     StudentEnrollment[]
@@ -178,6 +179,19 @@ model Subject {
   quizzes         Quiz[]
 
   @@map("subjects")
+}
+
+// الوحدة: أعلى مستوى في بنية المادة (المادة ← وحدة ← فصل ← درس).
+model Unit {
+  id          String    @id @default(uuid())
+  subjectId   String    @map("subject_id")
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  title       String
+  orderNum    Int       @default(0) @map("order_num")
+  description String?
+  chapters    Chapter[]
+
+  @@map("units")
 }
 
 model TeacherSubject {
@@ -215,6 +229,8 @@ model Chapter {
   id          String    @id @default(uuid())
   subjectId   String    @map("subject_id")
   subject     Subject   @relation(fields: [subjectId], references: [id])
+  unitId      String?   @map("unit_id")
+  unit        Unit?     @relation(fields: [unitId], references: [id])
   title       String
   orderNum    Int       @map("order_num")
   description String?
