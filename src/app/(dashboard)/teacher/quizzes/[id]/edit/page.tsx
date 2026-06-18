@@ -71,14 +71,22 @@ export default async function EditQuizPage({
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-xl font-bold">تكوين الاختبار</h2>
-          {quiz.status === "PUBLISHED" && (
+          <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/teacher/quizzes/${quiz.id}/assign`}
-              className="btn-primary"
+              href={`/teacher/quizzes/${quiz.id}/print`}
+              className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
             >
-              إسناد للطلاب ←
+              طباعة / تصدير
             </Link>
-          )}
+            {quiz.status === "PUBLISHED" && (
+              <Link
+                href={`/teacher/quizzes/${quiz.id}/assign`}
+                className="btn-primary"
+              >
+                إسناد للطلاب ←
+              </Link>
+            )}
+          </div>
         </div>
         {quiz.status === "PUBLISHED" && quiz.accessCode && (
           <p className="mt-2 inline-block rounded-xl bg-primary-light px-3 py-1.5 text-sm text-primary-dark">

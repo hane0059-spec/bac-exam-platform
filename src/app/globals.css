@@ -31,3 +31,17 @@
     @apply rounded-2xl border border-line bg-white shadow-card;
   }
 }
+
+/* الطباعة: هامش الصفحة وخلفية بيضاء صافية، وتجنّب قطع البطاقات عبر الصفحات. */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  body {
+    background: #fff;
+  }
+  .print-card {
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+}
