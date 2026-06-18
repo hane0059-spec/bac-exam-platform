@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import AcademicsManager from "@/components/admin/AcademicsManager";
-import AcademicsLists from "@/components/admin/AcademicsLists";
+import AcademicsTree from "@/components/admin/AcademicsTree";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,7 @@ export default async function AdminAcademicsPage() {
       </div>
 
       <div className="mb-6">
-        <AcademicsLists
+        <AcademicsTree
           grades={grades.map((g) => ({
             id: g.id,
             name: g.name,
