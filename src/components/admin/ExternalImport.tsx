@@ -40,18 +40,6 @@ interface Result {
   errors: { row: number; reason: string }[];
 }
 
-function downloadCsv(filename: string, rows: string[][]) {
-  const esc = (s: string) => `"${(s ?? "").replace(/"/g, '""')}"`;
-  const body = rows.map((r) => r.map(esc).join(",")).join("\r\n");
-  const blob = new Blob(["﻿" + body], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export default function ExternalImport({
   quizzes,
   grades,
@@ -157,11 +145,11 @@ export default function ExternalImport({
 
           <div>
             <label className="mb-1 block text-sm font-medium">
-              ملف الطلاب (CSV أو xlsx)
+              ملف الطلاب (Excel ‏.xlsx)
             </label>
             <input
               type="file"
-              accept=".csv,.xlsx"
+              accept=".xlsx"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="block w-full text-sm"
             />
@@ -174,23 +162,16 @@ export default function ExternalImport({
               الإجباري: الاسم الأول، الأخير، اسم الأب، الجنس (ذكر/أنثى). الباقي
               اختياري. كلمة السرّ تُولَّد تلقائياً إن تُركت فارغة.
             </p>
-            <div className="mt-2 flex flex-wrap gap-4">
+            <div className="mt-2">
               <a
                 href="/student_import_template.xlsx"
                 className="text-primary hover:underline"
               >
-                تنزيل قالب Excel (مُوصى)
+                تنزيل قالب Excel
               </a>
-              <button
-                type="button"
-                onClick={() => downloadCsv("template_students.csv", [HEADERS])}
-                className="text-primary hover:underline"
-              >
-                تنزيل قالب CSV
-              </button>
             </div>
             <p className="mt-1 text-ink/50">
-              ننصح بقالب Excel لتفادي مشاكل ترميز CSV العربية.
+              املأ القالب واحفظه بصيغة Excel (xlsx) وارفعه.
             </p>
           </div>
 

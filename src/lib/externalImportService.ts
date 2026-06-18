@@ -25,6 +25,10 @@ export async function runExternalImport(opts: {
 }): Promise<{ ok: true; result: ImportResult } | { ok: false; error: string }> {
   const { buffer, filename, defaultGradeId, createdById, quiz } = opts;
 
+  if (!filename.toLowerCase().endsWith(".xlsx")) {
+    return { ok: false, error: "يُقبل ملف Excel (xlsx) فقط" };
+  }
+
   const grades = await prisma.gradeLevel.findMany({
     select: { id: true, name: true, code: true },
   });
