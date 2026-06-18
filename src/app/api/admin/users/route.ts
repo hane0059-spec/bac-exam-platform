@@ -9,6 +9,7 @@ import {
   nextEmployeeCode,
   currentAcademicYear,
 } from "@/lib/adminUsers";
+import { getFieldDefs, validateAndClean } from "@/lib/customFields";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +47,15 @@ export async function POST(req: Request) {
   }
   // مؤسّسة الحساب الجديد: مدير المدرسة يورّث مؤسّسته؛ المدير العام يختار.
   const newSchoolId = ctx.isSuper ? d.schoolId ?? null : ctx.schoolId;
+
+  // الحقول المخصّصة حسب الدور.
+  const cf = validateAndClean(
+    await getFieldDefs(d.role === "ADMIN" ? "ADMIN" : "TEACHER"),
+    (raw as { customData?: unknown }).customData
+  );
+  if (!cf.ok) {
+    return NextResponse.json({ error: cf.error }, { status: 400 });
+  }
 
   if (
     email &&
@@ -85,6 +95,7 @@ export async function POST(req: Request) {
           ? d.isSuperAdmin
           : false,
       schoolId: newSchoolId,
+      customData: cf.data,
       createdById: session.sub,
       ...(d.role === "TEACHER"
         ? {

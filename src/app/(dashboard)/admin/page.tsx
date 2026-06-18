@@ -58,6 +58,19 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
+        {ctx.isSuper && (
+          <Link
+            href="/admin/fields"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              الحقول المخصّصة
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              تعريف حقول إضافية للمستخدمين (مدينة/مدرسة…) وضبط إجباريتها.
+            </p>
+          </Link>
+        )}
         <PlaceholderCard
           title="البنك العام للأسئلة"
           description="الإشراف على بنك الأسئلة المشترك بين المدرّسين."

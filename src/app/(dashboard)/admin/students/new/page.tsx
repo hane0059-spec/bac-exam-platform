@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import StudentForm from "@/components/teacher/StudentForm";
+import { getFieldDefs } from "@/lib/customFields";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,13 @@ export default async function AdminNewStudentPage() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
 
-  const gradeLevels = await prisma.gradeLevel.findMany({
-    select: { id: true, name: true },
-    orderBy: { orderNum: "asc" },
-  });
+  const [gradeLevels, customFields] = await Promise.all([
+    prisma.gradeLevel.findMany({
+      select: { id: true, name: true },
+      orderBy: { orderNum: "asc" },
+    }),
+    getFieldDefs("STUDENT"),
+  ]);
 
   return (
     <DashboardShell session={ctx.session}>
@@ -38,6 +42,7 @@ export default async function AdminNewStudentPage() {
           createEndpoint="/api/admin/students"
           redirectTo="/admin/users"
           showSubject={false}
+          customFields={customFields}
         />
       )}
     </DashboardShell>

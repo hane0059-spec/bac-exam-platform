@@ -10,6 +10,7 @@ import {
   academicYearFor,
   nextStudentCode,
 } from "@/lib/teacherStudents";
+import { getFieldDefs, validateAndClean } from "@/lib/customFields";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,6 +95,14 @@ export async function POST(req: Request) {
 
   const academicYear = await academicYearFor(session.sub, d.subjectId);
   const passwordHash = await bcrypt.hash(d.password, 10);
+  // الحقول المخصّصة.
+  const cf = validateAndClean(
+    await getFieldDefs("STUDENT"),
+    (raw as { customData?: unknown }).customData
+  );
+  if (!cf.ok) {
+    return NextResponse.json({ error: cf.error }, { status: 400 });
+  }
   // الطالب يرث مؤسّسة المدرّس.
   const teacher = await prisma.user.findUnique({
     where: { id: session.sub },
@@ -114,6 +123,7 @@ export async function POST(req: Request) {
           lastName: d.lastName,
           phone: d.studentPhone || null,
           schoolId: teacher?.schoolId ?? null,
+          customData: cf.data,
           createdById: session.sub,
           studentProfile: {
             create: {

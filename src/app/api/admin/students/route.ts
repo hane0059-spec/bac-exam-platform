@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import { nextStudentCode } from "@/lib/teacherStudents";
+import { getFieldDefs, validateAndClean } from "@/lib/customFields";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +70,14 @@ export async function POST(req: Request) {
     );
   }
 
+  const cf = validateAndClean(
+    await getFieldDefs("STUDENT"),
+    (raw as { customData?: unknown }).customData
+  );
+  if (!cf.ok) {
+    return NextResponse.json({ error: cf.error }, { status: 400 });
+  }
+
   const passwordHash = await bcrypt.hash(d.password, 10);
   for (let attempt = 0; attempt < 5; attempt++) {
     const studentCode = await nextStudentCode();
@@ -83,6 +92,7 @@ export async function POST(req: Request) {
           lastName: d.lastName,
           phone: d.studentPhone || null,
           schoolId: ctx.schoolId,
+          customData: cf.data,
           createdById: ctx.session.sub,
           studentProfile: {
             create: {

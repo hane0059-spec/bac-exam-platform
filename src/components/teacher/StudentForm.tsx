@@ -4,6 +4,8 @@
 // رمز الطالب يُولَّد تلقائياً (غير قابل للتعديل).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { FieldDef } from "@/lib/customFields";
+import CustomFieldsInput from "@/components/CustomFieldsInput";
 
 interface Option {
   id: string;
@@ -33,6 +35,7 @@ export default function StudentForm({
   createEndpoint = "/api/teacher/students",
   redirectTo = "/teacher/students",
   showSubject = true,
+  customFields = [],
 }: {
   mode: "create" | "edit";
   studentId?: string;
@@ -42,8 +45,10 @@ export default function StudentForm({
   createEndpoint?: string;
   redirectTo?: string;
   showSubject?: boolean;
+  customFields?: FieldDef[];
 }) {
   const router = useRouter();
+  const [customData, setCustomData] = useState<Record<string, string>>({});
 
   const [email, setEmail] = useState(initial?.email ?? "");
   const [password, setPassword] = useState("");
@@ -100,6 +105,7 @@ export default function StudentForm({
             ...common,
             password,
             enrollmentYear: Number(enrollmentYear),
+            customData,
             ...(showSubject ? { subjectId } : {}),
           }
         : { ...common, isActive };
@@ -227,6 +233,14 @@ export default function StudentForm({
         value={address}
         onChange={setAddress}
       />
+
+      {mode === "create" && customFields.length > 0 && (
+        <CustomFieldsInput
+          defs={customFields}
+          value={customData}
+          onChange={setCustomData}
+        />
+      )}
 
       {mode === "create" && (
         <div className="grid gap-3 sm:grid-cols-2">

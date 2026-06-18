@@ -3,6 +3,8 @@
 // إنشاء/تعديل حساب مدرّس أو مدير (مع ربط المواد للمدرّس).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { FieldDef } from "@/lib/customFields";
+import CustomFieldsInput from "@/components/CustomFieldsInput";
 
 interface Subject {
   id: string;
@@ -27,6 +29,7 @@ export default function UserForm({
   initial,
   canManageAdmins,
   schools,
+  customFields = [],
 }: {
   mode: "create" | "edit";
   userId?: string;
@@ -34,9 +37,11 @@ export default function UserForm({
   initial?: UserInitial;
   canManageAdmins: boolean;
   schools?: { id: string; name: string }[];
+  customFields?: FieldDef[];
 }) {
   const router = useRouter();
   const [schoolId, setSchoolId] = useState(schools?.[0]?.id ?? "");
+  const [customData, setCustomData] = useState<Record<string, string>>({});
   const [role, setRole] = useState<"TEACHER" | "ADMIN">(
     initial?.role ?? "TEACHER"
   );
@@ -93,6 +98,7 @@ export default function UserForm({
             subjectIds: isTeacher ? subjectIds : [],
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
             schoolId: schools ? schoolId || null : undefined,
+            customData,
           }
         : {
             firstName,
@@ -291,6 +297,14 @@ export default function UserForm({
           />
           الحساب مُفعّل
         </label>
+      )}
+
+      {mode === "create" && customFields.length > 0 && (
+        <CustomFieldsInput
+          defs={customFields}
+          value={customData}
+          onChange={setCustomData}
+        />
       )}
 
       {error && (

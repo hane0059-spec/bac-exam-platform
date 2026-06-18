@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import StudentForm from "@/components/teacher/StudentForm";
+import { getFieldDefs } from "@/lib/customFields";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function NewStudentPage() {
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
 
-  const [subjects, gradeLevels] = await Promise.all([
+  const [subjects, gradeLevels, customFields] = await Promise.all([
     prisma.subject.findMany({
       where: { teacherSubjects: { some: { teacherId: session.sub } } },
       select: { id: true, name: true },
@@ -24,6 +25,7 @@ export default async function NewStudentPage() {
       select: { id: true, name: true },
       orderBy: { orderNum: "asc" },
     }),
+    getFieldDefs("STUDENT"),
   ]);
 
   return (
@@ -46,6 +48,7 @@ export default async function NewStudentPage() {
           mode="create"
           subjects={subjects}
           gradeLevels={gradeLevels}
+          customFields={customFields}
         />
       )}
     </DashboardShell>

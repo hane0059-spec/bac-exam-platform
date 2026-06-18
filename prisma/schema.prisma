@@ -38,6 +38,27 @@ enum Gender {
   FEMALE
 }
 
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  SELECT
+}
+
+// حقول مخصّصة يعرّفها المدير العام للمستخدمين (مدينة/مدرسة…).
+model CustomFieldDef {
+  id        String          @id @default(uuid())
+  label     String
+  fieldKey  String          @unique @map("field_key")
+  fieldType CustomFieldType  @default(TEXT) @map("field_type")
+  options   String[] // لقوائم SELECT
+  required  Boolean         @default(false)
+  appliesTo String          @default("ALL") @map("applies_to") // ALL|STUDENT|TEACHER|ADMIN
+  orderNum  Int             @default(0) @map("order_num")
+  isActive  Boolean         @default(true) @map("is_active")
+
+  @@map("custom_field_defs")
+}
+
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
@@ -110,6 +131,7 @@ model User {
   isSuperAdmin Boolean  @default(false) @map("is_super_admin") // مدير عام (صلاحية كاملة)
   schoolId     String?  @map("school_id") // المؤسّسة (null = على مستوى المنصّة)
   school       School?  @relation(fields: [schoolId], references: [id])
+  customData   Json?    @map("custom_data") // قيم الحقول المخصّصة
   createdById  String?  @map("created_by_id") // المُنشئ للحساب
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

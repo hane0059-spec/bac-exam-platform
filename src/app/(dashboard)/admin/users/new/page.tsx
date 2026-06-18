@@ -26,6 +26,20 @@ export default async function NewUserPage() {
       })
     : undefined;
 
+  // حقول مخصّصة للمدرّسين/المدراء.
+  const customFields = await prisma.customFieldDef.findMany({
+    where: { isActive: true, appliesTo: { in: ["ALL", "TEACHER", "ADMIN"] } },
+    orderBy: { orderNum: "asc" },
+    select: {
+      id: true,
+      label: true,
+      fieldKey: true,
+      fieldType: true,
+      options: true,
+      required: true,
+    },
+  });
+
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-6">
@@ -39,6 +53,7 @@ export default async function NewUserPage() {
         subjects={subjects}
         canManageAdmins={ctx.isSuper}
         schools={schools}
+        customFields={customFields}
       />
     </DashboardShell>
   );
