@@ -18,7 +18,16 @@ export const runtime = "nodejs";
 const loginSchema = z.object({
   identifier: z.string().trim().min(1, "أدخل البريد أو رمز الطالب أو الاسم"),
   password: z.string().min(1, "كلمة السر مطلوبة"),
+  // نافذة الدخول المختارة (اختيارية) — تُتحقّق بعد كلمة السر فقط.
+  role: z.enum(["ADMIN", "TEACHER", "STUDENT", "PARENT"]).optional(),
 });
+
+const WINDOW_LABEL: Record<string, string> = {
+  ADMIN: "المدراء",
+  TEACHER: "المدرّسين",
+  STUDENT: "الطلاب",
+  PARENT: "أولياء الأمور",
+};
 
 // يحلّ المُعرّف إلى مستخدم: بريد، ثم رمز طالب، ثم اسم كامل (إن لم يلتبس).
 async function resolveUser(
@@ -94,6 +103,17 @@ export async function POST(req: Request) {
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return invalid;
+
+  // تحقّق النافذة (بعد كلمة السر فقط — لا يكشف وجود الحساب لغير المُصادَق).
+  if (parsed.data.role && user.role !== parsed.data.role) {
+    const correct = WINDOW_LABEL[user.role] ?? "";
+    return NextResponse.json(
+      {
+        error: `هذا الحساب ليس ضمن هذه النافذة — استخدم نافذة دخول ${correct}.`,
+      },
+      { status: 403 }
+    );
+  }
 
   const token = await createSessionToken({
     userId: user.id,
