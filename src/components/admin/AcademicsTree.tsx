@@ -113,7 +113,7 @@ export default function AcademicsTree({
                   <span className="text-xs text-ink/40" dir="ltr">
                     ({g.code})
                   </span>
-                  <span className="rounded-full bg-white px-2 py-0.5 text-xs text-ink/50">
+                  <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/50">
                     {subs.length} مادة
                   </span>
                 </button>

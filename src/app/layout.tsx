@@ -58,11 +58,11 @@ export default async function RootLayout({
       style={{ ["--font-app" as string]: FONT_CSS[font] }}
     >
       <body>
-        {/* تطبيق حجم النصّ المحفوظ قبل أول رسم لتفادي وميض التغيير. */}
+        {/* تطبيق حجم النصّ والوضع الليلي المحفوظين قبل أول رسم (تفادي الوميض). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var s=localStorage.getItem('bac-text-scale');if(s){document.documentElement.style.fontSize=(parseFloat(s)*100)+'%';}}catch(e){}})();",
+              "(function(){try{var s=localStorage.getItem('bac-text-scale');if(s){document.documentElement.style.fontSize=(parseFloat(s)*100)+'%';}var t=localStorage.getItem('bac-theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();",
           }}
         />
         {children}

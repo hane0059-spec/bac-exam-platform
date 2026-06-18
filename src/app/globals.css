@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* الألوان المحايدة متغيّرات (قنوات RGB لدعم الشفافية)؛ الوضع الليلي يبدّلها. */
+:root {
+  --ink: 22 48 43;
+  --parchment: 239 242 241;
+  --surface: 255 255 255;
+  --line: 215 222 219;
+}
+.dark {
+  --ink: 226 232 230;
+  --parchment: 15 23 21;
+  --surface: 26 34 31;
+  --line: 52 64 60;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
@@ -16,7 +30,7 @@
 
 @layer components {
   .field {
-    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-ink
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink
            outline-none transition focus:border-primary
            focus:ring-2 focus:ring-primary/20;
   }
@@ -28,12 +42,19 @@
            disabled:cursor-not-allowed disabled:opacity-60;
   }
   .card {
-    @apply rounded-2xl border border-line bg-white shadow-card;
+    @apply rounded-2xl border border-line bg-surface shadow-card;
   }
 }
 
-/* الطباعة: هامش الصفحة وخلفية بيضاء صافية، وتجنّب قطع البطاقات عبر الصفحات. */
+/* الطباعة: ألوان فاتحة دائماً وخلفية بيضاء (حتى في الوضع الليلي). */
 @media print {
+  :root,
+  .dark {
+    --ink: 22 48 43;
+    --parchment: 255 255 255;
+    --surface: 255 255 255;
+    --line: 215 222 219;
+  }
   @page {
     margin: 16mm;
   }

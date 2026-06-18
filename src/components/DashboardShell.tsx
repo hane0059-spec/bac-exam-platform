@@ -5,6 +5,7 @@ import { dashboardPath, type SessionData } from "@/lib/auth";
 import { unreadCount } from "@/lib/notifications";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
+import ThemeToggle from "./ThemeToggle";
 
 export default async function DashboardShell({
   session,
@@ -19,7 +20,7 @@ export default async function DashboardShell({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-line bg-white">
+      <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <Link
             href={dashboardPath(session.role)}
@@ -65,6 +66,7 @@ export default async function DashboardShell({
               )}
             </Link>
             <TextSizeControl />
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </div>

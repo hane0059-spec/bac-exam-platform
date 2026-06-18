@@ -36,7 +36,7 @@ export default function TextSizeControl() {
     <div
       role="group"
       aria-label="حجم النصّ"
-      className="flex items-center gap-1 rounded-xl border border-line bg-white px-1.5 py-1"
+      className="flex items-center gap-1 rounded-xl border border-line bg-surface px-1.5 py-1"
     >
       <span className="px-1 text-xs text-ink/50">الحجم</span>
       {LEVELS.map((l, i) => {

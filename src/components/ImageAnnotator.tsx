@@ -134,7 +134,7 @@ export default function ImageAnnotator({
               <div
                 style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }}
                 onClick={(e) => e.stopPropagation()}
-                className="absolute z-20 w-48 -translate-x-1/2 translate-y-2 rounded-xl border border-line bg-white p-2 text-sm shadow-card"
+                className="absolute z-20 w-48 -translate-x-1/2 translate-y-2 rounded-xl border border-line bg-surface p-2 text-sm shadow-card"
               >
                 <p className="leading-relaxed">{p.text}</p>
                 {editable && (
@@ -155,7 +155,7 @@ export default function ImageAnnotator({
           <div
             style={{ left: `${draft.x * 100}%`, top: `${draft.y * 100}%` }}
             onClick={(e) => e.stopPropagation()}
-            className="absolute z-20 w-56 -translate-x-1/2 translate-y-2 space-y-2 rounded-xl border border-primary bg-white p-2 shadow-card"
+            className="absolute z-20 w-56 -translate-x-1/2 translate-y-2 space-y-2 rounded-xl border border-primary bg-surface p-2 shadow-card"
           >
             <textarea
               autoFocus

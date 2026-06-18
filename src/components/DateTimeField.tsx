@@ -59,7 +59,7 @@ export default function DateTimeField({
     onChange(toValue(next));
   }
 
-  const box = "rounded-lg border border-line bg-white px-1 py-2 text-center outline-none focus:border-primary";
+  const box = "rounded-lg border border-line bg-surface px-1 py-2 text-center outline-none focus:border-primary";
 
   return (
     <div className="flex items-center gap-1" dir="ltr">

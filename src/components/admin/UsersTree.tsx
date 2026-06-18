@@ -75,7 +75,7 @@ function Branch({ node }: { node: TreeNode }) {
           <span className="text-xs text-ink/40">{open ? "▾" : "◂"}</span>
           {node.label}
         </span>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs text-ink/50">
+        <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/50">
           {node.count}
         </span>
       </button>

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type RoleKey = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT";
 
@@ -97,7 +98,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="absolute left-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-white shadow-card">
@@ -207,14 +211,14 @@ export default function LoginPage() {
                   نسيت كلمة السر؟
                 </button>
                 {showForgot && (
-                  <p className="mt-2 rounded-xl border border-line bg-white/60 p-3 text-sm leading-relaxed text-ink/70">
+                  <p className="mt-2 rounded-xl border border-line bg-surface/60 p-3 text-sm leading-relaxed text-ink/70">
                     {role.forgot}
                   </p>
                 )}
               </div>
 
               {role.key === "ADMIN" && (
-                <div className="rounded-xl border border-line bg-white/60 p-3 text-sm text-ink/70">
+                <div className="rounded-xl border border-line bg-surface/60 p-3 text-sm text-ink/70">
                   <p className="mb-1 font-medium text-ink">حساب المدير العام:</p>
                   <p dir="ltr" className="text-right">
                     admin@example.com — Admin@123
