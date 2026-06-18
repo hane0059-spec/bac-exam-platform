@@ -14,6 +14,19 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ctx.isSuper && (
           <Link
+            href="/admin/overview"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              نظرة عامة وإشراف
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              إحصاءات المنصّة وتوزّعها على المؤسّسات.
+            </p>
+          </Link>
+        )}
+        {ctx.isSuper && (
+          <Link
             href="/admin/schools"
             className="card p-5 transition hover:border-primary/40"
           >
