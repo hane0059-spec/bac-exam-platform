@@ -1,339 +1,187 @@
 // prisma/seed.ts
-// بذور أولية: الصفوف + مادة تجريبية + 3 حسابات تجريبية (مدير/مدرّس/طالب)
-// idempotent: يمكن تشغيله أكثر من مرة دون تكرار.
+// تصفير كامل ثمّ بناء أساس «بكالوريا علمي»: المدير العام + الصفّ + موادّه مُشجَّرة.
+// تحذير: يحذف كل البيانات. شغّله بـ: npm run db:seed
 
 import { PrismaClient, Role, Gender } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const ACADEMIC_YEAR = "2024-2025";
+// ── بنية مواد بكالوريا علمي (المادة ← وحدة ← فصل ← درس) ──
+// المواد العلمية تحوي تشجيراً ابتدائياً قابلاً للتوسيع من المدرّس.
+const SUBJECTS: {
+  name: string;
+  code: string;
+  color: string;
+  units?: { title: string; chapters: { title: string; lessons: string[] }[] }[];
+}[] = [
+  {
+    name: "علم الأحياء",
+    code: "BIO",
+    color: "#1F7A63",
+    units: [
+      {
+        title: "التنسيق العصبي والهرموني",
+        chapters: [
+          {
+            title: "الجهاز العصبي",
+            lessons: ["العصبون والسيالة العصبية", "التشابك العصبي", "الفعل المنعكس"],
+          },
+          {
+            title: "التنسيق الهرموني",
+            lessons: ["الغدة النخامية والهرمونات", "تنظيم سكر الدم"],
+          },
+        ],
+      },
+      {
+        title: "التكاثر",
+        chapters: [
+          { title: "التكاثر عند النبات", lessons: ["التكاثر الجنسي عند مغلفات البذور"] },
+          {
+            title: "التكاثر البشري",
+            lessons: ["الجهاز التناسلي", "التطور الجنيني", "الولادة والإرضاع"],
+          },
+        ],
+      },
+      {
+        title: "الوراثة",
+        chapters: [
+          { title: "قوانين مندل", lessons: ["الهجونة الأحادية", "الهجونة الثنائية"] },
+          { title: "الوراثة عند الإنسان", lessons: ["الوراثة المرتبطة بالجنس", "شجرة النسب"] },
+        ],
+      },
+    ],
+  },
+  {
+    name: "الفيزياء",
+    code: "PHYS",
+    color: "#155E4C",
+    units: [
+      {
+        title: "الكهرباء",
+        chapters: [
+          { title: "التيار المتناوب", lessons: ["الدارة RLC", "الاستطاعة الكهربائية"] },
+          { title: "الحقل المغناطيسي", lessons: ["الحث الكهرطيسي"] },
+        ],
+      },
+      {
+        title: "الموجات",
+        chapters: [{ title: "الظواهر الموجية", lessons: ["الانعراج", "التداخل"] }],
+      },
+      {
+        title: "الفيزياء النووية",
+        chapters: [{ title: "النشاط الإشعاعي", lessons: ["التفككات النووية", "الانشطار والاندماج"] }],
+      },
+    ],
+  },
+  {
+    name: "الكيمياء",
+    code: "CHEM",
+    color: "#B6862C",
+    units: [
+      {
+        title: "الكيمياء العضوية",
+        chapters: [{ title: "الكحولات والحموض", lessons: ["الأكسدة", "الأسترة"] }],
+      },
+      {
+        title: "التفاعلات الكيميائية",
+        chapters: [{ title: "سرعة التفاعل", lessons: ["العوامل المؤثرة في السرعة"] }],
+      },
+      {
+        title: "الحموض والأسس",
+        chapters: [{ title: "التوازنات", lessons: ["pH المحاليل", "المعايرة"] }],
+      },
+    ],
+  },
+  {
+    name: "الرياضيات",
+    code: "MATH",
+    color: "#2563EB",
+    units: [
+      { title: "التحليل", chapters: [{ title: "النهايات والاستمرار", lessons: ["المشتقات", "التكامل"] }] },
+      { title: "الهندسة الفراغية", chapters: [{ title: "الأشعة في الفراغ", lessons: ["الجداء السلمي"] }] },
+      { title: "الأعداد المركّبة", chapters: [{ title: "الأعداد المركّبة", lessons: ["الشكل المثلثي"] }] },
+    ],
+  },
+  { name: "اللغة العربية", code: "ARABIC", color: "#9333EA" },
+  { name: "اللغة الإنجليزية", code: "ENGLISH", color: "#DB2777" },
+  { name: "اللغة الفرنسية", code: "FRENCH", color: "#EA580C" },
+  { name: "التربية الدينية", code: "RELIGION", color: "#0D9488" },
+  { name: "التربية الوطنية", code: "NATIONAL", color: "#64748B" },
+];
+
+async function wipe() {
+  // الحذف بترتيب آمن للعلاقات (الأبناء أولاً).
+  await prisma.studentAnswer.deleteMany();
+  await prisma.examSession.deleteMany();
+  await prisma.quizAssignment.deleteMany();
+  await prisma.quizEdge.deleteMany();
+  await prisma.quizNode.deleteMany();
+  await prisma.quiz.deleteMany();
+  await prisma.questionOption.deleteMany();
+  await prisma.questionMatchingPair.deleteMany();
+  await prisma.studentConceptPerformance.deleteMany();
+  await prisma.question.deleteMany();
+  await prisma.concept.deleteMany();
+  await prisma.chapter.deleteMany();
+  await prisma.unit.deleteMany();
+  await prisma.studentEnrollment.deleteMany();
+  await prisma.teacherSubject.deleteMany();
+  await prisma.studentProfile.deleteMany();
+  await prisma.teacherProfile.deleteMany();
+  await prisma.subject.deleteMany();
+  await prisma.gradeLevel.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.school.deleteMany();
+}
 
 async function main() {
-  // ── الصفوف الدراسية ───────────────────────────────
-  const grades = [
-    { name: "السنة الأولى ابتدائي", code: "G1", orderNum: 1 },
-    { name: "السنة الرابعة متوسط", code: "M4", orderNum: 9 },
-    { name: "بكالوريا علوم تجريبية", code: "BAC_SCI", orderNum: 13 },
-    { name: "بكالوريا آداب", code: "BAC_LIT", orderNum: 14 },
-  ];
+  await wipe();
+  console.log("✓ حُذفت كل البيانات السابقة");
 
-  for (const g of grades) {
-    await prisma.gradeLevel.upsert({
-      where: { code: g.code },
-      update: { name: g.name, orderNum: g.orderNum },
-      create: g,
-    });
-  }
-
-  const bacSci = await prisma.gradeLevel.findUniqueOrThrow({
-    where: { code: "BAC_SCI" },
-  });
-
-  // ── مادة تجريبية ──────────────────────────────────
-  const subject = await prisma.subject.upsert({
-    where: { code: "PHYS_CHEM" },
-    update: {},
-    create: {
-      name: "الفيزياء والكيمياء",
-      code: "PHYS_CHEM",
-      gradeLevelId: bacSci.id,
-      description: "مادة تجريبية للاختبار الأولي",
-      color: "#1F7A63",
-    },
-  });
-
-  // ── المدرسة الافتراضية ────────────────────────────
-  const school = await prisma.school.upsert({
-    where: { id: "default-school" },
-    update: {},
-    create: { id: "default-school", name: "مدرسة تجريبية", type: "مدرسة" },
-  });
-
-  // ── الحسابات التجريبية ────────────────────────────
-  const passwords = {
-    admin: await bcrypt.hash("Admin@123", 10),
-    teacher: await bcrypt.hash("Teacher@123", 10),
-    student: await bcrypt.hash("Student@123", 10),
-  };
-
-  // المدير
-  await prisma.user.upsert({
-    where: { email: "admin@example.com" },
-    update: { isSuperAdmin: true },
-    create: {
+  // المدير العام للمنصّة.
+  await prisma.user.create({
+    data: {
       email: "admin@example.com",
-      passwordHash: passwords.admin,
+      passwordHash: await bcrypt.hash("Admin@123", 10),
       role: Role.ADMIN,
       gender: Gender.MALE,
-      firstName: "أحمد",
-      lastName: "بن صالح",
+      firstName: "المدير",
+      lastName: "العام",
       isSuperAdmin: true,
     },
   });
 
-  // المدرّسة
-  const teacher = await prisma.user.upsert({
-    where: { email: "teacher@example.com" },
-    update: { schoolId: school.id },
-    create: {
-      email: "teacher@example.com",
-      passwordHash: passwords.teacher,
-      role: Role.TEACHER,
-      gender: Gender.FEMALE,
-      firstName: "فاطمة",
-      lastName: "الزهراء",
-      schoolId: school.id,
-      teacherProfile: {
-        create: { employeeCode: "T-1001", qualification: "أستاذة الفيزياء" },
-      },
-    },
+  // الصفّ: بكالوريا علمي.
+  const grade = await prisma.gradeLevel.create({
+    data: { name: "بكالوريا علمي", code: "BAC_SCI", orderNum: 13 },
   });
 
-  // الطالب
-  const student = await prisma.user.upsert({
-    where: { email: "student@example.com" },
-    update: { schoolId: school.id },
-    create: {
-      email: "student@example.com",
-      passwordHash: passwords.student,
-      role: Role.STUDENT,
-      gender: Gender.MALE,
-      firstName: "يوسف",
-      lastName: "حدّاد",
-      schoolId: school.id,
-      studentProfile: {
-        create: {
-          studentCode: "S-1001",
-          gradeLevelId: bacSci.id,
-          enrollmentYear: 2024,
-        },
-      },
-    },
-  });
-
-  // ── ربط المدرّسة بالمادة ──────────────────────────
-  await prisma.teacherSubject.upsert({
-    where: {
-      teacherId_subjectId_academicYear: {
-        teacherId: teacher.id,
-        subjectId: subject.id,
-        academicYear: ACADEMIC_YEAR,
-      },
-    },
-    update: {},
-    create: {
-      teacherId: teacher.id,
-      subjectId: subject.id,
-      academicYear: ACADEMIC_YEAR,
-    },
-  });
-
-  // ── تسجيل الطالب في المادة ────────────────────────
-  const existingEnrollment = await prisma.studentEnrollment.findFirst({
-    where: {
-      studentId: student.id,
-      subjectId: subject.id,
-      academicYear: ACADEMIC_YEAR,
-    },
-  });
-  if (!existingEnrollment) {
-    await prisma.studentEnrollment.create({
-      data: {
-        studentId: student.id,
-        teacherId: teacher.id,
-        subjectId: subject.id,
-        academicYear: ACADEMIC_YEAR,
-      },
+  // المواد وتشجيرها.
+  for (const s of SUBJECTS) {
+    const subject = await prisma.subject.create({
+      data: { name: s.name, code: s.code, color: s.color, gradeLevelId: grade.id },
     });
+    for (const u of s.units ?? []) {
+      const unit = await prisma.unit.create({
+        data: { subjectId: subject.id, title: u.title },
+      });
+      for (const c of u.chapters) {
+        const chapter = await prisma.chapter.create({
+          data: { subjectId: subject.id, unitId: unit.id, title: c.title, orderNum: 0 },
+        });
+        for (const lesson of c.lessons) {
+          await prisma.concept.create({
+            data: { chapterId: chapter.id, title: lesson },
+          });
+        }
+      }
+    }
   }
 
-  // ── اختبار تجريبي خطّي منشور + أسئلته + إسناده للطالب ──
-  // idempotent: يُنشأ مرّة واحدة (يُتخطّى إن وُجد اختبار بالعنوان نفسه للمدرّسة).
-  const SAMPLE_QUIZ_TITLE = "اختبار تجريبي: مقدمة في الكهرباء";
-  const existingQuiz = await prisma.quiz.findFirst({
-    where: { title: SAMPLE_QUIZ_TITLE, creatorId: teacher.id },
-  });
-
-  if (!existingQuiz) {
-    await prisma.$transaction(async (tx) => {
-      const chapter = await tx.chapter.create({
-        data: {
-          subjectId: subject.id,
-          title: "الكهرباء الأساسية",
-          orderNum: 1,
-          description: "فصل تمهيدي لاختبار حلقة الطالب",
-        },
-      });
-
-      const concept = await tx.concept.create({
-        data: { chapterId: chapter.id, title: "التيار والمقاومة" },
-      });
-
-      const baseQ = {
-        creatorId: teacher.id,
-        subjectId: subject.id,
-        chapterId: chapter.id,
-        conceptId: concept.id,
-        points: 1,
-      };
-
-      // 1) اختيار من متعدد
-      const q1 = await tx.question.create({
-        data: {
-          ...baseQ,
-          type: "MULTIPLE_CHOICE",
-          content: "ما وحدة قياس شدة التيار الكهربائي؟",
-          explanation: "شدة التيار تُقاس بالأمبير (A).",
-          options: {
-            create: [
-              { label: "أ", content: "الفولت", isCorrect: false, orderNum: 1 },
-              { label: "ب", content: "الأمبير", isCorrect: true, orderNum: 2 },
-              { label: "ج", content: "الأوم", isCorrect: false, orderNum: 3 },
-              { label: "د", content: "الواط", isCorrect: false, orderNum: 4 },
-            ],
-          },
-        },
-      });
-
-      // 2) صح أو خطأ
-      const q2 = await tx.question.create({
-        data: {
-          ...baseQ,
-          type: "TRUE_FALSE",
-          content: "المقاومة الكهربائية تُقاس بوحدة الأوم.",
-          explanation: "صحيح؛ وحدة المقاومة هي الأوم (Ω).",
-          options: {
-            create: [
-              { label: "صح", content: "صح", isCorrect: true, orderNum: 1 },
-              { label: "خطأ", content: "خطأ", isCorrect: false, orderNum: 2 },
-            ],
-          },
-        },
-      });
-
-      // 3) إجابة قصيرة
-      const q3 = await tx.question.create({
-        data: {
-          ...baseQ,
-          type: "SHORT_ANSWER",
-          content:
-            "أكمل: ينصّ قانون أوم على أن التوتر يساوي حاصل ضرب شدة التيار في ...",
-          acceptedAnswers: ["المقاومة", "مقاومة الناقل"],
-          explanation: "U = R × I، فالتوتر = شدة التيار × المقاومة.",
-        },
-      });
-
-      // 4) اختيار من متعدد
-      const q4 = await tx.question.create({
-        data: {
-          ...baseQ,
-          type: "MULTIPLE_CHOICE",
-          content: "أيٌّ من العناصر الآتية يُعدّ موصلاً جيداً للكهرباء؟",
-          explanation: "النحاس فلزّ موصل جيّد؛ الخشب والزجاج والمطاط عوازل.",
-          options: {
-            create: [
-              { label: "أ", content: "الخشب", isCorrect: false, orderNum: 1 },
-              { label: "ب", content: "النحاس", isCorrect: true, orderNum: 2 },
-              { label: "ج", content: "الزجاج", isCorrect: false, orderNum: 3 },
-              { label: "د", content: "المطاط", isCorrect: false, orderNum: 4 },
-            ],
-          },
-        },
-      });
-
-      // 5) إجابة قصيرة
-      const q5 = await tx.question.create({
-        data: {
-          ...baseQ,
-          type: "SHORT_ANSWER",
-          content: "ما اسم الجهاز المستخدم لقياس شدة التيار الكهربائي؟",
-          acceptedAnswers: ["الأمبيرمتر", "الأميتر", "أمبيرمتر"],
-          explanation: "يُقاس التيار بالأمبيرمتر (يُوصَل على التسلسل).",
-        },
-      });
-
-      // الاختبار (خطّي منشور)
-      const quiz = await tx.quiz.create({
-        data: {
-          creatorId: teacher.id,
-          subjectId: subject.id,
-          title: SAMPLE_QUIZ_TITLE,
-          description: "اختبار تجريبي لتشغيل حلقة الطالب (5 أسئلة).",
-          mode: "LINEAR",
-          status: "PUBLISHED",
-          availableFrom: new Date(),
-          settings: {
-            timeLimitSec: 600, // 10 دقائق — يُفرَض على الخادم
-            maxAttempts: 3,
-            revealAnswers: "immediate", // تصحيح فوري بعد كل سؤال
-          },
-        },
-      });
-
-      // العُقد: بداية ← 5 أسئلة ← نهاية، موصولة بحوافّ ALWAYS بالترتيب.
-      const startNode = await tx.quizNode.create({
-        data: { quizId: quiz.id, nodeType: "START", positionX: 0, positionY: 0 },
-      });
-
-      const questions = [q1, q2, q3, q4, q5];
-      const questionNodes = [];
-      for (let i = 0; i < questions.length; i++) {
-        const node = await tx.quizNode.create({
-          data: {
-            quizId: quiz.id,
-            nodeType: "QUESTION",
-            questionId: questions[i].id,
-            positionX: (i + 1) * 200,
-            positionY: 0,
-          },
-        });
-        questionNodes.push(node);
-      }
-
-      const endNode = await tx.quizNode.create({
-        data: {
-          quizId: quiz.id,
-          nodeType: "END",
-          positionX: (questions.length + 1) * 200,
-          positionY: 0,
-        },
-      });
-
-      const ordered = [startNode, ...questionNodes, endNode];
-      for (let i = 0; i < ordered.length - 1; i++) {
-        await tx.quizEdge.create({
-          data: {
-            quizId: quiz.id,
-            sourceNodeId: ordered[i].id,
-            targetNodeId: ordered[i + 1].id,
-            conditionType: "ALWAYS",
-            priority: 0,
-          },
-        });
-      }
-
-      await tx.quiz.update({
-        where: { id: quiz.id },
-        data: { startNodeId: startNode.id },
-      });
-
-      // إسناد الاختبار للطالب التجريبي.
-      await tx.quizAssignment.create({
-        data: {
-          quizId: quiz.id,
-          studentId: student.id,
-          teacherId: teacher.id,
-        },
-      });
-    });
-    console.log("  + أُنشئ اختبار تجريبي منشور وأُسنِد للطالب");
-  }
-
-  console.log("✓ تمت تهيئة البذور بنجاح");
-  console.log("  المدير:  admin@example.com / Admin@123");
-  console.log("  المدرّسة: teacher@example.com / Teacher@123");
-  console.log("  الطالب:  student@example.com / Student@123");
+  console.log("✓ أُنشئ صفّ «بكالوريا علمي» مع موادّه المُشجَّرة");
+  console.log(`  المواد: ${SUBJECTS.length}`);
+  console.log("  المدير العام: admin@example.com / Admin@123");
 }
 
 main()
