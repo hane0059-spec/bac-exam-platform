@@ -7,7 +7,7 @@ import { getParentSession, parentOwnsStudent } from "@/lib/parent";
 import { getSessionReview } from "@/lib/exam";
 import DashboardShell from "@/components/DashboardShell";
 import SessionReviewView from "@/components/SessionReviewView";
-import AttachmentThumb from "@/components/AttachmentThumb";
+import ImageAnnotator from "@/components/ImageAnnotator";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,14 @@ export default async function ChildSessionReviewPage({
       attachments: {
         where: { kind: "ANSWER_UPLOAD" },
         orderBy: { createdAt: "asc" },
-        select: { id: true, mimeType: true },
+        select: {
+          id: true,
+          mimeType: true,
+          annotations: {
+            orderBy: { createdAt: "asc" },
+            select: { id: true, x: true, y: true, text: true },
+          },
+        },
       },
     },
   });
@@ -86,9 +93,14 @@ export default async function ChildSessionReviewPage({
               </div>
             )}
             {exam.attachments.length > 0 && (
-              <div className="flex flex-wrap gap-3">
+              <div className="space-y-4">
                 {exam.attachments.map((u) => (
-                  <AttachmentThumb key={u.id} id={u.id} mimeType={u.mimeType} />
+                  <ImageAnnotator
+                    key={u.id}
+                    attachmentId={u.id}
+                    mimeType={u.mimeType}
+                    annotations={u.annotations}
+                  />
                 ))}
               </div>
             )}

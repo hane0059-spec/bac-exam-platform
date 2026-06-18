@@ -97,7 +97,14 @@ export default async function TakeQuizPage({
         attachments: {
           where: { kind: "ANSWER_UPLOAD" },
           orderBy: { createdAt: "asc" },
-          select: { id: true, mimeType: true },
+          select: {
+            id: true,
+            mimeType: true,
+            annotations: {
+              orderBy: { createdAt: "asc" },
+              select: { id: true, x: true, y: true, text: true },
+            },
+          },
         },
       },
     }),

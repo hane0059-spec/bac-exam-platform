@@ -75,11 +75,15 @@
 
 **الاختبار الورقي/المرفوع (تخزين داخل Postgres):** نوع اختبار موازٍ (`Quiz.isFileBased`) بلا أسئلة/عُقد: المدرّس ينشئه ويرفع ورقته (صورة/PDF) من `/teacher/file-exams`، والطالب يرفع صور إجابته من صفحة الأداء ثم يُرسلها (`needsGrading`)، والمدرّس يصحّح يدوياً (درجة كلّية + ملاحظة) من «الإجابات والتصحيح»، ويراها الطالب ووليّ أمره. الملفات في جدول `Attachment` (bytea) خلف طبقة تجريد `src/lib/attachments.ts`، وتُبَثّ عبر `/api/attachments/[id]` **بفحص ملكية صارم فقط** (لا روابط عامّة). حدود: صورة/PDF ≤3MB، 12 صفحة. الدرجة تُخزَّن في `ExamSession.{totalScore,maxPossibleScore,percentage}` + `teacherFeedback`. الرفع عبر `ImageUploadField` المشترك: **ضغط الصورة على المتصفّح** (`imageCompress.ts`: تصغير + JPEG) ثم **معاينة قبل التأكيد** (يرى الرافِع الوضوح والأبعاد والحجم، فيرفع أو يحذف ويختار غيرها).
 
+**الإشعارات (داخل التطبيق):** جدول `Notification` + جرس بعدّاد غير المقروء في رأس كل لوحة + صفحة `/notifications` (تُعلَّم مقروءةً عند الفتح). يُنشَأ إشعار للطالب عند **أوّل تصحيح** لورقته (لا يتكرّر عند التعديل).
+
+**تعليقات المدرّس على الصورة:** جدول `Annotation` (إحداثيات نسبية x,y على صورة الإجابة) — المدرّس ينقر الصورة فيضع دبّوساً بتعليق من «الإجابات والتصحيح» (`ImageAnnotator` editable)، ويراها الطالب ووليّ أمره دبابيس فوق الصورة (قراءة فقط). التعليقات على الصور لا PDF.
+
 **أدلّة الاستخدام:** زرّ «كيف أستخدم صفحتي؟» في رأس كل لوحة يفتح `/guide/[role]` (تبويب جديد) — دليل مخصّص لكل دور (طالب/مدرّس/مدير/وليّ)، محتواه في `src/lib/guide.ts`.
 
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
-**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`) (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
+**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`)، **`Notification`**، **`Annotation`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
 
 > البذرة الحالية (`prisma/seed.ts`) **تصفّر كل شيء** ثم تنشئ المدير العام + صفّ «بكالوريا علمي» + 9 مواد (العلمية مُشجَّرة). استخدم Git دائماً.
 

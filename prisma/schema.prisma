@@ -169,8 +169,40 @@ model User {
   parentLinks        ParentLink[]        @relation("ParentLinks")
   studentParents     ParentLink[]        @relation("StudentParents")
   uploadedAttachments Attachment[]       @relation("UploadedBy")
+  notifications      Notification[]
+  annotations        Annotation[]        @relation("AnnotationAuthor")
 
   @@map("users")
+}
+
+// إشعار داخل التطبيق لمستخدم (مثل: تصحيح اختبار).
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // GRADED | ...
+  message   String
+  linkUrl   String?  @map("link_url")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// تعليق المدرّس على صورة إجابة بموضع نسبي (x,y) من 0 إلى 1.
+model Annotation {
+  id           String     @id @default(uuid())
+  attachmentId String     @map("attachment_id")
+  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  authorId     String     @map("author_id")
+  author       User       @relation("AnnotationAuthor", fields: [authorId], references: [id])
+  x            Float // نسبة من عرض الصورة (0..1)
+  y            Float // نسبة من ارتفاعها (0..1)
+  text         String
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@map("annotations")
 }
 
 // مرفق ثنائي (صورة/PDF) مُخزَّن في القاعدة، يُبَثّ عبر مسار مُصادَق فقط.
@@ -187,6 +219,7 @@ model Attachment {
   quiz         Quiz?          @relation(fields: [quizId], references: [id], onDelete: Cascade)
   sessionId    String?        @map("session_id")
   session      ExamSession?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  annotations  Annotation[]
   createdAt    DateTime       @default(now()) @map("created_at")
 
   @@map("attachments")

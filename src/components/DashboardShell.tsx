@@ -2,10 +2,11 @@
 import Link from "next/link";
 import { roleLabel, welcome } from "@/lib/gender";
 import { dashboardPath, type SessionData } from "@/lib/auth";
+import { unreadCount } from "@/lib/notifications";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
 
-export default function DashboardShell({
+export default async function DashboardShell({
   session,
   children,
 }: {
@@ -14,6 +15,7 @@ export default function DashboardShell({
 }) {
   const fullName = `${session.firstName} ${session.lastName}`;
   const label = roleLabel(session.role, session.gender);
+  const unread = await unreadCount(session.sub).catch(() => 0);
 
   return (
     <div className="min-h-screen">
@@ -50,6 +52,18 @@ export default function DashboardShell({
             >
               كيف أستخدم صفحتي؟
             </a>
+            <Link
+              href="/notifications"
+              title="الإشعارات"
+              className="relative rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+            >
+              <span aria-hidden>🔔</span>
+              {unread > 0 && (
+                <span className="absolute -top-1.5 -left-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </Link>
             <TextSizeControl />
             <LogoutButton />
           </div>

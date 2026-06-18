@@ -4,10 +4,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
+import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
 
 interface Upload {
   id: string;
   mimeType: string;
+  annotations?: Pin[];
 }
 interface Finished {
   needsGrading: boolean;
@@ -257,9 +259,19 @@ export default function FileExamRunner({
               {finished.feedback}
             </div>
           )}
-          <div className="flex flex-wrap gap-3">
+          {finished.uploads.some((u) => (u.annotations?.length ?? 0) > 0) && (
+            <p className="text-xs text-ink/50">
+              اضغط الأرقام الحمراء على الصورة لقراءة تعليقات المدرّس.
+            </p>
+          )}
+          <div className="space-y-4">
             {finished.uploads.map((u) => (
-              <FilePreview key={u.id} att={u} />
+              <ImageAnnotator
+                key={u.id}
+                attachmentId={u.id}
+                mimeType={u.mimeType}
+                annotations={u.annotations ?? []}
+              />
             ))}
           </div>
           {canStart && (

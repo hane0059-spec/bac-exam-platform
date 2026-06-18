@@ -3,11 +3,12 @@
 // المدرّس: تصحيح محاولة ورقية واحدة (درجة + ملاحظة) — قابل للتعديل دائماً.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import AttachmentThumb from "@/components/AttachmentThumb";
+import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
 
 interface Upload {
   id: string;
   mimeType: string;
+  annotations: Pin[];
 }
 
 export default function FileGradePanel({
@@ -74,9 +75,15 @@ export default function FileGradePanel({
       </div>
 
       {uploads.length > 0 ? (
-        <div className="flex flex-wrap gap-3">
+        <div className="space-y-4">
           {uploads.map((u) => (
-            <AttachmentThumb key={u.id} id={u.id} mimeType={u.mimeType} />
+            <ImageAnnotator
+              key={u.id}
+              attachmentId={u.id}
+              mimeType={u.mimeType}
+              annotations={u.annotations}
+              editable
+            />
           ))}
         </div>
       ) : (

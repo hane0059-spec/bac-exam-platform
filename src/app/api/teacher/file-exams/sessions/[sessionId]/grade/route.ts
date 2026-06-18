@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { gradeFileSchema, parseFileExamSettings } from "@/lib/fileExam";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +22,17 @@ export async function POST(
     select: {
       id: true,
       status: true,
-      quiz: { select: { creatorId: true, isFileBased: true, settings: true } },
+      needsGrading: true,
+      studentId: true,
+      quizId: true,
+      quiz: {
+        select: {
+          creatorId: true,
+          isFileBased: true,
+          settings: true,
+          title: true,
+        },
+      },
     },
   });
   if (!exam || exam.quiz.creatorId !== session.sub || !exam.quiz.isFileBased)
@@ -66,5 +77,16 @@ export async function POST(
       needsGrading: false,
     },
   });
+
+  // إشعار الطالب عند أوّل تصحيح فقط (لا يتكرّر عند التعديل).
+  if (exam.needsGrading) {
+    await createNotification({
+      userId: exam.studentId,
+      type: "GRADED",
+      message: `تم تصحيح اختبارك «${exam.quiz.title}» — ${percentage}%`,
+      linkUrl: `/student/quizzes/${exam.quizId}`,
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }
