@@ -41,6 +41,15 @@ export default function DashboardShell({
             >
               الرئيسية
             </Link>
+            <a
+              href={`/guide/${session.role.toLowerCase()}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+              title="كيف تستخدم صفحتك؟"
+            >
+              كيف أستخدم صفحتي؟
+            </a>
             <TextSizeControl />
             <LogoutButton />
           </div>

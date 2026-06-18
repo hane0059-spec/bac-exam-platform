@@ -73,6 +73,8 @@
 
 **ولي الأمر:** دور `PARENT` + جدول ربط `ParentLink` (متعدّد-لمتعدّد: ولي ← عدّة أبناء، وطالب ← عدّة أولياء). **المدير** ينشئ الوليّ ويربطه بأبنائه بلصق رموز الطلاب (بعزل المؤسّسة) من `/admin/parents` (قائمة/إنشاء/إدارة روابط). **لوحة الوليّ** `/parent`: أبناؤه ونتائج كلّ ابن (قراءة فقط) عبر `SessionReviewView` المشترك — مع **فحص ملكية صارم** (`parentOwnsStudent`) لكل وصول لبيانات طالب، وإخفاء النتيجة ما دامت بانتظار التصحيح. الدخول الموحّد يعمل للوليّ (بريد/اسم).
 
+**أدلّة الاستخدام:** زرّ «كيف أستخدم صفحتي؟» في رأس كل لوحة يفتح `/guide/[role]` (تبويب جديد) — دليل مخصّص لكل دور (طالب/مدرّس/مدير/وليّ)، محتواه في `src/lib/guide.ts`.
+
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
 **إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
