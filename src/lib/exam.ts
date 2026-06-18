@@ -230,6 +230,7 @@ export interface StudentQuizListItem {
   quizId: string;
   title: string;
   description: string | null;
+  isFileBased: boolean;
   questionCount: number;
   timeLimitSec: number | null;
   maxAttempts: number;
@@ -290,6 +291,7 @@ export async function listStudentQuizzes(
       quizId: a.quizId,
       title: a.quiz.title,
       description: a.quiz.description,
+      isFileBased: a.quiz.isFileBased,
       questionCount: a.quiz.nodes.length,
       timeLimitSec: settings.timeLimitSec,
       maxAttempts: effectiveMax,

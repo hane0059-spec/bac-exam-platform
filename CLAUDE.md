@@ -73,11 +73,13 @@
 
 **ولي الأمر:** دور `PARENT` + جدول ربط `ParentLink` (متعدّد-لمتعدّد: ولي ← عدّة أبناء، وطالب ← عدّة أولياء). **المدير** ينشئ الوليّ ويربطه بأبنائه بلصق رموز الطلاب (بعزل المؤسّسة) من `/admin/parents` (قائمة/إنشاء/إدارة روابط). **لوحة الوليّ** `/parent`: أبناؤه ونتائج كلّ ابن (قراءة فقط) عبر `SessionReviewView` المشترك — مع **فحص ملكية صارم** (`parentOwnsStudent`) لكل وصول لبيانات طالب، وإخفاء النتيجة ما دامت بانتظار التصحيح. الدخول الموحّد يعمل للوليّ (بريد/اسم).
 
+**الاختبار الورقي/المرفوع (تخزين داخل Postgres):** نوع اختبار موازٍ (`Quiz.isFileBased`) بلا أسئلة/عُقد: المدرّس ينشئه ويرفع ورقته (صورة/PDF) من `/teacher/file-exams`، والطالب يرفع صور إجابته من صفحة الأداء ثم يُرسلها (`needsGrading`)، والمدرّس يصحّح يدوياً (درجة كلّية + ملاحظة) من «الإجابات والتصحيح»، ويراها الطالب ووليّ أمره. الملفات في جدول `Attachment` (bytea) خلف طبقة تجريد `src/lib/attachments.ts`، وتُبَثّ عبر `/api/attachments/[id]` **بفحص ملكية صارم فقط** (لا روابط عامّة). حدود: صورة/PDF ≤3MB، 12 صفحة. الدرجة تُخزَّن في `ExamSession.{totalScore,maxPossibleScore,percentage}` + `teacherFeedback`.
+
 **أدلّة الاستخدام:** زرّ «كيف أستخدم صفحتي؟» في رأس كل لوحة يفتح `/guide/[role]` (تبويب جديد) — دليل مخصّص لكل دور (طالب/مدرّس/مدير/وليّ)، محتواه في `src/lib/guide.ts`.
 
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
-**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
+**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`) (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
 
 > البذرة الحالية (`prisma/seed.ts`) **تصفّر كل شيء** ثم تنشئ المدير العام + صفّ «بكالوريا علمي» + 9 مواد (العلمية مُشجَّرة). استخدم Git دائماً.
 

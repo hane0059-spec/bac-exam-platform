@@ -43,6 +43,7 @@ export default async function ChildResultsPage({
       status: true,
       percentage: true,
       completedAt: true,
+      needsGrading: true,
       quiz: { select: { title: true } },
       _count: { select: { answers: { where: { needsReview: true } } } },
     },
@@ -71,7 +72,7 @@ export default async function ChildResultsPage({
       ) : (
         <div className="space-y-2">
           {sessions.map((s) => {
-            const pending = s._count.answers > 0;
+            const pending = s._count.answers > 0 || s.needsGrading;
             return (
               <Link
                 key={s.id}

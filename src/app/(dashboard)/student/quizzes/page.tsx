@@ -62,6 +62,11 @@ export default async function StudentQuizzesPage() {
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <h3 className="font-display text-lg font-semibold leading-snug">
                     {q.title}
+                    {q.isFileBased && (
+                      <span className="mr-2 rounded-full bg-gold/15 px-2 py-0.5 align-middle text-xs font-medium text-gold">
+                        ورقي
+                      </span>
+                    )}
                   </h3>
                   <StateBadge state={q.state} />
                 </div>
@@ -71,12 +76,16 @@ export default async function StudentQuizzesPage() {
                   </p>
                 )}
                 <ul className="mb-4 space-y-1 text-sm text-ink/70">
-                  <li>عدد الأسئلة: {q.questionCount}</li>
+                  {q.isFileBased ? (
+                    <li>رفع صورة الإجابة وتصحيح المدرّس</li>
+                  ) : (
+                    <li>عدد الأسئلة: {q.questionCount}</li>
+                  )}
                   {time && <li>المدة: {time}</li>}
                   <li>
                     المحاولات: {q.attemptsUsed} / {q.maxAttempts}
                   </li>
-                  {q.bestPercentage !== null && (
+                  {!q.isFileBased && q.bestPercentage !== null && (
                     <li>أفضل نتيجة: {q.bestPercentage}%</li>
                   )}
                 </ul>
