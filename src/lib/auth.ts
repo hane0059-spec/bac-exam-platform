@@ -8,7 +8,7 @@ export const SESSION_COOKIE = "session";
 const ALG = "HS256";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 أيام
 
-export type Role = "ADMIN" | "TEACHER" | "STUDENT";
+export type Role = "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
 export type Gender = "MALE" | "FEMALE";
 
 export interface SessionData extends JWTPayload {
@@ -86,5 +86,7 @@ export function dashboardPath(role: Role): string {
       return "/teacher";
     case "STUDENT":
       return "/student";
+    case "PARENT":
+      return "/parent";
   }
 }

@@ -71,9 +71,11 @@
 
 **لوحة المدير العام (الإشراف عبر المؤسّسات):** صفحة نظرة عامة (`/admin/overview`: إحصاءات المنصّة + جدول لكل مؤسّسة)، تصفّح **البنك العام** (`/admin/quizzes` و`/admin/questions`: قراءة فقط، فلترة بالمؤسّسة/المادة/النوع أو الحالة + ترقيم). النسبة للمؤسّسة عبر `creator.schoolId`.
 
+**ولي الأمر:** دور `PARENT` + جدول ربط `ParentLink` (متعدّد-لمتعدّد: ولي ← عدّة أبناء، وطالب ← عدّة أولياء). **المدير** ينشئ الوليّ ويربطه بأبنائه بلصق رموز الطلاب (بعزل المؤسّسة) من `/admin/parents` (قائمة/إنشاء/إدارة روابط). **لوحة الوليّ** `/parent`: أبناؤه ونتائج كلّ ابن (قراءة فقط) عبر `SessionReviewView` المشترك — مع **فحص ملكية صارم** (`parentOwnsStudent`) لكل وصول لبيانات طالب، وإخفاء النتيجة ما دامت بانتظار التصحيح. الدخول الموحّد يعمل للوليّ (بريد/اسم).
+
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
-**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
+**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
 
 > البذرة الحالية (`prisma/seed.ts`) **تصفّر كل شيء** ثم تنشئ المدير العام + صفّ «بكالوريا علمي» + 9 مواد (العلمية مُشجَّرة). استخدم Git دائماً.
 
@@ -81,7 +83,8 @@
 - ~~تشجير لوحة المدير~~ ✅ تمّ: تبويب الطلاب/المدرّسين شجرياً + صفحة «الصفّ ← مواده» المتداخلة. (لاحقاً عند الحاجة: تحميل كسول للشجرة إن كبر عدد الطلاب — حالياً تُرسَل كاملةً من الخادم بلا ترقيم.)
 - **إرسال بيانات الدخول** بالبريد ثم SMS (خدمات خارجية — يلزم مزوّد ومفاتيح). **مؤجّل**: لا مزوّد متاح حالياً.
 - ~~لوحة المدير العام: إشراف على البنك العام والاختبارات عبر المؤسّسات~~ ✅ تمّ (نظرة عامة + تصفّح البنك والاختبارات، قراءة فقط).
-- دور ولي الأمر. وبنود Backlog أدناه عند الإذن.
+- ~~دور ولي الأمر~~ ✅ تمّ (دور `PARENT` + `ParentLink` + لوحة الوليّ، قراءة فقط). لاحقاً: ربط الوليّ بأبنائه من المدرّس أيضاً.
+- بنود Backlog أدناه عند الإذن.
 
 ## Backlog (أفكار مؤجّلة)
 > مصدرها مواصفات «بنك الأسئلة الشامل» (علم الأحياء — ثالث ثانوي 2026). لا تُبدأ قبل إذن صريح.

@@ -6,6 +6,7 @@ const ROLE_LABELS: Record<Role, Record<Gender, string>> = {
   ADMIN: { MALE: "مدير", FEMALE: "مديرة" },
   TEACHER: { MALE: "مدرّس", FEMALE: "مدرّسة" },
   STUDENT: { MALE: "طالب", FEMALE: "طالبة" },
+  PARENT: { MALE: "ولي أمر", FEMALE: "وليّة أمر" },
 };
 
 // مسمّى الدور حسب الجنس: "مدير" / "مديرة" ...

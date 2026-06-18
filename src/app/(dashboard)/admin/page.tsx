@@ -58,6 +58,17 @@ export default async function AdminDashboard() {
             إنشاء وإدارة حسابات المدراء والمدرّسين وربط المواد.
           </p>
         </Link>
+        <Link
+          href="/admin/parents"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            أولياء الأمور
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            إنشاء أولياء الأمور وربطهم بأبنائهم لمتابعة نتائجهم.
+          </p>
+        </Link>
         {ctx.isSuper && (
           <Link
             href="/admin/academics"

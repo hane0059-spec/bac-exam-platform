@@ -19,6 +19,7 @@ enum Role {
   ADMIN
   TEACHER
   STUDENT
+  PARENT
 }
 
 // المؤسّسة التعليمية (مدرسة/معهد) — وعاء العزل بين المستخدمين.
@@ -149,8 +150,24 @@ model User {
   examSessions       ExamSession[]
   assignments        QuizAssignment[]    @relation("StudentAssignments")
   givenAssignments   QuizAssignment[]    @relation("TeacherAssignments")
+  // ولي الأمر: روابطه بأبنائه؛ والطالب: روابط أوليائه (متعدّد-لمتعدّد).
+  parentLinks        ParentLink[]        @relation("ParentLinks")
+  studentParents     ParentLink[]        @relation("StudentParents")
 
   @@map("users")
+}
+
+// ربط ولي الأمر بطالب (متعدّد-لمتعدّد): ولي ← عدّة طلاب، وطالب ← عدّة أولياء.
+model ParentLink {
+  id        String   @id @default(uuid())
+  parentId  String   @map("parent_id")
+  parent    User     @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
+  studentId String   @map("student_id")
+  student   User     @relation("StudentParents", fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([parentId, studentId])
+  @@map("parent_links")
 }
 
 model StudentProfile {

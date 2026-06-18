@@ -13,6 +13,7 @@ const ROLE_PREFIX: { prefix: string; role: Role }[] = [
   { prefix: "/admin", role: "ADMIN" },
   { prefix: "/teacher", role: "TEACHER" },
   { prefix: "/student", role: "STUDENT" },
+  { prefix: "/parent", role: "PARENT" },
 ];
 
 export async function middleware(req: NextRequest) {
