@@ -39,6 +39,15 @@ enum Gender {
   FEMALE
 }
 
+// إعدادات المنصّة العامة (مفتاح/قيمة) — يضبطها المدير العام (الخط/الثيم…).
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
 enum CustomFieldType {
   TEXT
   NUMBER

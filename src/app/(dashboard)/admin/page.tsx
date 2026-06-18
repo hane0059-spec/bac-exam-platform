@@ -126,10 +126,22 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        <PlaceholderCard
-          title="الإعدادات"
-          description="ضبط الخط والثيم وإعدادات المنصة العامة."
-        />
+        {ctx.isSuper ? (
+          <Link
+            href="/admin/settings"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">الإعدادات</h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              اختيار خطّ المنصّة المطبَّق على كل الواجهات.
+            </p>
+          </Link>
+        ) : (
+          <PlaceholderCard
+            title="الإعدادات"
+            description="ضبط الخط والثيم وإعدادات المنصة العامة."
+          />
+        )}
       </div>
     </DashboardShell>
   );

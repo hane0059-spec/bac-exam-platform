@@ -5,8 +5,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-cairo)", "system-ui", "sans-serif"],
-        display: ["var(--font-cairo)", "system-ui", "sans-serif"],
+        // المتغيّر المستهلَك يُضبَط ديناميكياً في layout حسب إعداد المدير،
+        // مع ارتداد إلى Cairo إن لم يُضبَط.
+        sans: ["var(--font-app)", "var(--font-cairo)", "system-ui", "sans-serif"],
+        display: ["var(--font-app)", "var(--font-cairo)", "system-ui", "sans-serif"],
       },
       colors: {
         ink: "#16302B",

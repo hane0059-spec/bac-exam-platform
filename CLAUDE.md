@@ -75,7 +75,7 @@
 
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
-**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
+**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
 
 > البذرة الحالية (`prisma/seed.ts`) **تصفّر كل شيء** ثم تنشئ المدير العام + صفّ «بكالوريا علمي» + 9 مواد (العلمية مُشجَّرة). استخدم Git دائماً.
 
@@ -97,7 +97,7 @@
 5. **بطاقات مراجعة (Flashcards)** اعتماداً على `tags`.
 6. **وسوم أنماط البكالوريا الموحّدة** (`bac_negative`, `bac_trap`, `application`, …) معياراً ثابتاً على الأسئلة.
 7. ~~طباعة/تصدير الاختبار وسلّم التصحيح~~ ✅ تمّ للمدرّس: `/teacher/quizzes/[id]/print` (تبديل ورقة الأسئلة/سلّم التصحيح + طباعة المتصفّح، `print:` وأنماط `@media print`). لاحقاً: للطالب بعد الانتهاء.
-8. **تبديل الخط/الثيم من إعدادات الموقع** (لوحة المدير عبر `AppSetting`): الخط الحالي Cairo مُمرَّر بمتغيّر CSS واحد `--font-cairo` ليسهُل جعله ديناميكياً لاحقاً.
+8. **تبديل الخط** ✅ تمّ: `/admin/settings` (المدير العام) يختار خطّ المنصّة (Cairo/Tajawal/Reem Kufi) عبر `AppSetting`؛ يُحمَّل الثلاثة في `layout` ويُضبَط المتغيّر المستهلَك `--font-app` ديناميكياً. **متبقٍّ**: تبديل الثيم/الألوان.
 9. **إتاحة وصول إضافية**: وضع «تباين عالٍ» للرؤية الضعيفة، وربما قراءة صوتية للأسئلة. (تمّ بالفعل: متحكّم تكبير حجم النصّ لكامل الموقع، يُحفظ على الجهاز.)
 
 ## أوامر التشغيل
