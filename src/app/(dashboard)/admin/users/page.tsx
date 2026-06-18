@@ -1,81 +1,45 @@
 // src/app/(dashboard)/admin/users/page.tsx
-// المدير: قائمة المستخدمين بتصفية بالدور والمؤسّسة وترقيم صفحات.
+// المدير: المستخدمون في عرض شجري — تبويب الطلاب (مؤسّسة←صفّ←طلاب) وتبويب المدرّسين/المدراء.
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { roleLabel } from "@/lib/gender";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
+import UsersTree, { type TreeNode, type LeafItem } from "@/components/admin/UsersTree";
 import type { Role } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 30;
-const FILTERS = [
-  { key: "", label: "الكل" },
-  { key: "TEACHER", label: "المدرّسون" },
-  { key: "ADMIN", label: "المدراء" },
-  { key: "STUDENT", label: "الطلاب" },
-] as const;
+const NO_SCHOOL = "على مستوى المنصّة";
+const NO_GRADE = "بلا صفّ";
+
+type Tab = "students" | "staff";
 
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { role?: string; schoolId?: string; page?: string };
+  searchParams: { tab?: string };
 }) {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   const session = ctx.session;
 
-  const roleFilter = searchParams.role ?? "";
-  // المدير العام يفلتر بالمؤسّسة؛ مدير المدرسة محصور بمؤسّسته.
-  const schoolFilter = ctx.isSchoolManager
-    ? ctx.schoolId
-    : searchParams.schoolId || undefined;
-  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
+  const tab: Tab = searchParams.tab === "staff" ? "staff" : "students";
+  // مدير المدرسة محصور بمؤسّسته؛ المدير العام يرى الكل.
+  const schoolScope = ctx.isSchoolManager ? { schoolId: ctx.schoolId } : {};
 
-  const where = {
-    ...(roleFilter ? { role: roleFilter as Role } : {}),
-    ...(schoolFilter ? { schoolId: schoolFilter } : {}),
-  };
+  const roots =
+    tab === "students"
+      ? await buildStudentRoots(ctx.isSuper, schoolScope)
+      : await buildStaffRoots(ctx.isSuper, schoolScope);
 
-  const [total, users, schools] = await Promise.all([
-    prisma.user.count({ where }),
-    prisma.user.findMany({
-      where,
-      orderBy: [{ role: "asc" }, { createdAt: "desc" }],
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        gender: true,
-        email: true,
-        isActive: true,
-        isSuperAdmin: true,
-        teacherProfile: { select: { employeeCode: true } },
-        studentProfile: { select: { studentCode: true } },
-      },
-    }),
-    ctx.isSuper
-      ? prisma.school.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
-      : Promise.resolve([]),
-  ]);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  const qs = (over: Record<string, string>) => {
-    const q = new URLSearchParams();
-    if (roleFilter) q.set("role", roleFilter);
-    if (!ctx.isSchoolManager && searchParams.schoolId)
-      q.set("schoolId", searchParams.schoolId);
-    for (const [k, v] of Object.entries(over)) {
-      if (v) q.set(k, v);
-      else q.delete(k);
-    }
-    return `/admin/users${q.toString() ? `?${q}` : ""}`;
-  };
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-1.5 text-sm transition ${
+      active
+        ? "bg-primary text-white"
+        : "bg-ink/5 text-ink/70 hover:bg-primary-light"
+    }`;
 
   return (
     <DashboardShell session={session}>
@@ -94,127 +58,179 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <Link
-            key={f.key}
-            href={qs({ role: f.key, page: "" })}
-            className={`rounded-full px-3 py-1 text-sm ${
-              roleFilter === f.key
-                ? "bg-primary text-white"
-                : "bg-ink/5 text-ink/70 hover:bg-primary-light"
-            }`}
-          >
-            {f.label}
-          </Link>
-        ))}
+      <div className="mb-5 flex gap-2">
+        <Link href="/admin/users?tab=students" className={pill(tab === "students")}>
+          الطلاب
+        </Link>
+        <Link href="/admin/users?tab=staff" className={pill(tab === "staff")}>
+          المدرّسون والمدراء
+        </Link>
       </div>
 
-      {ctx.isSuper && schools.length > 0 && (
-        <div className="mb-5 flex flex-wrap gap-2">
-          <Link
-            href={qs({ schoolId: "", page: "" })}
-            className={`rounded-full px-3 py-1 text-sm ${
-              !searchParams.schoolId
-                ? "bg-gold/20 text-gold"
-                : "bg-ink/5 text-ink/60 hover:bg-gold/10"
-            }`}
-          >
-            كل المؤسّسات
-          </Link>
-          {schools.map((s) => (
-            <Link
-              key={s.id}
-              href={qs({ schoolId: s.id, page: "" })}
-              className={`rounded-full px-3 py-1 text-sm ${
-                searchParams.schoolId === s.id
-                  ? "bg-gold/20 text-gold"
-                  : "bg-ink/5 text-ink/60 hover:bg-gold/10"
-              }`}
-            >
-              {s.name}
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <p className="mb-3 text-sm text-ink/50">{total} مستخدم</p>
-
-      {users.length === 0 ? (
-        <div className="card p-8 text-center text-ink/60">لا مستخدمون.</div>
-      ) : (
-        <div className="space-y-2">
-          {users.map((u) => {
-            const editable = u.role !== "STUDENT";
-            return (
-              <div
-                key={u.id}
-                className="card flex flex-wrap items-center justify-between gap-3 p-4"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      {u.firstName} {u.lastName}
-                    </span>
-                    <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs text-ink/60">
-                      {roleLabel(u.role as Role, u.gender as "MALE" | "FEMALE")}
-                      {u.role === "ADMIN" &&
-                        (u.isSuperAdmin ? " عام" : " مؤسّسة")}
-                    </span>
-                    {!u.isActive && (
-                      <span className="rounded-full bg-ink/10 px-2 py-0.5 text-xs text-ink/50">
-                        موقوف
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-0.5 flex gap-2 text-xs text-ink/40" dir="ltr">
-                    {(u.teacherProfile?.employeeCode ||
-                      u.studentProfile?.studentCode) && (
-                      <span>
-                        {u.teacherProfile?.employeeCode ??
-                          u.studentProfile?.studentCode}
-                      </span>
-                    )}
-                    {u.email && <span>{u.email}</span>}
-                  </p>
-                </div>
-                {editable ? (
-                  <Link
-                    href={`/admin/users/${u.id}/edit`}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    تحرير
-                  </Link>
-                ) : (
-                  <span className="text-xs text-ink/40">يُدار من مدرّسه</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-5 flex items-center justify-center gap-3 text-sm">
-          {page > 1 ? (
-            <Link href={qs({ page: String(page - 1) })} className="text-primary hover:underline">
-              ← السابق
-            </Link>
-          ) : (
-            <span className="text-ink/30">← السابق</span>
-          )}
-          <span className="text-ink/60">
-            صفحة {page} من {totalPages}
-          </span>
-          {page < totalPages ? (
-            <Link href={qs({ page: String(page + 1) })} className="text-primary hover:underline">
-              التالي →
-            </Link>
-          ) : (
-            <span className="text-ink/30">التالي →</span>
-          )}
-        </div>
-      )}
+      <UsersTree
+        roots={roots}
+        emptyLabel={tab === "students" ? "لا طلاب." : "لا مدرّسون أو مدراء."}
+      />
     </DashboardShell>
   );
+}
+
+// ─────────────────────────────────────────────
+// بناء شجرة الطلاب: مؤسّسة ← صفّ ← طلاب (للمدير العام)، أو صفّ ← طلاب (لمدير المدرسة).
+async function buildStudentRoots(
+  isSuper: boolean,
+  schoolScope: { schoolId?: string | null },
+): Promise<TreeNode[]> {
+  const students = await prisma.user.findMany({
+    where: { role: "STUDENT", ...schoolScope },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      isActive: true,
+      schoolId: true,
+      school: { select: { name: true } },
+      studentProfile: {
+        select: {
+          studentCode: true,
+          gradeLevel: { select: { id: true, name: true, orderNum: true } },
+        },
+      },
+    },
+  });
+
+  const toLeaf = (s: (typeof students)[number]): LeafItem => ({
+    id: s.id,
+    name: `${s.firstName} ${s.lastName}`,
+    meta: s.studentProfile?.studentCode ?? undefined,
+    inactive: !s.isActive,
+    managedNote: "يُدار من مدرّسه", // الطالب يُحرّر من مدرّسه (اتساقاً مع القرار المثبّت)
+  });
+
+  // تجميع حسب الصفّ ضمن مجموعة معطاة.
+  const gradeNodes = (rows: typeof students): TreeNode[] => {
+    const byGrade = new Map<
+      string,
+      { name: string; orderNum: number; leaves: LeafItem[] }
+    >();
+    for (const s of rows) {
+      const g = s.studentProfile?.gradeLevel;
+      const key = g?.id ?? "__none__";
+      if (!byGrade.has(key))
+        byGrade.set(key, {
+          name: g?.name ?? NO_GRADE,
+          orderNum: g?.orderNum ?? 9999,
+          leaves: [],
+        });
+      byGrade.get(key)!.leaves.push(toLeaf(s));
+    }
+    return [...byGrade.entries()]
+      .sort((a, b) => a[1].orderNum - b[1].orderNum)
+      .map(([id, v]) => ({
+        id,
+        label: v.name,
+        count: v.leaves.length,
+        leaves: v.leaves,
+      }));
+  };
+
+  if (!isSuper) {
+    // مدير المدرسة: الصفوف مباشرةً.
+    return gradeNodes(students);
+  }
+
+  // المدير العام: مؤسّسة ← صفّ ← طلاب.
+  const bySchool = new Map<
+    string,
+    { name: string; rows: typeof students }
+  >();
+  for (const s of students) {
+    const key = s.schoolId ?? "__none__";
+    if (!bySchool.has(key))
+      bySchool.set(key, { name: s.school?.name ?? NO_SCHOOL, rows: [] });
+    bySchool.get(key)!.rows.push(s);
+  }
+  return [...bySchool.entries()]
+    .sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"))
+    .map(([id, v]) => ({
+      id,
+      label: v.name,
+      count: v.rows.length,
+      children: gradeNodes(v.rows),
+    }));
+}
+
+// ─────────────────────────────────────────────
+// بناء شجرة المدرّسين/المدراء: مؤسّسة ← أعضاء (للمدير العام)، أو حسب الدور (لمدير المدرسة).
+async function buildStaffRoots(
+  isSuper: boolean,
+  schoolScope: { schoolId?: string | null },
+): Promise<TreeNode[]> {
+  const staff = await prisma.user.findMany({
+    where: { role: { in: ["TEACHER", "ADMIN"] }, ...schoolScope },
+    orderBy: [{ role: "asc" }, { lastName: "asc" }, { firstName: "asc" }],
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      gender: true,
+      isActive: true,
+      isSuperAdmin: true,
+      email: true,
+      schoolId: true,
+      school: { select: { name: true } },
+      teacherProfile: { select: { employeeCode: true } },
+    },
+  });
+
+  const toLeaf = (u: (typeof staff)[number]): LeafItem => {
+    const adminScope =
+      u.role === "ADMIN" ? (u.isSuperAdmin ? " عام" : " مؤسّسة") : "";
+    const meta = [u.teacherProfile?.employeeCode, u.email]
+      .filter(Boolean)
+      .join(" • ");
+    return {
+      id: u.id,
+      name: `${u.firstName} ${u.lastName}`,
+      badge: roleLabel(u.role as Role, u.gender as "MALE" | "FEMALE") + adminScope,
+      meta: meta || undefined,
+      inactive: !u.isActive,
+      editHref: `/admin/users/${u.id}/edit`,
+    };
+  };
+
+  if (!isSuper) {
+    // مدير المدرسة: تجميع حسب الدور.
+    const groups: { id: string; label: string; roles: Role[] }[] = [
+      { id: "teachers", label: "المدرّسون", roles: ["TEACHER"] },
+      { id: "admins", label: "المدراء", roles: ["ADMIN"] },
+    ];
+    return groups
+      .map((g) => {
+        const leaves = staff
+          .filter((u) => g.roles.includes(u.role as Role))
+          .map(toLeaf);
+        return { id: g.id, label: g.label, count: leaves.length, leaves };
+      })
+      .filter((n) => n.count > 0);
+  }
+
+  // المدير العام: مؤسّسة ← أعضاء.
+  const bySchool = new Map<string, { name: string; leaves: LeafItem[] }>();
+  for (const u of staff) {
+    const key = u.schoolId ?? "__none__";
+    if (!bySchool.has(key))
+      bySchool.set(key, { name: u.school?.name ?? NO_SCHOOL, leaves: [] });
+    bySchool.get(key)!.leaves.push(toLeaf(u));
+  }
+  return [...bySchool.entries()]
+    .sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"))
+    .map(([id, v]) => ({
+      id,
+      label: v.name,
+      count: v.leaves.length,
+      leaves: v.leaves,
+    }));
 }
