@@ -32,6 +32,31 @@ export default function AssignPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [codes, setCodes] = useState("");
+  const [codeResult, setCodeResult] = useState<{
+    assigned: string[];
+    notFound: string[];
+    otherSchool: string[];
+  } | null>(null);
+
+  async function assignByCode() {
+    setError("");
+    setCodeResult(null);
+    setBusy(true);
+    const res = await fetch(`/api/teacher/quizzes/${quizId}/assign-by-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codes }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(d.error ?? "تعذّر الإسناد بالرمز.");
+      return;
+    }
+    setCodeResult(d);
+    router.refresh();
+  }
 
   const dueIso = () => (due ? new Date(due).toISOString() : null);
   const unassigned = students.filter((s) => !s.assigned);
@@ -138,6 +163,43 @@ export default function AssignPanel({
         >
           إسناد للجميع ({unassigned.length})
         </button>
+      </div>
+
+      <div className="card space-y-2 p-4">
+        <label className="block text-sm font-medium">
+          إسناد بالرمز (الصق رموز الطلاب — من أي مادة أو صفّ في مدرستك)
+        </label>
+        <textarea
+          dir="ltr"
+          className="field min-h-[70px]"
+          value={codes}
+          onChange={(e) => setCodes(e.target.value)}
+          placeholder="S-1002  S-1003  S-1010 …"
+        />
+        <button
+          onClick={assignByCode}
+          disabled={busy || !published || !codes.trim()}
+          className="btn-primary"
+        >
+          إسناد بالرمز
+        </button>
+        {codeResult && (
+          <div className="text-sm">
+            <p className="text-primary-dark">
+              أُسنِد: {codeResult.assigned.length}
+            </p>
+            {codeResult.notFound.length > 0 && (
+              <p className="text-red-600">
+                رموز غير موجودة: {codeResult.notFound.join("، ")}
+              </p>
+            )}
+            {codeResult.otherSchool.length > 0 && (
+              <p className="text-gold">
+                خارج مدرستك: {codeResult.otherSchool.join("، ")}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {error && (

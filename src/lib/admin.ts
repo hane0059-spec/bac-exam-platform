@@ -18,3 +18,27 @@ export async function isSuperAdmin(userId: string): Promise<boolean> {
   });
   return !!u && u.role === "ADMIN" && u.isSuperAdmin;
 }
+
+export interface AdminContext {
+  session: SessionData;
+  schoolId: string | null; // مؤسّسة المدير (null = على مستوى المنصّة)
+  isSuper: boolean; // مدير عام للمنصّة (schoolId=null + isSuperAdmin)
+  isSchoolManager: boolean; // مدير مدرسة (schoolId مضبوط)
+}
+
+/** سياق المدير: مؤسّسته ومستواه — لعزل الاستعلامات. */
+export async function getAdminContext(): Promise<AdminContext | null> {
+  const session = await getAdminSession();
+  if (!session) return null;
+  const u = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { isSuperAdmin: true, schoolId: true },
+  });
+  if (!u) return null;
+  return {
+    session,
+    schoolId: u.schoolId,
+    isSuper: u.schoolId === null && u.isSuperAdmin,
+    isSchoolManager: u.schoolId !== null,
+  };
+}

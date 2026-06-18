@@ -2,12 +2,11 @@
 // المدير: تعديل حساب مدرّس/مدير + إعادة كلمة السرّ.
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import UserForm, { type UserInitial } from "@/components/admin/UserForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
-import { isSuperAdmin } from "@/lib/admin";
+import { getAdminContext } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +15,9 @@ export default async function EditUserPage({
 }: {
   params: { id: string };
 }) {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (session.role !== "ADMIN") redirect("/");
+  const ctx = await getAdminContext();
+  if (!ctx) redirect("/login");
+  const session = ctx.session;
 
   const user = await prisma.user.findUnique({
     where: { id: params.id },
@@ -28,9 +27,10 @@ export default async function EditUserPage({
     },
   });
   if (!user || user.role === "STUDENT") notFound();
+  // عزل المؤسّسة: مدير المدرسة يعدّل مستخدمي مؤسّسته فقط.
+  if (ctx.isSchoolManager && user.schoolId !== ctx.schoolId) notFound();
 
-  const canManageAdmins = await isSuperAdmin(session.sub);
-  // إدارة حسابات المدراء للمدير العام فقط.
+  const canManageAdmins = ctx.isSuper;
   if (user.role === "ADMIN" && !canManageAdmins) notFound();
 
   const subjects = await prisma.subject.findMany({

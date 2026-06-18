@@ -94,6 +94,11 @@ export async function POST(req: Request) {
 
   const academicYear = await academicYearFor(session.sub, d.subjectId);
   const passwordHash = await bcrypt.hash(d.password, 10);
+  // الطالب يرث مؤسّسة المدرّس.
+  const teacher = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { schoolId: true },
+  });
 
   // محاولة الإنشاء مع توليد رمز تسلسلي، وإعادة المحاولة عند تزامن نادر.
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -108,6 +113,7 @@ export async function POST(req: Request) {
           firstName: d.firstName,
           lastName: d.lastName,
           phone: d.studentPhone || null,
+          schoolId: teacher?.schoolId ?? null,
           createdById: session.sub,
           studentProfile: {
             create: {

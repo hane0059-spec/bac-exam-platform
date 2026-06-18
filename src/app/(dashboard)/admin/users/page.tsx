@@ -2,9 +2,9 @@
 // المدير: قائمة المستخدمين مع تصفية بالدور.
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { roleLabel } from "@/lib/gender";
+import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import type { Role } from "@/lib/auth";
 
@@ -22,13 +22,17 @@ export default async function AdminUsersPage({
 }: {
   searchParams: { role?: string };
 }) {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (session.role !== "ADMIN") redirect("/");
+  const ctx = await getAdminContext();
+  if (!ctx) redirect("/login");
+  const session = ctx.session;
 
   const roleFilter = searchParams.role;
   const users = await prisma.user.findMany({
-    where: roleFilter ? { role: roleFilter as Role } : {},
+    where: {
+      ...(roleFilter ? { role: roleFilter as Role } : {}),
+      // مدير المدرسة يرى مستخدمي مؤسّسته فقط.
+      ...(ctx.isSchoolManager ? { schoolId: ctx.schoolId } : {}),
+    },
     orderBy: [{ role: "asc" }, { createdAt: "desc" }],
     select: {
       id: true,

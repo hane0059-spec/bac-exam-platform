@@ -21,6 +21,18 @@ enum Role {
   STUDENT
 }
 
+// المؤسّسة التعليمية (مدرسة/معهد) — وعاء العزل بين المستخدمين.
+model School {
+  id        String   @id @default(uuid())
+  name      String
+  type      String? // "مدرسة" / "معهد"
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  users     User[]
+
+  @@map("schools")
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -96,6 +108,8 @@ model User {
   avatarUrl    String?  @map("avatar_url")
   isActive     Boolean  @default(true) @map("is_active")
   isSuperAdmin Boolean  @default(false) @map("is_super_admin") // مدير عام (صلاحية كاملة)
+  schoolId     String?  @map("school_id") // المؤسّسة (null = على مستوى المنصّة)
+  school       School?  @relation(fields: [schoolId], references: [id])
   createdById  String?  @map("created_by_id") // المُنشئ للحساب
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

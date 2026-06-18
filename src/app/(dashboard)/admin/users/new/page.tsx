@@ -2,29 +2,32 @@
 // المدير: إنشاء حساب مدرّس أو مدير.
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import UserForm from "@/components/admin/UserForm";
-import { isSuperAdmin } from "@/lib/admin";
+import { getAdminContext } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewUserPage() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-  if (session.role !== "ADMIN") redirect("/");
+  const ctx = await getAdminContext();
+  if (!ctx) redirect("/login");
 
-  const [subjects, canManageAdmins] = await Promise.all([
-    prisma.subject.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-    isSuperAdmin(session.sub),
-  ]);
+  // مدير المدرسة يرى مواد مؤسّسته فقط (عبر مدرّسيها)؛ المدير العام يرى الكل.
+  const subjects = await prisma.subject.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  // اختيار المؤسّسة متاح للمدير العام فقط.
+  const schools = ctx.isSuper
+    ? await prisma.school.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : undefined;
 
   return (
-    <DashboardShell session={session}>
+    <DashboardShell session={ctx.session}>
       <div className="mb-6">
         <Link href="/admin/users" className="text-sm text-primary hover:underline">
           ← المستخدمون
@@ -34,7 +37,8 @@ export default async function NewUserPage() {
       <UserForm
         mode="create"
         subjects={subjects}
-        canManageAdmins={canManageAdmins}
+        canManageAdmins={ctx.isSuper}
+        schools={schools}
       />
     </DashboardShell>
   );

@@ -2,7 +2,7 @@
 // PATCH: تعديل حساب مدرّس/مدير (بيانات/تفعيل/مواد). (المدير حصراً.)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession, isSuperAdmin } from "@/lib/admin";
+import { getAdminContext } from "@/lib/admin";
 import { userUpdateSchema, currentAcademicYear } from "@/lib/adminUsers";
 
 export const runtime = "nodejs";
@@ -12,13 +12,18 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getAdminSession();
-  if (!session) {
+  const ctx = await getAdminContext();
+  if (!ctx) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
   }
+  const session = ctx.session;
 
   const target = await prisma.user.findUnique({ where: { id: params.id } });
   if (!target) {
+    return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
+  }
+  // عزل المؤسّسة: مدير المدرسة يدير مستخدمي مؤسّسته فقط.
+  if (ctx.isSchoolManager && target.schoolId !== ctx.schoolId) {
     return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
   }
   if (target.role === "STUDENT") {
@@ -45,7 +50,7 @@ export async function PATCH(
   const email = d.email ? d.email.toLowerCase() : null;
 
   // إدارة حسابات المدراء للمدير العام فقط.
-  const actorIsSuper = await isSuperAdmin(session.sub);
+  const actorIsSuper = ctx.isSuper;
   if (target.role === "ADMIN" && !actorIsSuper) {
     return NextResponse.json(
       { error: "إدارة حسابات المدراء متاحة للمدير العام فقط" },

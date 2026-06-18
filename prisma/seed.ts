@@ -43,6 +43,13 @@ async function main() {
     },
   });
 
+  // ── المدرسة الافتراضية ────────────────────────────
+  const school = await prisma.school.upsert({
+    where: { id: "default-school" },
+    update: {},
+    create: { id: "default-school", name: "مدرسة تجريبية", type: "مدرسة" },
+  });
+
   // ── الحسابات التجريبية ────────────────────────────
   const passwords = {
     admin: await bcrypt.hash("Admin@123", 10),
@@ -68,7 +75,7 @@ async function main() {
   // المدرّسة
   const teacher = await prisma.user.upsert({
     where: { email: "teacher@example.com" },
-    update: {},
+    update: { schoolId: school.id },
     create: {
       email: "teacher@example.com",
       passwordHash: passwords.teacher,
@@ -76,6 +83,7 @@ async function main() {
       gender: Gender.FEMALE,
       firstName: "فاطمة",
       lastName: "الزهراء",
+      schoolId: school.id,
       teacherProfile: {
         create: { employeeCode: "T-1001", qualification: "أستاذة الفيزياء" },
       },
@@ -85,7 +93,7 @@ async function main() {
   // الطالب
   const student = await prisma.user.upsert({
     where: { email: "student@example.com" },
-    update: {},
+    update: { schoolId: school.id },
     create: {
       email: "student@example.com",
       passwordHash: passwords.student,
@@ -93,6 +101,7 @@ async function main() {
       gender: Gender.MALE,
       firstName: "يوسف",
       lastName: "حدّاد",
+      schoolId: school.id,
       studentProfile: {
         create: {
           studentCode: "S-1001",

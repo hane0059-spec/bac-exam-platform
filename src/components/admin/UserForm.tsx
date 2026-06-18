@@ -26,14 +26,17 @@ export default function UserForm({
   subjects,
   initial,
   canManageAdmins,
+  schools,
 }: {
   mode: "create" | "edit";
   userId?: string;
   subjects: Subject[];
   initial?: UserInitial;
   canManageAdmins: boolean;
+  schools?: { id: string; name: string }[];
 }) {
   const router = useRouter();
+  const [schoolId, setSchoolId] = useState(schools?.[0]?.id ?? "");
   const [role, setRole] = useState<"TEACHER" | "ADMIN">(
     initial?.role ?? "TEACHER"
   );
@@ -89,6 +92,7 @@ export default function UserForm({
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
+            schoolId: schools ? schoolId || null : undefined,
           }
         : {
             firstName,
@@ -144,7 +148,27 @@ export default function UserForm({
         </div>
       )}
 
-      {role === "ADMIN" && canManageAdmins && (
+      {schools && mode === "create" && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            {role === "ADMIN" ? "المؤسّسة التي يديرها" : "المؤسّسة"}
+          </label>
+          <select
+            className="field"
+            value={schoolId}
+            onChange={(e) => setSchoolId(e.target.value)}
+          >
+            <option value="">— بلا مؤسّسة (مستوى المنصّة) —</option>
+            {schools.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {role === "ADMIN" && canManageAdmins && !schoolId && (
         <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
           <input
             type="checkbox"
@@ -152,7 +176,7 @@ export default function UserForm({
             onChange={(e) => setSuperAdmin(e.target.checked)}
             className="accent-primary"
           />
-          مدير عام (صلاحية كاملة على المدراء والإعدادات)
+          مدير عام للمنصّة (صلاحية كاملة)
         </label>
       )}
 

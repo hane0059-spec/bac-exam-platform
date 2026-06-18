@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession, isSuperAdmin } from "@/lib/admin";
+import { getAdminContext } from "@/lib/admin";
 import {
   userCreateSchema,
   nextEmployeeCode,
@@ -14,10 +14,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const session = await getAdminSession();
-  if (!session) {
+  const ctx = await getAdminContext();
+  if (!ctx) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
   }
+  const session = ctx.session;
 
   let raw: unknown;
   try {
@@ -35,14 +36,16 @@ export async function POST(req: Request) {
   const d = parsed.data;
   const email = d.email ? d.email.toLowerCase() : null;
 
-  // إنشاء حساب مدير متاح للمدير العام فقط.
-  const actorIsSuper = await isSuperAdmin(session.sub);
+  // إنشاء حساب مدير (مدير مدرسة) متاح للمدير العام للمنصّة فقط.
+  const actorIsSuper = ctx.isSuper;
   if (d.role === "ADMIN" && !actorIsSuper) {
     return NextResponse.json(
       { error: "إنشاء حساب مدير متاح للمدير العام فقط" },
       { status: 403 }
     );
   }
+  // مؤسّسة الحساب الجديد: مدير المدرسة يورّث مؤسّسته؛ المدير العام يختار.
+  const newSchoolId = ctx.isSuper ? d.schoolId ?? null : ctx.schoolId;
 
   if (
     email &&
@@ -76,7 +79,12 @@ export async function POST(req: Request) {
       gender: d.gender,
       firstName: d.firstName,
       lastName: d.lastName,
-      isSuperAdmin: d.role === "ADMIN" && actorIsSuper ? d.isSuperAdmin : false,
+      // المدير العام فقط على مستوى المنصّة (بلا مؤسّسة)؛ مدير المدرسة ليس «عاماً».
+      isSuperAdmin:
+        d.role === "ADMIN" && actorIsSuper && newSchoolId === null
+          ? d.isSuperAdmin
+          : false,
+      schoolId: newSchoolId,
       createdById: session.sub,
       ...(d.role === "TEACHER"
         ? {

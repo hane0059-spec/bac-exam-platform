@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession, isSuperAdmin } from "@/lib/admin";
+import { getAdminContext } from "@/lib/admin";
 import { passwordSchema } from "@/lib/adminUsers";
 
 export const runtime = "nodejs";
@@ -13,18 +13,21 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getAdminSession();
-  if (!session) {
+  const ctx = await getAdminContext();
+  if (!ctx) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
   }
   const target = await prisma.user.findUnique({
     where: { id: params.id },
-    select: { id: true, role: true },
+    select: { id: true, role: true, schoolId: true },
   });
   if (!target || target.role === "STUDENT") {
     return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
   }
-  if (target.role === "ADMIN" && !(await isSuperAdmin(session.sub))) {
+  if (ctx.isSchoolManager && target.schoolId !== ctx.schoolId) {
+    return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
+  }
+  if (target.role === "ADMIN" && !ctx.isSuper) {
     return NextResponse.json(
       { error: "إعادة كلمة سرّ مدير متاحة للمدير العام فقط" },
       { status: 403 }

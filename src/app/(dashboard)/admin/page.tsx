@@ -1,16 +1,30 @@
 // src/app/(dashboard)/admin/page.tsx
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { getAdminContext } from "@/lib/admin";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
 
 export default async function AdminDashboard() {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const ctx = await getAdminContext();
+  if (!ctx) redirect("/login");
+  const session = ctx.session;
 
   return (
     <DashboardShell session={session}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ctx.isSuper && (
+          <Link
+            href="/admin/schools"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              المدارس والمعاهد
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              إنشاء المؤسّسات وتعيين مديريها.
+            </p>
+          </Link>
+        )}
         <Link
           href="/admin/external"
           className="card p-5 transition hover:border-primary/40"
