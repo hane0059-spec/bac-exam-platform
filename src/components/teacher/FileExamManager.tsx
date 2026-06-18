@@ -1,0 +1,273 @@
+"use client";
+// src/components/teacher/FileExamManager.tsx
+// المدرّس: إدارة اختبار ورقي — تعديل البيانات، رفع الملف، النشر.
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+function toLocal(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(
+    d.getHours(),
+  )}:${p(d.getMinutes())}`;
+}
+
+interface Props {
+  quizId: string;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  accessCode: string | null;
+  examFile: { id: string; mimeType: string } | null;
+  initial: {
+    title: string;
+    description: string;
+    maxScore: number;
+    minutes: string;
+    availableFrom: string | null;
+    availableUntil: string | null;
+  };
+}
+
+export default function FileExamManager({
+  quizId,
+  status,
+  accessCode,
+  examFile,
+  initial,
+}: Props) {
+  const router = useRouter();
+  const [title, setTitle] = useState(initial.title);
+  const [description, setDescription] = useState(initial.description);
+  const [maxScore, setMaxScore] = useState(initial.maxScore);
+  const [minutes, setMinutes] = useState(initial.minutes);
+  const [from, setFrom] = useState(toLocal(initial.availableFrom));
+  const [until, setUntil] = useState(toLocal(initial.availableUntil));
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
+
+  function flash(m: string) {
+    setMsg(m);
+    setError("");
+  }
+
+  async function saveDetails() {
+    setBusy(true);
+    setError("");
+    setMsg("");
+    const res = await fetch(`/api/teacher/file-exams/${quizId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        description: description || undefined,
+        maxScore: Number(maxScore),
+        timeLimitSec: minutes ? Number(minutes) * 60 : null,
+        availableFrom: from ? new Date(from).toISOString() : null,
+        availableUntil: until ? new Date(until).toISOString() : null,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(data.error ?? "تعذّر الحفظ.");
+      return;
+    }
+    flash("تم الحفظ.");
+    router.refresh();
+  }
+
+  async function uploadFile(file: File) {
+    setBusy(true);
+    setError("");
+    setMsg("");
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/teacher/file-exams/${quizId}/exam-file`, {
+      method: "POST",
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(data.error ?? "تعذّر الرفع.");
+      return;
+    }
+    flash("تم رفع الملف.");
+    router.refresh();
+  }
+
+  async function togglePublish() {
+    setBusy(true);
+    setError("");
+    setMsg("");
+    const action = status === "PUBLISHED" ? "unpublish" : "publish";
+    const res = await fetch(`/api/teacher/quizzes/${quizId}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(data.error ?? "تعذّر تغيير الحالة.");
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* الحالة والنشر */}
+      <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
+        <span className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              status === "PUBLISHED"
+                ? "bg-primary text-white"
+                : "bg-ink/10 text-ink/60"
+            }`}
+          >
+            {status === "PUBLISHED" ? "منشور" : "مسوّدة"}
+          </span>
+          {accessCode && (
+            <span className="text-sm text-ink/60">
+              رمز الاختبار:{" "}
+              <span className="font-bold" dir="ltr">
+                {accessCode}
+              </span>
+            </span>
+          )}
+        </span>
+        <div className="flex gap-2">
+          {status === "PUBLISHED" && (
+            <Link
+              href={`/teacher/quizzes/${quizId}/assign`}
+              className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
+            >
+              إسناد للطلاب
+            </Link>
+          )}
+          <Link
+            href={`/teacher/file-exams/${quizId}/submissions`}
+            className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
+          >
+            الإجابات والتصحيح
+          </Link>
+          <button
+            onClick={togglePublish}
+            disabled={busy}
+            className="btn-primary px-4 py-2 text-sm"
+          >
+            {status === "PUBLISHED" ? "إلغاء النشر" : "نشر"}
+          </button>
+        </div>
+      </div>
+
+      {/* ملف الاختبار */}
+      <div className="card space-y-3 p-5">
+        <h3 className="font-display font-semibold">ملف الاختبار (صورة/PDF)</h3>
+        {examFile ? (
+          <a
+            href={`/api/attachments/${examFile.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-sm text-primary hover:underline"
+          >
+            عرض الملف الحالي ↗
+          </a>
+        ) : (
+          <p className="text-sm text-ink/50">لا ملف بعد — ارفع ملف الاختبار.</p>
+        )}
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          disabled={busy}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) uploadFile(f);
+            e.target.value = "";
+          }}
+          className="block text-sm"
+        />
+        <p className="text-xs text-ink/40">
+          الحد الأقصى 3 ميغابايت — JPG/PNG/WebP/PDF.
+        </p>
+      </div>
+
+      {/* البيانات */}
+      <div className="card space-y-3 p-5">
+        <h3 className="font-display font-semibold">بيانات الاختبار</h3>
+        <input
+          className="field"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="العنوان"
+        />
+        <textarea
+          className="field min-h-[64px]"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="وصف/تعليمات (اختياري)"
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm text-ink/60">الدرجة القصوى</label>
+            <input
+              type="number"
+              min={1}
+              className="field"
+              value={maxScore}
+              onChange={(e) => setMaxScore(Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-ink/60">
+              المدة بالدقائق (اختياري)
+            </label>
+            <input
+              type="number"
+              min={1}
+              dir="ltr"
+              className="field"
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-ink/60">يتاح من</label>
+            <input
+              type="datetime-local"
+              dir="ltr"
+              className="field"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-ink/60">يتاح حتى</label>
+            <input
+              type="datetime-local"
+              dir="ltr"
+              className="field"
+              value={until}
+              onChange={(e) => setUntil(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {msg && <p className="text-sm text-primary-dark">{msg}</p>}
+
+        <button
+          onClick={saveDetails}
+          disabled={busy || !title.trim() || maxScore < 1}
+          className="btn-primary"
+        >
+          حفظ البيانات
+        </button>
+      </div>
+    </div>
+  );
+}

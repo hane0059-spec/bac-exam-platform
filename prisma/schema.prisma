@@ -123,6 +123,12 @@ enum SessionStatus {
   TIMED_OUT
 }
 
+// نوع المرفق: ملف اختبار يرفعه المدرّس، أو صورة إجابة يرفعها الطالب.
+enum AttachmentKind {
+  EXAM_FILE
+  ANSWER_UPLOAD
+}
+
 // ─────────────────────────────────────────────
 // USERS & AUTH
 // ─────────────────────────────────────────────
@@ -162,8 +168,28 @@ model User {
   // ولي الأمر: روابطه بأبنائه؛ والطالب: روابط أوليائه (متعدّد-لمتعدّد).
   parentLinks        ParentLink[]        @relation("ParentLinks")
   studentParents     ParentLink[]        @relation("StudentParents")
+  uploadedAttachments Attachment[]       @relation("UploadedBy")
 
   @@map("users")
+}
+
+// مرفق ثنائي (صورة/PDF) مُخزَّن في القاعدة، يُبَثّ عبر مسار مُصادَق فقط.
+model Attachment {
+  id           String         @id @default(uuid())
+  kind         AttachmentKind
+  mimeType     String         @map("mime_type")
+  sizeBytes    Int            @map("size_bytes")
+  data         Bytes // المحتوى الثنائي (bytea)
+  uploadedById String         @map("uploaded_by_id")
+  uploadedBy   User           @relation("UploadedBy", fields: [uploadedById], references: [id])
+  // ربط حسب النوع: ملف الاختبار بالاختبار، ورفع الإجابة بالجلسة.
+  quizId       String?        @map("quiz_id")
+  quiz         Quiz?          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  sessionId    String?        @map("session_id")
+  session      ExamSession?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  @@map("attachments")
 }
 
 // ربط ولي الأمر بطالب (متعدّد-لمتعدّد): ولي ← عدّة طلاب، وطالب ← عدّة أولياء.
@@ -395,6 +421,7 @@ model Quiz {
   status        QuizStatus @default(DRAFT)
   accessCode    String?    @unique @map("access_code") // رمز تسلسلي للدخول للاختبار
   allowCodeJoin Boolean    @default(false) @map("allow_code_join") // السماح بالانضمام عبر الرمز
+  isFileBased   Boolean    @default(false) @map("is_file_based") // اختبار ورقي/مرفوع (صورة/PDF + تصحيح يدوي)
   startNodeId   String?    @map("start_node_id")
   settings      Json       @default("{}") // { timeLimit, maxAttempts, ... }
   availableFrom DateTime?  @map("available_from")
@@ -406,6 +433,7 @@ model Quiz {
   edges       QuizEdge[]
   sessions    ExamSession[]
   assignments QuizAssignment[]
+  attachments Attachment[]
 
   @@map("quizzes")
 }
@@ -485,8 +513,12 @@ model ExamSession {
   attemptNumber    Int           @default(1) @map("attempt_number")
   deviceInfo       Json?         @map("device_info")
   ipAddress        String?       @map("ip_address")
+  // للاختبار الورقي/المرفوع: بانتظار تصحيح المدرّس + ملاحظته (الدرجة في الحقول أعلاه).
+  needsGrading     Boolean       @default(false) @map("needs_grading")
+  teacherFeedback  String?       @map("teacher_feedback")
 
-  answers StudentAnswer[]
+  answers     StudentAnswer[]
+  attachments Attachment[]
 
   @@map("exam_sessions")
 }

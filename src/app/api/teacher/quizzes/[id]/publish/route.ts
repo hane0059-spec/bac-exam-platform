@@ -37,14 +37,27 @@ export async function POST(
   }
 
   if (parsed.data.action === "publish") {
-    const questionCount = await prisma.quizNode.count({
-      where: { quizId: quiz.id, nodeType: "QUESTION" },
-    });
-    if (questionCount < 1) {
-      return NextResponse.json(
-        { error: "أضف سؤالاً واحداً على الأقل قبل النشر" },
-        { status: 422 }
-      );
+    if (quiz.isFileBased) {
+      // الاختبار الورقي: يلزم رفع ملف الاختبار قبل النشر.
+      const hasFile = await prisma.attachment.count({
+        where: { quizId: quiz.id, kind: "EXAM_FILE" },
+      });
+      if (hasFile < 1) {
+        return NextResponse.json(
+          { error: "ارفع ملف الاختبار قبل النشر" },
+          { status: 422 }
+        );
+      }
+    } else {
+      const questionCount = await prisma.quizNode.count({
+        where: { quizId: quiz.id, nodeType: "QUESTION" },
+      });
+      if (questionCount < 1) {
+        return NextResponse.json(
+          { error: "أضف سؤالاً واحداً على الأقل قبل النشر" },
+          { status: 422 }
+        );
+      }
     }
     // توليد رمز تسلسلي فريد عند أوّل نشر (يثبت بعدها).
     if (quiz.accessCode) {
