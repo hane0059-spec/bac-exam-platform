@@ -3,13 +3,7 @@
 // المدير العام: اختيار خطّ المنصّة (يُطبَّق على كل الواجهات).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FONT_OPTIONS, type FontKey } from "@/lib/settings";
-
-const PREVIEW_VAR: Record<FontKey, string> = {
-  cairo: "var(--font-cairo)",
-  tajawal: "var(--font-tajawal)",
-  reem: "var(--font-reem)",
-};
+import { FONT_OPTIONS, FONT_CSS, type FontKey } from "@/lib/settings";
 
 export default function SettingsForm({ current }: { current: FontKey }) {
   const router = useRouter();
@@ -67,7 +61,7 @@ export default function SettingsForm({ current }: { current: FontKey }) {
             </span>
             <span
               className="text-lg text-ink/70"
-              style={{ fontFamily: PREVIEW_VAR[f.key] }}
+              style={{ fontFamily: FONT_CSS[f.key] }}
             >
               منصّة الاختبارات الإلكترونية
             </span>

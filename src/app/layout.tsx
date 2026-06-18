@@ -1,10 +1,11 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { Cairo, Tajawal, Reem_Kufi } from "next/font/google";
+import { Cairo, Tajawal, Reem_Kufi, Amiri, Tinos } from "next/font/google";
 import "./globals.css";
-import { getAppFont, type FontKey } from "@/lib/settings";
+import { getAppFont, FONT_CSS } from "@/lib/settings";
 
-// خطوط عربية يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
+// خطوط يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
+// Amiri/Tinos بدائل ويب للخطوط النظامية (التقليدي/تايمز) لتظهر على كل الأجهزة.
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
@@ -23,12 +24,20 @@ const reem = Reem_Kufi({
   variable: "--font-reem",
   display: "swap",
 });
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-amiri",
+  display: "swap",
+});
+const tinos = Tinos({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-tinos",
+  display: "swap",
+});
 
-const FONT_VAR: Record<FontKey, string> = {
-  cairo: "--font-cairo",
-  tajawal: "--font-tajawal",
-  reem: "--font-reem",
-};
+const FONT_VARS = `${cairo.variable} ${tajawal.variable} ${reem.variable} ${amiri.variable} ${tinos.variable}`;
 
 export const metadata: Metadata = {
   title: "منصة الاختبارات الإلكترونية",
@@ -45,8 +54,8 @@ export default async function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${cairo.variable} ${tajawal.variable} ${reem.variable}`}
-      style={{ ["--font-app" as string]: `var(${FONT_VAR[font]})` }}
+      className={FONT_VARS}
+      style={{ ["--font-app" as string]: FONT_CSS[font] }}
     >
       <body>
         {/* تطبيق حجم النصّ المحفوظ قبل أول رسم لتفادي وميض التغيير. */}

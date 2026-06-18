@@ -7,9 +7,22 @@ export const FONT_OPTIONS = [
   { key: "cairo", label: "Cairo (افتراضي)" },
   { key: "tajawal", label: "Tajawal" },
   { key: "reem", label: "Reem Kufi" },
+  { key: "traditional", label: "Traditional Arabic (تقليدي)" },
+  { key: "times", label: "Times New Roman" },
 ] as const;
 
 export type FontKey = (typeof FONT_OPTIONS)[number]["key"];
+
+// قيمة CSS لـ font-family لكل خيار. للخطوط النظامية (تايمز/التقليدي) نضع
+// الخطّ النظامي أولاً ثم بديلاً من الويب (Tinos/Amiri) يُحمَّل لكل الأجهزة.
+export const FONT_CSS: Record<FontKey, string> = {
+  cairo: "var(--font-cairo)",
+  tajawal: "var(--font-tajawal)",
+  reem: "var(--font-reem)",
+  traditional:
+    '"Traditional Arabic", "Arabic Typesetting", var(--font-amiri), serif',
+  times: '"Times New Roman", var(--font-tinos), var(--font-amiri), serif',
+};
 
 const FONT_KEYS = FONT_OPTIONS.map((f) => f.key) as readonly string[];
 
