@@ -42,6 +42,14 @@ export default async function QuizResultsPage({
     },
   });
 
+  // الجلسات التي بها إجابات بانتظار التصحيح.
+  const pending = await prisma.studentAnswer.groupBy({
+    by: ["sessionId"],
+    where: { sessionId: { in: sessions.map((s) => s.id) }, needsReview: true },
+    _count: { _all: true },
+  });
+  const pendingBySession = new Map(pending.map((p) => [p.sessionId, p._count._all]));
+
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
@@ -83,7 +91,14 @@ export default async function QuizResultsPage({
                   <td className="p-2" dir="ltr">
                     {s.student.studentProfile?.studentCode ?? "—"}
                   </td>
-                  <td className="p-2">{STATUS[s.status] ?? s.status}</td>
+                  <td className="p-2">
+                    {STATUS[s.status] ?? s.status}
+                    {pendingBySession.get(s.id) ? (
+                      <span className="mr-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs text-gold">
+                        بانتظار المراجعة
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="p-2 font-medium">
                     {s.status === "IN_PROGRESS"
                       ? "—"

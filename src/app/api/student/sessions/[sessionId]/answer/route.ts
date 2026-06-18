@@ -111,9 +111,11 @@ export async function POST(
   } else if (q.type === "SHORT_ANSWER") {
     isCorrect = gradeShortAnswer(q.acceptedAnswers, textAnswer ?? "");
   } else {
-    // أنواع أخرى لا تُصحَّح آلياً في هذه المرحلة.
+    // المقالي لا يُصحَّح آلياً — يُترك للمدرّس.
     isCorrect = false;
   }
+  // القصيرة (تصحيح أوّلي) والمقالي يخضعان لمراجعة المدرّس.
+  const needsReview = q.type === "SHORT_ANSWER" || q.type === "ESSAY";
   const scoreEarned = isCorrect ? points : 0;
 
   // عقدة السؤال التالية (أو النهاية).
@@ -127,6 +129,7 @@ export async function POST(
         textAnswer: textAnswer ?? null,
         isCorrect,
         scoreEarned,
+        needsReview,
         selectedOptions: connectOptionIds.length
           ? { connect: connectOptionIds.map((id) => ({ id })) }
           : undefined,
@@ -153,10 +156,22 @@ export async function POST(
 
   // كشف التصحيح الفوري فقط إن لم يكن وضع الكشف «في نهاية الاختبار».
   // في وضع «end» لا تُرسَل أي بيانات تصحيح للمتصفّح أثناء الأداء.
+  // الأسئلة الخاضعة للمراجعة تُظهر «بانتظار المدرّس» لا تصحيحاً نهائياً.
   const reveal =
     settings.revealAnswers === "end"
       ? null
+      : needsReview
+      ? {
+          needsReview: true,
+          isCorrect: false,
+          scoreEarned: 0,
+          points,
+          explanation: null,
+          correctOptions: [],
+          acceptedAnswers: [],
+        }
       : {
+          needsReview: false,
           isCorrect,
           scoreEarned,
           points,
@@ -167,7 +182,7 @@ export async function POST(
                   .filter((o) => o.isCorrect)
                   .map((o) => ({ id: o.id, label: o.label, content: o.content }))
               : [],
-          acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],
+          acceptedAnswers: [],
         };
 
   if (finished) {

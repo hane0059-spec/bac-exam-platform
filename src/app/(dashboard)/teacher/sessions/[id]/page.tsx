@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionReview } from "@/lib/exam";
 import DashboardShell from "@/components/DashboardShell";
 import SessionReviewView from "@/components/SessionReviewView";
+import GradePanel from "@/components/teacher/GradePanel";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,26 @@ export default async function TeacherSessionReviewPage({
           مراجعة: {review.studentName}
         </h2>
       </div>
-      <SessionReviewView review={review} />
+      <div className="space-y-5">
+        <GradePanel
+          sessionId={params.id}
+          items={review.items
+            .filter((it) => it.needsReview)
+            .map((it) => ({
+              nodeId: it.nodeId,
+              index: it.index,
+              content: it.content,
+              type: it.type,
+              points: it.points,
+              scoreEarned: it.scoreEarned,
+              isCorrect: it.isCorrect,
+              textAnswer: it.textAnswer,
+              acceptedAnswers: it.acceptedAnswers,
+              explanation: it.explanation,
+            }))}
+        />
+        <SessionReviewView review={review} />
+      </div>
     </DashboardShell>
   );
 }

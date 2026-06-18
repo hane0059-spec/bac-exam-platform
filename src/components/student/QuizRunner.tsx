@@ -24,6 +24,7 @@ interface Question {
   total: number;
 }
 interface Reveal {
+  needsReview: boolean;
   isCorrect: boolean;
   scoreEarned: number;
   points: number;
@@ -305,14 +306,24 @@ export default function QuizRunner({
           </p>
 
           {isShort ? (
-            <input
-              type="text"
-              value={text}
-              disabled={startedFeedback}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="اكتب إجابتك هنا…"
-              className="field"
-            />
+            question.type === "ESSAY" ? (
+              <textarea
+                value={text}
+                disabled={startedFeedback}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="اكتب إجابتك المقالية هنا…"
+                className="field min-h-[140px]"
+              />
+            ) : (
+              <input
+                type="text"
+                value={text}
+                disabled={startedFeedback}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="اكتب إجابتك هنا…"
+                className="field"
+              />
+            )
           ) : (
             <div className="space-y-2">
               {question.options.map((o) => (
@@ -399,6 +410,24 @@ function FeedbackCard({
   onNext: () => void;
 }) {
   const praise = gender === "FEMALE" ? "أحسنتِ" : "أحسنتَ";
+
+  // إجابة تخضع لمراجعة المدرّس (قصيرة/مقالية).
+  if (reveal.needsReview) {
+    return (
+      <div className="card border-r-4 border-r-gold p-5">
+        <p className="font-display text-lg font-bold text-gold">
+          تمّ استلام إجابتك
+        </p>
+        <p className="mt-1 text-sm text-ink/70">
+          يراجعها المدرّس ويعتمد الدرجة لاحقاً.
+        </p>
+        <button onClick={onNext} className="btn-primary mt-4">
+          {isLast ? "عرض النتيجة" : "السؤال التالي"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`card border-r-4 p-5 ${

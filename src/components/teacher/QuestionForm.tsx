@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
+type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER" | "ESSAY";
 
 interface Concept {
   id: string;
@@ -137,6 +137,9 @@ export default function QuestionForm({
         .map((t) => t.trim())
         .filter(Boolean),
     };
+    if (type === "ESSAY") {
+      return { ...base, acceptedAnswers: [], options: [] };
+    }
     if (type === "SHORT_ANSWER") {
       return {
         ...base,
@@ -197,6 +200,7 @@ export default function QuestionForm({
               ["MULTIPLE_CHOICE", "اختيار من متعدد"],
               ["TRUE_FALSE", "صح / خطأ"],
               ["SHORT_ANSWER", "إجابة قصيرة"],
+              ["ESSAY", "مقالي"],
             ] as const
           ).map(([v, label]) => (
             <button

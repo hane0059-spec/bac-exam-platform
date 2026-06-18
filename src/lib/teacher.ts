@@ -71,7 +71,7 @@ const optionSchema = z.object({
 
 export const questionInputSchema = z
   .object({
-    type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER"]),
+    type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY"]),
     subjectId: z.string().min(1, "المادة مطلوبة"),
     chapterId: z.string().min(1).nullish(),
     conceptId: z.string().min(1).nullish(),
@@ -86,6 +86,8 @@ export const questionInputSchema = z
     acceptedAnswers: z.array(z.string().trim().min(1)).default([]),
   })
   .superRefine((data, ctx) => {
+    // المقالي يدويّ بالكامل: لا خيارات ولا إجابات مقبولة مطلوبة.
+    if (data.type === "ESSAY") return;
     if (data.type === "SHORT_ANSWER") {
       if (data.acceptedAnswers.length < 1) {
         ctx.addIssue({

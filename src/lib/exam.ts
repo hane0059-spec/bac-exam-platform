@@ -310,12 +310,14 @@ export async function listStudentQuizzes(
 
 export interface SessionReviewItem {
   index: number;
+  nodeId: string;
   type: string;
   content: string;
   points: number;
   scoreEarned: number;
   isCorrect: boolean;
   answered: boolean;
+  needsReview: boolean;
   explanation: string | null;
   textAnswer: string | null;
   acceptedAnswers: string[];
@@ -370,12 +372,14 @@ export async function getSessionReview(
     const selectedIds = new Set(ans?.selectedOptions.map((o) => o.id) ?? []);
     return {
       index: i + 1,
+      nodeId: n.id,
       type: q.type,
       content: q.content,
       points: Number(n.pointsOverride ?? q.points),
       scoreEarned: ans ? Number(ans.scoreEarned) : 0,
       isCorrect: ans?.isCorrect ?? false,
       answered: Boolean(ans),
+      needsReview: ans?.needsReview ?? false,
       explanation: q.explanation ?? null,
       textAnswer: ans?.textAnswer ?? null,
       acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],

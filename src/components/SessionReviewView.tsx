@@ -26,22 +26,32 @@ export default function SessionReviewView({
           <div
             key={it.index}
             className={`card border-r-4 p-4 ${
-              it.isCorrect ? "border-r-primary" : "border-r-red-500"
+              it.needsReview
+                ? "border-r-gold"
+                : it.isCorrect
+                ? "border-r-primary"
+                : "border-r-red-500"
             }`}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
               <p className="font-medium leading-relaxed">
                 {it.index}. {it.content}
               </p>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                  it.isCorrect
-                    ? "bg-primary text-white"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {it.scoreEarned} / {it.points}
-              </span>
+              {it.needsReview ? (
+                <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
+                  بانتظار المراجعة
+                </span>
+              ) : (
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                    it.isCorrect
+                      ? "bg-primary text-white"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {it.scoreEarned} / {it.points}
+                </span>
+              )}
             </div>
 
             {it.options.length > 0 ? (

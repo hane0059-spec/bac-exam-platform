@@ -441,6 +441,7 @@ model StudentAnswer {
   textAnswer        String?        @map("text_answer")
   isCorrect         Boolean        @map("is_correct")
   scoreEarned       Decimal        @default(0) @db.Decimal(5, 2) @map("score_earned")
+  needsReview       Boolean        @default(false) @map("needs_review") // بانتظار تصحيح المدرّس
   timeSpent         Int            @default(0) @map("time_spent") // seconds
   hintUsed          Boolean        @default(false) @map("hint_used")
   answeredAt        DateTime       @default(now()) @map("answered_at")
