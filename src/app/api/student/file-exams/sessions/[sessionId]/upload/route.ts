@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getStudentSession } from "@/lib/exam";
+import { getStudentSession, finalizeFileSessionIfExpired } from "@/lib/exam";
 import { readUpload } from "@/lib/attachments";
 
 export const runtime = "nodejs";
@@ -39,6 +39,9 @@ export async function POST(
     return NextResponse.json({ error: "الجلسة غير موجودة" }, { status: 404 });
   if (exam.status !== "IN_PROGRESS")
     return NextResponse.json({ error: "انتهت هذه المحاولة" }, { status: 409 });
+  // فرض المهلة: إن انتهى الوقت تُنهى الجلسة ويُرفض الرفع.
+  if (await finalizeFileSessionIfExpired(exam.id))
+    return NextResponse.json({ error: "انتهى وقت الاختبار." }, { status: 409 });
 
   const count = await prisma.attachment.count({
     where: { sessionId: exam.id, kind: "ANSWER_UPLOAD" },

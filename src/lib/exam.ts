@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import type { SessionData } from "@/lib/auth";
 import { computeScore } from "@/lib/grading";
+import { parseFileExamSettings } from "@/lib/fileExam";
 
 // ─────────────────────────────────────────────
 // الحراسة والإعدادات
@@ -406,6 +407,53 @@ export async function getSessionReview(
     percentage: Number(exam.percentage),
     items,
   };
+}
+
+/**
+ * يفرض مهلة الاختبار الورقي على الخادم: إن انتهى الوقت لجلسة جارية،
+ * تُرسَل للتصحيح إن وُجدت صور (COMPLETED + needsGrading)، وإلا TIMED_OUT.
+ * يُعيد true إن أنهى الجلسة بسبب انتهاء الوقت.
+ */
+export async function finalizeFileSessionIfExpired(
+  sessionId: string
+): Promise<boolean> {
+  const s = await prisma.examSession.findUnique({
+    where: { id: sessionId },
+    select: {
+      id: true,
+      status: true,
+      startedAt: true,
+      quiz: { select: { isFileBased: true, settings: true } },
+    },
+  });
+  if (!s || !s.quiz.isFileBased || s.status !== "IN_PROGRESS") return false;
+  const settings = parseFileExamSettings(s.quiz.settings);
+  if (!settings.timeLimitSec || !isExpired(s.startedAt, settings.timeLimitSec))
+    return false;
+
+  const pages = await prisma.attachment.count({
+    where: { sessionId: s.id, kind: "ANSWER_UPLOAD" },
+  });
+  await prisma.examSession.update({
+    where: { id: s.id },
+    data: pages > 0
+      ? {
+          status: "COMPLETED",
+          needsGrading: true,
+          completedAt: new Date(),
+          timeSpent: settings.timeLimitSec,
+          maxPossibleScore: settings.maxScore,
+          totalScore: 0,
+          percentage: 0,
+        }
+      : {
+          status: "TIMED_OUT",
+          completedAt: new Date(),
+          timeSpent: settings.timeLimitSec,
+          maxPossibleScore: settings.maxScore,
+        },
+  });
+  return true;
 }
 
 export async function finalizeSession(

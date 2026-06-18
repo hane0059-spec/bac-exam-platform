@@ -7,7 +7,12 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import QuizRunner from "@/components/student/QuizRunner";
 import FileExamRunner from "@/components/student/FileExamRunner";
-import { parseSettings, isWithinWindow } from "@/lib/exam";
+import {
+  parseSettings,
+  isWithinWindow,
+  remainingSeconds,
+  finalizeFileSessionIfExpired,
+} from "@/lib/exam";
 import { parseFileExamSettings } from "@/lib/fileExam";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +69,14 @@ export default async function TakeQuizPage({
 
   // ─── اختبار ورقي/مرفوع ───
   const settings = parseFileExamSettings(quiz.settings);
+
+  // فرض المهلة على الخادم قبل عرض الحالة (إن انتهى وقت الجلسة الجارية).
+  const ip = await prisma.examSession.findFirst({
+    where: { studentId, quizId: quiz.id, status: "IN_PROGRESS" },
+    select: { id: true },
+  });
+  if (ip) await finalizeFileSessionIfExpired(ip.id);
+
   const [examFile, inProgress, finished, finishedCount] = await Promise.all([
     prisma.attachment.findFirst({
       where: { quizId: quiz.id, kind: "EXAM_FILE" },
@@ -74,6 +87,7 @@ export default async function TakeQuizPage({
       orderBy: { startedAt: "desc" },
       select: {
         id: true,
+        startedAt: true,
         attachments: {
           where: { kind: "ANSWER_UPLOAD" },
           orderBy: { createdAt: "asc" },
@@ -141,6 +155,12 @@ export default async function TakeQuizPage({
         examFileId={examFile?.id ?? null}
         view={view}
         canStart={canStart}
+        timeLimitSec={settings.timeLimitSec}
+        timeRemainingSec={
+          inProgress
+            ? remainingSeconds(inProgress.startedAt, settings.timeLimitSec)
+            : null
+        }
         sessionId={inProgress?.id ?? null}
         inProgressUploads={inProgress?.attachments ?? []}
         finished={

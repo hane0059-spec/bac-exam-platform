@@ -2,7 +2,11 @@
 // POST: بدء (أو استئناف) جلسة اختبار ورقي. يتحقّق من الإسناد والنشر والنافذة والمحاولات.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStudentSession, isWithinWindow } from "@/lib/exam";
+import {
+  getStudentSession,
+  isWithinWindow,
+  finalizeFileSessionIfExpired,
+} from "@/lib/exam";
 import { parseFileExamSettings } from "@/lib/fileExam";
 
 export const runtime = "nodejs";
@@ -34,13 +38,17 @@ export async function POST(
     );
   }
 
-  // استئناف جلسة جارية إن وُجدت.
+  // استئناف جلسة جارية إن وُجدت — ما لم تكن مهلتها قد انتهت (تُنهى عندئذ).
   const existing = await prisma.examSession.findFirst({
     where: { studentId, quizId, status: "IN_PROGRESS" },
     orderBy: { startedAt: "desc" },
     select: { id: true },
   });
-  if (existing) return NextResponse.json({ sessionId: existing.id });
+  if (existing) {
+    const expired = await finalizeFileSessionIfExpired(existing.id);
+    if (!expired) return NextResponse.json({ sessionId: existing.id });
+    // انتهى الوقت → لا استئناف؛ تتابع المنطق لمنح محاولة جديدة إن سُمح.
+  }
 
   const settings = parseFileExamSettings(quiz.settings);
   const finishedCount = await prisma.examSession.count({

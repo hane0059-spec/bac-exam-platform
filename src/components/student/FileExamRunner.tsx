@@ -1,10 +1,45 @@
 "use client";
 // src/components/student/FileExamRunner.tsx
 // أداء اختبار ورقي: عرض ملف الاختبار، رفع صور الإجابة، الإرسال، وعرض النتيجة.
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
 import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
+
+function fmtClock(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// عدّاد تنازلي للمهلة — عند الصفر يُحدّث الصفحة ليُنهي الخادم الجلسة.
+function Countdown({ initial }: { initial: number }) {
+  const router = useRouter();
+  const [left, setLeft] = useState(initial);
+  const fired = useRef(false);
+  useEffect(() => {
+    if (left <= 0) {
+      if (!fired.current) {
+        fired.current = true;
+        router.refresh();
+      }
+      return;
+    }
+    const t = setTimeout(() => setLeft((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left, router]);
+  const low = left <= 60;
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-sm font-bold tabular-nums ${
+        low ? "bg-red-100 text-red-700" : "bg-gold/15 text-gold"
+      }`}
+      dir="ltr"
+    >
+      ⏱ {fmtClock(Math.max(0, left))}
+    </span>
+  );
+}
 
 interface Upload {
   id: string;
@@ -53,6 +88,8 @@ export default function FileExamRunner({
   examFileId,
   view,
   canStart,
+  timeLimitSec,
+  timeRemainingSec,
   sessionId,
   inProgressUploads,
   finished,
@@ -63,6 +100,8 @@ export default function FileExamRunner({
   examFileId: string | null;
   view: "locked" | "not_started" | "in_progress" | "submitted" | "graded";
   canStart: boolean;
+  timeLimitSec: number | null;
+  timeRemainingSec: number | null;
   sessionId: string | null;
   inProgressUploads: Upload[];
   finished: Finished | null;
@@ -180,6 +219,11 @@ export default function FileExamRunner({
           <p className="text-ink/70">
             اطّلع على ورقة الاختبار أعلاه، ثم ابدأ لرفع صور إجابتك.
           </p>
+          {timeLimitSec && (
+            <p className="text-sm text-gold">
+              ⏱ المدة المتاحة: {Math.round(timeLimitSec / 60)} دقيقة من لحظة البدء.
+            </p>
+          )}
           <button onClick={start} disabled={busy || !canStart} className="btn-primary">
             ابدأ الاختبار
           </button>
@@ -188,7 +232,12 @@ export default function FileExamRunner({
 
       {view === "in_progress" && (
         <div className="card space-y-4 p-6">
-          <h3 className="font-display font-semibold">صور إجابتك</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-display font-semibold">صور إجابتك</h3>
+            {timeRemainingSec !== null && (
+              <Countdown initial={timeRemainingSec} />
+            )}
+          </div>
           {inProgressUploads.length > 0 ? (
             <div className="flex flex-wrap gap-3">
               {inProgressUploads.map((u) => (
