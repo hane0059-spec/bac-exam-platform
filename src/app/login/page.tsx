@@ -12,6 +12,7 @@ interface RoleWindow {
   hint: string;
   placeholder: string;
   icon: string;
+  forgot: string; // إرشاد عند نسيان كلمة السر (لا إرسال — إعادة تعيين بإشراف)
 }
 
 const WINDOWS: RoleWindow[] = [
@@ -22,6 +23,8 @@ const WINDOWS: RoleWindow[] = [
     hint: "رمز الطالب أو الاسم الكامل أو البريد",
     placeholder: "S-1002 أو الاسم الكامل",
     icon: "🎓",
+    forgot:
+      "راجع مدرّسك أو إدارة مؤسّستك لإعادة تعيين كلمة سرّك — يمكنهم ذلك فوراً.",
   },
   {
     key: "TEACHER",
@@ -30,6 +33,7 @@ const WINDOWS: RoleWindow[] = [
     hint: "البريد أو رمز المدرّس أو الاسم",
     placeholder: "name@example.com أو T-1002",
     icon: "🧑‍🏫",
+    forgot: "راجع إدارة مؤسّستك (المدير) لإعادة تعيين كلمة سرّك.",
   },
   {
     key: "ADMIN",
@@ -38,6 +42,8 @@ const WINDOWS: RoleWindow[] = [
     hint: "البريد الإلكتروني",
     placeholder: "admin@example.com",
     icon: "🛡️",
+    forgot:
+      "مدير المؤسّسة: راجع المدير العام للمنصّة. المدير العام: راجع مسؤول النظام.",
   },
   {
     key: "PARENT",
@@ -46,6 +52,7 @@ const WINDOWS: RoleWindow[] = [
     hint: "البريد أو الاسم الكامل",
     placeholder: "name@example.com أو الاسم الكامل",
     icon: "👪",
+    forgot: "راجع إدارة مؤسّسة ابنك لإعادة تعيين كلمة سرّك.",
   },
 ];
 
@@ -55,12 +62,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   function pick(w: RoleWindow) {
     setRole(w);
     setIdentifier("");
     setPassword("");
     setError(null);
+    setShowForgot(false);
   }
 
   async function handleSubmit() {
@@ -188,6 +197,21 @@ export default function LoginPage() {
               >
                 {loading ? "جارٍ الدخول…" : "تسجيل الدخول"}
               </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowForgot((v) => !v)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  نسيت كلمة السر؟
+                </button>
+                {showForgot && (
+                  <p className="mt-2 rounded-xl border border-line bg-white/60 p-3 text-sm leading-relaxed text-ink/70">
+                    {role.forgot}
+                  </p>
+                )}
+              </div>
 
               {role.key === "ADMIN" && (
                 <div className="rounded-xl border border-line bg-white/60 p-3 text-sm text-ink/70">
