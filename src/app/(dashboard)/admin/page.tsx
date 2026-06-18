@@ -102,6 +102,19 @@ export default async function AdminDashboard() {
             description="الإشراف على بنك الأسئلة المشترك بين المدرّسين."
           />
         )}
+        {ctx.isSuper && (
+          <Link
+            href="/admin/quizzes"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              الاختبارات عبر المؤسّسات
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              تصفّح اختبارات كل المؤسّسات (قراءة فقط) بفلترة وحالة.
+            </p>
+          </Link>
+        )}
         <PlaceholderCard
           title="الإعدادات"
           description="ضبط الخط والثيم وإعدادات المنصة العامة."
