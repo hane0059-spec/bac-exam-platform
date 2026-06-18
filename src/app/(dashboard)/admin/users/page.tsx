@@ -55,6 +55,8 @@ export default async function AdminUsersPage({
         email: true,
         isActive: true,
         isSuperAdmin: true,
+        teacherProfile: { select: { employeeCode: true } },
+        studentProfile: { select: { studentCode: true } },
       },
     }),
     ctx.isSuper
@@ -79,9 +81,17 @@ export default async function AdminUsersPage({
     <DashboardShell session={session}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold">المستخدمون</h2>
-        <Link href="/admin/users/new" className="btn-primary">
-          + حساب جديد
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/students/new"
+            className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
+          >
+            + طالب
+          </Link>
+          <Link href="/admin/users/new" className="btn-primary">
+            + مدرّس/مدير
+          </Link>
+        </div>
       </div>
 
       <div className="mb-3 flex flex-wrap gap-2">
@@ -157,11 +167,16 @@ export default async function AdminUsersPage({
                       </span>
                     )}
                   </div>
-                  {u.email && (
-                    <p className="mt-0.5 text-xs text-ink/40" dir="ltr">
-                      {u.email}
-                    </p>
-                  )}
+                  <p className="mt-0.5 flex gap-2 text-xs text-ink/40" dir="ltr">
+                    {(u.teacherProfile?.employeeCode ||
+                      u.studentProfile?.studentCode) && (
+                      <span>
+                        {u.teacherProfile?.employeeCode ??
+                          u.studentProfile?.studentCode}
+                      </span>
+                    )}
+                    {u.email && <span>{u.email}</span>}
+                  </p>
                 </div>
                 {editable ? (
                   <Link

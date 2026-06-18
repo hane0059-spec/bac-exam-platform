@@ -35,6 +35,13 @@ async function resolveUser(
   });
   if (profile) return { user: profile.user };
 
+  // رمز المدرّس.
+  const tProfile = await prisma.teacherProfile.findUnique({
+    where: { employeeCode: identifier },
+    include: { user: true },
+  });
+  if (tProfile) return { user: tProfile.user };
+
   const parts = identifier.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
     const firstName = parts[0];

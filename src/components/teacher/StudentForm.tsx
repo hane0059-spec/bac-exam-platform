@@ -30,12 +30,18 @@ export default function StudentForm({
   subjects,
   gradeLevels,
   initial,
+  createEndpoint = "/api/teacher/students",
+  redirectTo = "/teacher/students",
+  showSubject = true,
 }: {
   mode: "create" | "edit";
   studentId?: string;
   subjects: Option[];
   gradeLevels: Option[];
   initial?: StudentInitial;
+  createEndpoint?: string;
+  redirectTo?: string;
+  showSubject?: boolean;
 }) {
   const router = useRouter();
 
@@ -86,7 +92,7 @@ export default function StudentForm({
     };
     const url =
       mode === "create"
-        ? "/api/teacher/students"
+        ? createEndpoint
         : `/api/teacher/students/${studentId}`;
     const payload =
       mode === "create"
@@ -94,7 +100,7 @@ export default function StudentForm({
             ...common,
             password,
             enrollmentYear: Number(enrollmentYear),
-            subjectId,
+            ...(showSubject ? { subjectId } : {}),
           }
         : { ...common, isActive };
     const res = await fetch(url, {
@@ -109,7 +115,7 @@ export default function StudentForm({
       return;
     }
     if (mode === "create") {
-      router.push("/teacher/students");
+      router.push(redirectTo);
       router.refresh();
     } else {
       setSaved(true);
@@ -233,20 +239,24 @@ export default function StudentForm({
               onChange={(e) => setEnrollmentYear(Number(e.target.value))}
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">المادة</label>
-            <select
-              className="field"
-              value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
-            >
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {showSubject && (
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                المادة (للتسجيل)
+              </label>
+              <select
+                className="field"
+                value={subjectId}
+                onChange={(e) => setSubjectId(e.target.value)}
+              >
+                {subjects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       )}
 
@@ -276,7 +286,7 @@ export default function StudentForm({
           {busy ? "…" : mode === "create" ? "إنشاء الطالب" : "حفظ التعديلات"}
         </button>
         <button
-          onClick={() => router.push("/teacher/students")}
+          onClick={() => router.push(redirectTo)}
           className="rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5"
         >
           رجوع

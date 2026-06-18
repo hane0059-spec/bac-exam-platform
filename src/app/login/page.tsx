@@ -51,7 +51,7 @@ export default function LoginPage() {
           <div className="space-y-5">
             <div>
               <label htmlFor="identifier" className="mb-1.5 block text-sm font-medium">
-                البريد أو رمز الطالب أو الاسم
+                البريد أو الرمز أو الاسم
               </label>
               <input
                 id="identifier"
