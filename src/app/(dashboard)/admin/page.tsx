@@ -126,6 +126,19 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
+        {ctx.isSuper && (
+          <Link
+            href="/admin/storage"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              التخزين والمرفقات
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              مراقبة حجم المرفقات (صور/PDF) وتوزّعها على المؤسّسات.
+            </p>
+          </Link>
+        )}
         {ctx.isSuper ? (
           <Link
             href="/admin/settings"
