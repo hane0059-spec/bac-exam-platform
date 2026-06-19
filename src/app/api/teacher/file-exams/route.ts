@@ -2,7 +2,11 @@
 // POST: إنشاء اختبار ورقي/مرفوع (مسوّدة). المدرّس حصراً، بملكية المادة.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession, teacherTeachesSubject } from "@/lib/teacher";
+import {
+  getTeacherSession,
+  teacherTeachesSubject,
+  teacherCanFileExams,
+} from "@/lib/teacher";
 import { fileExamCreateSchema } from "@/lib/fileExam";
 
 export const runtime = "nodejs";
@@ -12,6 +16,13 @@ export async function POST(req: Request) {
   const session = await getTeacherSession();
   if (!session)
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+
+  // الخاصّية يفعّلها المدير عند الطلب.
+  if (!(await teacherCanFileExams(session.sub)))
+    return NextResponse.json(
+      { error: "ميزة الاختبارات الورقية غير مفعّلة لحسابك — اطلبها من الإدارة." },
+      { status: 403 },
+    );
 
   let raw: unknown;
   try {

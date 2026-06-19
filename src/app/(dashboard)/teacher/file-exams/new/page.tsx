@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import FileExamForm from "@/components/teacher/FileExamForm";
+import { teacherCanFileExams } from "@/lib/teacher";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export default async function NewFileExamPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
+  // الخاصّية يفعّلها المدير؛ المنع على الخادم لا الواجهة فقط.
+  if (!(await teacherCanFileExams(session.sub))) redirect("/teacher/quizzes");
 
   const subjects = await prisma.subject.findMany({
     where: { teacherSubjects: { some: { teacherId: session.sub } } },

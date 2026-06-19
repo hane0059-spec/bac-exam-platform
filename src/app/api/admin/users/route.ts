@@ -103,6 +103,7 @@ export async function POST(req: Request) {
               create: {
                 employeeCode: await nextEmployeeCode(),
                 qualification: d.qualification || null,
+                canFileExams: d.canFileExams,
               },
             },
             teacherSubjects: {

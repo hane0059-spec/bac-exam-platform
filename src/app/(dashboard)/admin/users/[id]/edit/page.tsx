@@ -22,7 +22,7 @@ export default async function EditUserPage({
   const user = await prisma.user.findUnique({
     where: { id: params.id },
     include: {
-      teacherProfile: { select: { qualification: true } },
+      teacherProfile: { select: { qualification: true, canFileExams: true } },
       teacherSubjects: { select: { subjectId: true } },
     },
   });
@@ -47,6 +47,7 @@ export default async function EditUserPage({
     isActive: user.isActive,
     qualification: user.teacherProfile?.qualification ?? "",
     subjectIds: user.teacherSubjects.map((t) => t.subjectId),
+    canFileExams: user.teacherProfile?.canFileExams ?? false,
     isSuperAdmin: user.isSuperAdmin,
   };
 

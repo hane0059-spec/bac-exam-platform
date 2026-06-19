@@ -374,6 +374,11 @@ async function main() {
   // اختبار ورقي/مرفوع (الكيمياء)
   const chem = subjects.find((s) => s.code === "CHEM")!;
   const chemT = teacherBySubject.get(chem.id)!;
+  // تفعيل خاصّية الاختبارات الورقية لمدرّس الكيمياء (يفعّلها المدير عند الطلب).
+  await prisma.teacherProfile.update({
+    where: { userId: chemT },
+    data: { canFileExams: true },
+  });
   const fileExam = await prisma.quiz.create({
     data: {
       creatorId: chemT,

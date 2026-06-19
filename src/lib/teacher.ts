@@ -12,6 +12,15 @@ export async function getTeacherSession(): Promise<SessionData | null> {
   return session;
 }
 
+/** هل يُسمح لهذا المدرّس بإنشاء اختبارات ورقية/مرفوعة؟ (خاصّية يفعّلها المدير). */
+export async function teacherCanFileExams(teacherId: string): Promise<boolean> {
+  const p = await prisma.teacherProfile.findUnique({
+    where: { userId: teacherId },
+    select: { canFileExams: true },
+  });
+  return !!p?.canFileExams;
+}
+
 /** هل يدرّس هذا المدرّس هذه المادة؟ (تحقّق ملكية إلزامي). */
 export async function teacherTeachesSubject(
   teacherId: string,

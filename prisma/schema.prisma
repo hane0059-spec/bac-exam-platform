@@ -288,6 +288,8 @@ model TeacherProfile {
   employeeCode  String  @unique @map("employee_code")
   qualification String?
   bio           String?
+  // خاصّية اختيارية يفعّلها المدير عند الطلب: إنشاء اختبارات ورقية/مرفوعة (لتقليل التخزين).
+  canFileExams  Boolean @default(false) @map("can_file_exams")
 
   @@map("teacher_profiles")
 }

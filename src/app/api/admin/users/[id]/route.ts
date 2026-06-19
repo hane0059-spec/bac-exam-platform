@@ -109,7 +109,10 @@ export async function PATCH(
         ...(isTeacher
           ? {
               teacherProfile: {
-                update: { qualification: d.qualification || null },
+                update: {
+                  qualification: d.qualification || null,
+                  canFileExams: d.canFileExams,
+                },
               },
             }
           : {}),
