@@ -54,6 +54,13 @@ export default async function DashboardShell({
               كيف أستخدم صفحتي؟
             </a>
             <Link
+              href="/account"
+              className="rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+              title="حسابي وكلمة السر"
+            >
+              حسابي
+            </Link>
+            <Link
               href="/notifications"
               title="الإشعارات"
               className="relative rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"

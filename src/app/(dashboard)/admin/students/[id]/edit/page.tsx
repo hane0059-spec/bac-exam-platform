@@ -9,6 +9,7 @@ import StudentForm, {
   type StudentInitial,
 } from "@/components/teacher/StudentForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
+import AdminEnrollmentManager from "@/components/admin/AdminEnrollmentManager";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,43 @@ export default async function AdminEditStudentPage({
   // عزل المؤسّسة: مدير المدرسة يعدّل طلاب مؤسّسته فقط.
   if (ctx.isSchoolManager && student.schoolId !== ctx.schoolId) notFound();
 
-  const gradeLevels = await prisma.gradeLevel.findMany({
-    select: { id: true, name: true },
-    orderBy: { orderNum: "asc" },
+  const [gradeLevels, teachers, enrollments] = await Promise.all([
+    prisma.gradeLevel.findMany({
+      select: { id: true, name: true },
+      orderBy: { orderNum: "asc" },
+    }),
+    // مدرّسو مؤسّسة الطالب مع موادّهم.
+    prisma.user.findMany({
+      where: { role: "TEACHER", schoolId: student.schoolId },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        teacherSubjects: {
+          select: { subject: { select: { id: true, name: true } } },
+        },
+      },
+    }),
+    prisma.studentEnrollment.findMany({
+      where: { studentId: student.id, isActive: true },
+      select: {
+        id: true,
+        teacher: { select: { firstName: true, lastName: true } },
+        subject: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  // إزالة تكرار مواد المدرّس.
+  const teacherOpts = teachers.map((t) => {
+    const seen = new Map<string, string>();
+    for (const ts of t.teacherSubjects) seen.set(ts.subject.id, ts.subject.name);
+    return {
+      id: t.id,
+      name: `${t.firstName} ${t.lastName}`,
+      subjects: [...seen].map(([id, name]) => ({ id, name })),
+    };
   });
 
   const initial: StudentInitial = {
@@ -68,6 +103,15 @@ export default async function AdminEditStudentPage({
           initial={initial}
           updateEndpoint="/api/admin/students"
           redirectTo="/admin/users"
+        />
+        <AdminEnrollmentManager
+          studentId={student.id}
+          teachers={teacherOpts}
+          current={enrollments.map((e) => ({
+            id: e.id,
+            teacherName: `${e.teacher.firstName} ${e.teacher.lastName}`,
+            subjectName: e.subject.name,
+          }))}
         />
         <PasswordResetForm
           endpoint={`/api/admin/students/${student.id}/password`}
