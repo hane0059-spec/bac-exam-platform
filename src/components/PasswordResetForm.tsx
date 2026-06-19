@@ -37,7 +37,7 @@ export default function PasswordResetForm({ endpoint }: { endpoint: string }) {
     setPassword("");
     setMsg(
       generated
-        ? `تم التغيير. سلّم الطالب كلمته المؤقّتة: ${used}`
+        ? `تم التغيير. سلّم صاحب الحساب كلمته المؤقّتة: ${used}`
         : "تم تغيير كلمة السرّ."
     );
     setGenerated(false);
@@ -75,7 +75,7 @@ export default function PasswordResetForm({ endpoint }: { endpoint: string }) {
       </div>
       {generated && (
         <p className="text-xs text-ink/50">
-          كلمة سهلة للنطق — انسخها وسلّمها للطالب قبل الحفظ.
+          كلمة سهلة للنطق — انسخها وسلّمها لصاحب الحساب قبل الحفظ.
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
