@@ -109,6 +109,7 @@ export default function FileExamRunner({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState(false); // تأكيد الإرسال النهائي
 
   async function start() {
     setBusy(true);
@@ -125,6 +126,7 @@ export default function FileExamRunner({
   // يرمي عند الفشل ليُظهر ImageUploadField رسالة الخطأ ويُبقي المعاينة.
   async function addPage(file: File) {
     if (!sessionId) throw new Error("لا جلسة.");
+    setConfirming(false); // أيّ تغيير في الصور يلغي تأكيد الإرسال
     const fd = new FormData();
     fd.append("file", file);
     const res = await fetch(
@@ -140,6 +142,7 @@ export default function FileExamRunner({
 
   async function removePage(attachmentId: string) {
     if (!sessionId) return;
+    setConfirming(false); // أيّ تغيير في الصور يلغي تأكيد الإرسال
     setBusy(true);
     setError("");
     const res = await fetch(
@@ -158,9 +161,9 @@ export default function FileExamRunner({
     router.refresh();
   }
 
-  async function submit() {
+  // الإرسال الفعلي — يُستدعى من زرّ التأكيد داخل الواجهة فقط.
+  async function doSubmit() {
     if (!sessionId) return;
-    if (!confirm("إرسال إجابتك للتصحيح؟ لا يمكن التعديل بعدها.")) return;
     setBusy(true);
     setError("");
     const res = await fetch(
@@ -231,48 +234,89 @@ export default function FileExamRunner({
       )}
 
       {view === "in_progress" && (
-        <div className="card space-y-4 p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-display font-semibold">صور إجابتك</h3>
-            {timeRemainingSec !== null && (
-              <Countdown initial={timeRemainingSec} />
+        <>
+          {/* قسم رفع صور الإجابة (إضافة/حذف بحرّية قبل الإرسال) */}
+          <div className="card space-y-4 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-display font-semibold">صور إجابتك</h3>
+              {timeRemainingSec !== null && (
+                <Countdown initial={timeRemainingSec} />
+              )}
+            </div>
+            {inProgressUploads.length > 0 ? (
+              <div className="flex flex-wrap gap-3">
+                {inProgressUploads.map((u) => (
+                  <div key={u.id} className="space-y-1 text-center">
+                    <FilePreview att={u} />
+                    <button
+                      onClick={() => removePage(u.id)}
+                      disabled={busy}
+                      className="block text-xs text-red-500 hover:underline"
+                    >
+                      حذف
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-ink/50">لم ترفع صوراً بعد.</p>
             )}
+
+            <ImageUploadField
+              onUpload={addPage}
+              label="أضف صورة صفحة (يمكن إضافة عدّة صفحات)"
+              hint="صوّر ورقتك بوضوح وإضاءة جيّدة — تُضغط تلقائياً قبل الرفع."
+              capture
+              disabled={busy}
+            />
           </div>
-          {inProgressUploads.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {inProgressUploads.map((u) => (
-                <div key={u.id} className="space-y-1 text-center">
-                  <FilePreview att={u} />
+
+          {/* قسم الإرسال النهائي — منفصلٌ تماماً وبتأكيد داخل الواجهة */}
+          <div className="card space-y-3 border-t-4 border-t-gold p-6">
+            <h3 className="font-display font-semibold">الإرسال النهائي للتصحيح</h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              بعد الإرسال <span className="font-medium text-ink">لا يمكنك</span>{" "}
+              إضافة أو حذف أو تعديل أي صورة. تأكّد من رفع كل صفحات إجابتك أولاً.
+            </p>
+
+            {inProgressUploads.length === 0 ? (
+              <p className="text-sm text-ink/50">
+                ارفع صورة واحدة على الأقل لتتمكّن من الإرسال.
+              </p>
+            ) : !confirming ? (
+              <button
+                onClick={() => setConfirming(true)}
+                disabled={busy}
+                className="btn-primary"
+              >
+                إرسال الإجابة للتصحيح
+              </button>
+            ) : (
+              <div className="space-y-3 rounded-xl border border-gold bg-gold/10 p-4">
+                <p className="text-sm font-medium text-gold">
+                  تأكيد الإرسال: ستُرسَل {inProgressUploads.length} صفحة للتصحيح
+                  ولن تتمكّن من التعديل بعدها. هل أنت متأكّد؟
+                </p>
+                <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => removePage(u.id)}
+                    onClick={doSubmit}
                     disabled={busy}
-                    className="block text-xs text-red-500 hover:underline"
+                    className="btn-primary"
                   >
-                    حذف
+                    {busy ? "جارٍ الإرسال…" : "نعم، أرسل الآن"}
+                  </button>
+                  <button
+                    onClick={() => setConfirming(false)}
+                    disabled={busy}
+                    className="rounded-xl border border-line px-5 py-3 text-sm font-medium hover:bg-ink/5"
+                  >
+                    تراجع
                   </button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-ink/50">لم ترفع صوراً بعد.</p>
-          )}
-
-          <ImageUploadField
-            onUpload={addPage}
-            label="أضف صورة صفحة (يمكن إضافة عدّة صفحات)"
-            hint="صوّر ورقتك بوضوح وإضاءة جيّدة — تُضغط تلقائياً قبل الرفع."
-            capture
-            disabled={busy}
-          />
-
-          <button
-            onClick={submit}
-            disabled={busy || inProgressUploads.length === 0}
-            className="btn-primary"
-          >
-            إرسال للتصحيح
-          </button>
-        </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {view === "submitted" && finished && (
