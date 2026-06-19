@@ -84,7 +84,7 @@
 
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
-**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`)، **`Notification`**، **`Annotation`** (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
+**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`)، **`Notification`**، **`Annotation`**، **`QuestionReport`** (+`QuestionReportStatus`) (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.extraAttempts`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `User.email` صار اختيارياً.
 
 > البذرة الحالية (`prisma/seed.ts`) **تصفّر كل شيء** ثم تنشئ المدير العام + صفّ «بكالوريا علمي» + 9 مواد (العلمية مُشجَّرة). استخدم Git دائماً.
 
@@ -102,7 +102,7 @@
 1. **نوع سؤال ORDER/SEQUENCE** (ترتيب مراحل) — النمط الوحيد غير المغطّى بالأنواع الثمانية. يتطلّب تغيير مخطط بسيط (إضافة قيمة للـ enum + جدول/حقل ترتيب). يُناقَش عند الخطوة 3.
 2. **مولّد نماذج اختبار عشوائية** — توليد 5–7 نماذج غير متطابقة من بنك حسب نطاق صفحات/درس. ميزة مستقلة عن نهج شجرة `QuizNode/QuizEdge`؛ لا تُخلط بها.
 3. **ربط الموقع بـ Claude API** لتوليد أسئلة عند الطلب (تغيير معماري — يُناقَش).
-4. **زر «الإبلاغ عن خطأ في السؤال»** للطالب أثناء الأداء (زاوية السؤال السفلى اليسرى) + مسار مراجعة للمدرّس وإعادة حساب الدرجة.
+4. **زر «الإبلاغ عن خطأ في السؤال»** ✅ تمّ (المرحلة 1): الطالب يبلّغ أثناء الأداء (`QuizRunner`) → جدول `QuestionReport` + إشعار المدرّس، ومسار مراجعة `/teacher/reports` (معالجة/تجاهل/إعادة فتح + ملاحظة، بعدّاد على لوحة المدرّس). **متبقٍّ (مرحلة 2)**: إلغاء السؤال وإعادة حساب درجات الجلسات المتأثّرة (`computeScore` يدعم `isCancelled` أصلاً).
 5. **بطاقات مراجعة (Flashcards)** اعتماداً على `tags`.
 6. **وسوم أنماط البكالوريا الموحّدة** (`bac_negative`, `bac_trap`, `application`, …) معياراً ثابتاً على الأسئلة.
 7. ~~طباعة/تصدير الاختبار وسلّم التصحيح~~ ✅ تمّ للمدرّس: `/teacher/quizzes/[id]/print` (تبديل ورقة الأسئلة/سلّم التصحيح + طباعة المتصفّح، `print:` وأنماط `@media print`). لاحقاً: للطالب بعد الانتهاء.

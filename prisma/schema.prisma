@@ -129,6 +129,13 @@ enum AttachmentKind {
   ANSWER_UPLOAD
 }
 
+// حالة بلاغ خطأ في سؤال.
+enum QuestionReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
 // ─────────────────────────────────────────────
 // USERS & AUTH
 // ─────────────────────────────────────────────
@@ -171,8 +178,27 @@ model User {
   uploadedAttachments Attachment[]       @relation("UploadedBy")
   notifications      Notification[]
   annotations        Annotation[]        @relation("AnnotationAuthor")
+  questionReports    QuestionReport[]
 
   @@map("users")
+}
+
+// بلاغ طالب عن خطأ في سؤال؛ يراجعه المدرّس المُنشئ.
+model QuestionReport {
+  id          String               @id @default(uuid())
+  questionId  String               @map("question_id")
+  question    Question             @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  studentId   String               @map("student_id")
+  student     User                 @relation(fields: [studentId], references: [id])
+  sessionId   String?              @map("session_id") // الجلسة التي بُلّغ منها
+  reason      String
+  status      QuestionReportStatus @default(OPEN)
+  teacherNote String?              @map("teacher_note")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  resolvedAt  DateTime?            @map("resolved_at")
+
+  @@index([questionId, status])
+  @@map("question_reports")
 }
 
 // إشعار داخل التطبيق لمستخدم (مثل: تصحيح اختبار).
@@ -406,6 +432,7 @@ model Question {
   matchingPairs   QuestionMatchingPair[]
   quizNodes       QuizNode[]
   studentAnswers  StudentAnswer[]
+  reports         QuestionReport[]
 
   @@map("questions")
 }

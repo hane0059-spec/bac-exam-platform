@@ -2,11 +2,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
+
+export const dynamic = "force-dynamic";
 
 export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const openReports = await prisma.questionReport.count({
+    where: { status: "OPEN", question: { creatorId: session.sub } },
+  });
 
   return (
     <DashboardShell session={session}>
@@ -53,6 +60,22 @@ export default async function TeacherDashboard() {
           </h3>
           <p className="text-sm leading-relaxed text-ink/60">
             مراجعة نتائج الطلاب ودرجاتهم وإجاباتهم.
+          </p>
+        </Link>
+        <Link
+          href="/teacher/reports"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">بلاغات الأسئلة</h3>
+            {openReports > 0 && (
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                {openReports}
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-ink/60">
+            مراجعة ملاحظات الطلاب عن أخطاء محتملة في أسئلتك.
           </p>
         </Link>
       </div>

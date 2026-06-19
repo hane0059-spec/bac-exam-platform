@@ -381,6 +381,13 @@ export default function QuizRunner({
             <p className="text-xs text-ink/50">
               التخطّي ينقلك للسؤال التالي، وتعود للأسئلة المتخطّاة في آخر الاختبار.
             </p>
+            <div className="pt-1 text-left">
+              <ReportButton
+                key={question.nodeId}
+                sessionId={sessionId}
+                nodeId={question.nodeId}
+              />
+            </div>
           </div>
         )}
 
@@ -397,6 +404,87 @@ export default function QuizRunner({
   }
 
   return null;
+}
+
+// زرّ «الإبلاغ عن خطأ» — حالته الخاصّة، يُعاد تركيبه لكل سؤال (key=nodeId).
+function ReportButton({
+  sessionId,
+  nodeId,
+}: {
+  sessionId: string;
+  nodeId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function send() {
+    setBusy(true);
+    setErr("");
+    const res = await fetch("/api/student/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, nodeId, reason }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setErr(d.error ?? "تعذّر الإرسال.");
+      return;
+    }
+    setDone(true);
+    setOpen(false);
+  }
+
+  if (done) {
+    return (
+      <p className="text-xs text-primary-dark">
+        شكراً، تمّ إبلاغ المدرّس بملاحظتك.
+      </p>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs text-ink/50 transition hover:text-red-600 hover:underline"
+      >
+        🚩 الإبلاغ عن خطأ في السؤال
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border border-line p-3 text-right">
+      <textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="صف الخطأ (خيار غير صحيح، صياغة غامضة، معلومة خاطئة…)"
+        className="field min-h-[64px] text-sm"
+      />
+      {err && <p className="text-sm text-red-600">{err}</p>}
+      <div className="flex gap-2">
+        <button
+          onClick={send}
+          disabled={busy || reason.trim().length < 3}
+          className="btn-primary px-3 py-1 text-sm"
+        >
+          إرسال البلاغ
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-sm text-ink/60 hover:underline"
+        >
+          إلغاء
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function FeedbackCard({
