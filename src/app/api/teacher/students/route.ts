@@ -4,7 +4,11 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession, teacherTeachesSubject } from "@/lib/teacher";
+import {
+  getTeacherSession,
+  teacherTeachesSubject,
+  teacherCanManageStudents,
+} from "@/lib/teacher";
 import {
   studentCreateSchema,
   academicYearFor,
@@ -50,6 +54,12 @@ export async function POST(req: Request) {
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "إدارة الطلاب غير مفعّلة لحسابك — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
   }
 
   let raw: unknown;

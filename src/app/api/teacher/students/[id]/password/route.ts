@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession } from "@/lib/teacher";
+import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import { ownedStudent, passwordSchema } from "@/lib/teacherStudents";
 
 export const runtime = "nodejs";
@@ -16,6 +16,12 @@ export async function POST(
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "إدارة الطلاب غير مفعّلة لحسابك — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
   }
   if (!(await ownedStudent(session.sub, params.id))) {
     return NextResponse.json({ error: "الطالب غير موجود" }, { status: 404 });

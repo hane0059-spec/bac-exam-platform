@@ -104,6 +104,7 @@ export async function POST(req: Request) {
                 employeeCode: await nextEmployeeCode(),
                 qualification: d.qualification || null,
                 canFileExams: d.canFileExams,
+                canManageStudents: d.canManageStudents,
               },
             },
             teacherSubjects: {

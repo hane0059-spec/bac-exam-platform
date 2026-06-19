@@ -22,7 +22,13 @@ export default async function EditUserPage({
   const user = await prisma.user.findUnique({
     where: { id: params.id },
     include: {
-      teacherProfile: { select: { qualification: true, canFileExams: true } },
+      teacherProfile: {
+        select: {
+          qualification: true,
+          canFileExams: true,
+          canManageStudents: true,
+        },
+      },
       teacherSubjects: { select: { subjectId: true } },
     },
   });
@@ -48,6 +54,7 @@ export default async function EditUserPage({
     qualification: user.teacherProfile?.qualification ?? "",
     subjectIds: user.teacherSubjects.map((t) => t.subjectId),
     canFileExams: user.teacherProfile?.canFileExams ?? false,
+    canManageStudents: user.teacherProfile?.canManageStudents ?? false,
     isSuperAdmin: user.isSuperAdmin,
   };
 

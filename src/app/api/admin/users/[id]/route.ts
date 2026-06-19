@@ -112,6 +112,7 @@ export async function PATCH(
                 update: {
                   qualification: d.qualification || null,
                   canFileExams: d.canFileExams,
+                  canManageStudents: d.canManageStudents,
                 },
               },
             }

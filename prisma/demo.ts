@@ -251,6 +251,11 @@ async function main() {
   const phys = subjects.find((s) => s.code === "PHYS")!;
   const bioT = teacherBySubject.get(bio.id)!;
   const physT = teacherBySubject.get(phys.id)!;
+  // مدرّس الأحياء مأذون بإدارة الطلاب (لعرض الحالتين في العالم التجريبي).
+  await prisma.teacherProfile.update({
+    where: { userId: bioT },
+    data: { canManageStudents: true },
+  });
 
   // MCQ
   const qMcq = await prisma.question.create({

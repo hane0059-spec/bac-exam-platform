@@ -290,6 +290,8 @@ model TeacherProfile {
   bio           String?
   // خاصّية اختيارية يفعّلها المدير عند الطلب: إنشاء اختبارات ورقية/مرفوعة (لتقليل التخزين).
   canFileExams  Boolean @default(false) @map("can_file_exams")
+  // إذن المدير للمدرّس بإضافة وإدارة حسابات الطلاب (الإسناد يبقى حرّاً دائماً).
+  canManageStudents Boolean @default(false) @map("can_manage_students")
 
   @@map("teacher_profiles")
 }

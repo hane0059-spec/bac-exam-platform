@@ -21,6 +21,17 @@ export async function teacherCanFileExams(teacherId: string): Promise<boolean> {
   return !!p?.canFileExams;
 }
 
+/** هل أذن المدير لهذا المدرّس بإضافة وإدارة الطلاب؟ (الإسناد حرّ دائماً.) */
+export async function teacherCanManageStudents(
+  teacherId: string
+): Promise<boolean> {
+  const p = await prisma.teacherProfile.findUnique({
+    where: { userId: teacherId },
+    select: { canManageStudents: true },
+  });
+  return !!p?.canManageStudents;
+}
+
 /** هل يدرّس هذا المدرّس هذه المادة؟ (تحقّق ملكية إلزامي). */
 export async function teacherTeachesSubject(
   teacherId: string,

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { roleLabel } from "@/lib/gender";
+import { teacherCanManageStudents } from "@/lib/teacher";
 import DashboardShell from "@/components/DashboardShell";
 
 export const dynamic = "force-dynamic";
@@ -14,39 +15,49 @@ export default async function TeacherStudentsPage() {
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
 
-  const students = await prisma.user.findMany({
-    where: { role: "STUDENT", createdById: session.sub },
-    orderBy: { createdAt: "desc" },
-    include: {
-      studentProfile: { include: { gradeLevel: { select: { name: true } } } },
-      studentEnrollments: {
-        where: { teacherId: session.sub, isActive: true },
-        include: { subject: { select: { name: true } } },
+  const [students, canManage] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: "STUDENT", createdById: session.sub },
+      orderBy: { createdAt: "desc" },
+      include: {
+        studentProfile: { include: { gradeLevel: { select: { name: true } } } },
+        studentEnrollments: {
+          where: { teacherId: session.sub, isActive: true },
+          include: { subject: { select: { name: true } } },
+        },
       },
-    },
-  });
+    }),
+    teacherCanManageStudents(session.sub),
+  ]);
 
   return (
     <DashboardShell session={session}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold">طلابي</h2>
-        <Link href="/teacher/students/new" className="btn-primary">
-          + طالب جديد
-        </Link>
+        {canManage && (
+          <Link href="/teacher/students/new" className="btn-primary">
+            + طالب جديد
+          </Link>
+        )}
       </div>
+
+      {!canManage && (
+        <p className="mb-4 rounded-xl bg-gold/10 p-3 text-sm text-gold">
+          إدارة الطلاب (إضافة/تعديل) يفعّلها لك مدير المؤسّسة عند الطلب. يمكنك
+          إسناد الاختبارات لطلابك دائماً.
+        </p>
+      )}
 
       {students.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
-          لا طلاب بعد. أنشئ حساب طالبك الأول وسجّله في مادتك.
+          {canManage
+            ? "لا طلاب بعد. أنشئ حساب طالبك الأول وسجّله في مادتك."
+            : "لا طلاب من إنشائك."}
         </div>
       ) : (
         <div className="space-y-3">
-          {students.map((s) => (
-            <Link
-              key={s.id}
-              href={`/teacher/students/${s.id}/edit`}
-              className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
-            >
+          {students.map((s) => {
+            const inner = (
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">
@@ -70,9 +81,25 @@ export default async function TeacherStudentsPage() {
                       .join("، ")}`}
                 </p>
               </div>
-              <span className="text-sm text-primary">تحرير ←</span>
-            </Link>
-          ))}
+            );
+            return canManage ? (
+              <Link
+                key={s.id}
+                href={`/teacher/students/${s.id}/edit`}
+                className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+              >
+                {inner}
+                <span className="text-sm text-primary">تحرير ←</span>
+              </Link>
+            ) : (
+              <div
+                key={s.id}
+                className="card flex flex-wrap items-center justify-between gap-3 p-4"
+              >
+                {inner}
+              </div>
+            );
+          })}
         </div>
       )}
     </DashboardShell>

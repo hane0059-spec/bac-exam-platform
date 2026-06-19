@@ -10,6 +10,7 @@ import StudentForm, {
 } from "@/components/teacher/StudentForm";
 import PasswordReset from "@/components/teacher/PasswordReset";
 import EnrollmentManager from "@/components/teacher/EnrollmentManager";
+import { teacherCanManageStudents } from "@/lib/teacher";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function EditStudentPage({
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
+  if (!(await teacherCanManageStudents(session.sub))) redirect("/teacher/students");
 
   const student = await prisma.user.findUnique({
     where: { id: params.id },

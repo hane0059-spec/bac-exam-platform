@@ -20,6 +20,7 @@ export interface UserInitial {
   qualification: string;
   subjectIds: string[];
   canFileExams: boolean;
+  canManageStudents: boolean;
   isSuperAdmin: boolean;
 }
 
@@ -64,6 +65,9 @@ export default function UserForm({
   const [canFileExams, setCanFileExams] = useState(
     initial?.canFileExams ?? false
   );
+  const [canManageStudents, setCanManageStudents] = useState(
+    initial?.canManageStudents ?? false
+  );
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -101,6 +105,7 @@ export default function UserForm({
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
             canFileExams: isTeacher ? canFileExams : false,
+            canManageStudents: isTeacher ? canManageStudents : false,
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
             schoolId: schools ? schoolId || null : undefined,
             customData,
@@ -114,6 +119,7 @@ export default function UserForm({
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
             canFileExams: isTeacher ? canFileExams : false,
+            canManageStudents: isTeacher ? canManageStudents : false,
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
           };
     const res = await fetch(url, {
@@ -298,6 +304,15 @@ export default function UserForm({
               className="accent-primary"
             />
             السماح بإنشاء اختبارات ورقية/مرفوعة (صور/PDF)
+          </label>
+          <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={canManageStudents}
+              onChange={(e) => setCanManageStudents(e.target.checked)}
+              className="accent-primary"
+            />
+            السماح بإضافة وإدارة حسابات الطلاب (الإسناد متاح دائماً)
           </label>
         </>
       )}

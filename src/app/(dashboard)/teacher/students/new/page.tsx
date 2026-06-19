@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import StudentForm from "@/components/teacher/StudentForm";
 import { getFieldDefs } from "@/lib/customFields";
+import { teacherCanManageStudents } from "@/lib/teacher";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ export default async function NewStudentPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
+  // الإذن يفعّله المدير؛ المنع على الخادم لا الواجهة فقط.
+  if (!(await teacherCanManageStudents(session.sub))) redirect("/teacher/students");
 
   const [subjects, gradeLevels, customFields] = await Promise.all([
     prisma.subject.findMany({

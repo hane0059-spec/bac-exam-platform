@@ -2,7 +2,7 @@
 // GET: بيانات طالب للتحرير. PATCH: تعديل بياناته. (المدرّس المُنشئ فقط.)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession } from "@/lib/teacher";
+import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import { ownedStudent, studentUpdateSchema } from "@/lib/teacherStudents";
 
 export const runtime = "nodejs";
@@ -60,6 +60,12 @@ export async function PATCH(
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "إدارة الطلاب غير مفعّلة لحسابك — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
   }
   if (!(await ownedStudent(session.sub, params.id))) {
     return NextResponse.json({ error: "الطالب غير موجود" }, { status: 404 });
