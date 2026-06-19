@@ -52,16 +52,26 @@ export default async function QuizResultsPage({
 
   return (
     <DashboardShell session={session}>
-      <div className="mb-6">
-        <Link
-          href="/teacher/results"
-          className="text-sm text-primary hover:underline"
-        >
-          ← المتابعة والنتائج
-        </Link>
-        <h2 className="mt-2 font-display text-xl font-bold">
-          نتائج: {quiz.title}
-        </h2>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <Link
+            href="/teacher/results"
+            className="text-sm text-primary hover:underline"
+          >
+            ← المتابعة والنتائج
+          </Link>
+          <h2 className="mt-2 font-display text-xl font-bold">
+            نتائج: {quiz.title}
+          </h2>
+        </div>
+        {sessions.length > 0 && (
+          <a
+            href={`/api/teacher/quizzes/${quiz.id}/results/export`}
+            className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
+          >
+            تصدير Excel ↓
+          </a>
+        )}
       </div>
 
       {sessions.length === 0 ? (
