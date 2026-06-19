@@ -103,7 +103,23 @@ export default function QuizRunner({
   const [remaining, setRemaining] = useState<number | null>(null);
   const [result, setResult] = useState<ResultData | null>(null);
   const [skipNote, setSkipNote] = useState("");
+  const [ordered, setOrdered] = useState<SanitizedOption[]>([]);
   const submitting = useRef(false);
+
+  // سؤال الترتيب: ابدأ بالترتيب المعروض (المخلوط) ثم يرتّبه الطالب.
+  useEffect(() => {
+    if (question?.type === "ORDER") setOrdered(question.options);
+  }, [question]);
+
+  function moveOrdered(idx: number, dir: -1 | 1) {
+    setOrdered((prev) => {
+      const j = idx + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const a = [...prev];
+      [a[idx], a[j]] = [a[j], a[idx]];
+      return a;
+    });
+  }
 
   const startedFeedback = phase === "feedback";
 
@@ -148,7 +164,12 @@ export default function QuizRunner({
     if (submitting.current || !question) return;
     submitting.current = true;
     setSkipNote("");
-    const optionIds = selected ? [selected] : [];
+    const optionIds =
+      question.type === "ORDER"
+        ? ordered.map((o) => o.id)
+        : selected
+        ? [selected]
+        : [];
     const res = await fetch(`/api/student/sessions/${sessionId}/answer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -186,7 +207,7 @@ export default function QuizRunner({
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
     setPhase("feedback");
-  }, [question, selected, text, sessionId, loadResult]);
+  }, [question, selected, text, ordered, sessionId, loadResult]);
 
   const goNext = useCallback(() => {
     if (pendingFinish) {
@@ -283,8 +304,13 @@ export default function QuizRunner({
   }
 
   if ((phase === "question" || startedFeedback) && question) {
-    const isShort = question.options.length === 0;
-    const canSubmit = isShort ? text.trim().length > 0 : selected !== "";
+    const isOrder = question.type === "ORDER";
+    const isShort = !isOrder && question.options.length === 0;
+    const canSubmit = isShort
+      ? text.trim().length > 0
+      : isOrder
+      ? ordered.length > 0
+      : selected !== "";
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between text-sm text-ink/60">
@@ -307,7 +333,46 @@ export default function QuizRunner({
             {question.content}
           </p>
 
-          {isShort ? (
+          {isOrder ? (
+            <div className="space-y-2">
+              <p className="mb-1 text-sm text-ink/60">
+                رتّب العناصر بالترتيب الصحيح (استخدم الأسهم):
+              </p>
+              {ordered.map((o, i) => (
+                <div
+                  key={o.id}
+                  className="flex items-center gap-2 rounded-xl border border-line p-3"
+                >
+                  <span className="w-6 text-center text-sm font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1">{o.content}</span>
+                  {!startedFeedback && (
+                    <span className="flex">
+                      <button
+                        type="button"
+                        onClick={() => moveOrdered(i, -1)}
+                        disabled={i === 0}
+                        className="px-1.5 text-ink/40 hover:text-primary disabled:opacity-30"
+                        aria-label="أعلى"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveOrdered(i, 1)}
+                        disabled={i === ordered.length - 1}
+                        className="px-1.5 text-ink/40 hover:text-primary disabled:opacity-30"
+                        aria-label="أسفل"
+                      >
+                        ↓
+                      </button>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : isShort ? (
             question.type === "ESSAY" ? (
               <textarea
                 value={text}

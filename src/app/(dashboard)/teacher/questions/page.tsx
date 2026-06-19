@@ -16,6 +16,8 @@ const TYPE_LABEL: Record<string, string> = {
   MULTIPLE_CHOICE: "اختيار من متعدد",
   TRUE_FALSE: "صح / خطأ",
   SHORT_ANSWER: "إجابة قصيرة",
+  ESSAY: "مقالي",
+  ORDER: "ترتيب",
 };
 const DIFF_LABEL: Record<string, string> = {
   EASY: "سهل",

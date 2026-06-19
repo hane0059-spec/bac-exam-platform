@@ -35,6 +35,8 @@ const TYPE_LABEL: Record<string, string> = {
   MULTIPLE_CHOICE: "اختيار",
   TRUE_FALSE: "صح/خطأ",
   SHORT_ANSWER: "قصيرة",
+  ESSAY: "مقالي",
+  ORDER: "ترتيب",
 };
 
 function isoToLocal(iso: string | null): string {

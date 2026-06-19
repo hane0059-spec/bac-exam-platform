@@ -78,6 +78,7 @@ enum QuestionType {
   FILL_BLANK
   DIAGRAM_LABEL
   CALCULATION
+  ORDER
 }
 
 enum Difficulty {

@@ -5,8 +5,22 @@ import {
   normalizeArabic,
   gradeOptionAnswer,
   gradeShortAnswer,
+  gradeOrderAnswer,
   computeScore,
 } from "./grading";
+
+describe("gradeOrderAnswer", () => {
+  it("صحيح عند تطابق التسلسل تماماً", () => {
+    expect(gradeOrderAnswer(["a", "b", "c"], ["a", "b", "c"])).toBe(true);
+  });
+  it("خطأ عند اختلاف الترتيب", () => {
+    expect(gradeOrderAnswer(["a", "b", "c"], ["a", "c", "b"])).toBe(false);
+  });
+  it("خطأ عند اختلاف الطول أو فراغ", () => {
+    expect(gradeOrderAnswer(["a", "b"], ["a"])).toBe(false);
+    expect(gradeOrderAnswer([], [])).toBe(false);
+  });
+});
 
 describe("normalizeArabic", () => {
   it("يزيل التشكيل", () => {

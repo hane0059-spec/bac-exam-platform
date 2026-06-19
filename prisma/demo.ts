@@ -8,6 +8,7 @@ import {
   computeScore,
   gradeOptionAnswer,
   gradeShortAnswer,
+  gradeOrderAnswer,
 } from "../src/lib/grading";
 
 const prisma = new PrismaClient();
@@ -583,6 +584,48 @@ async function main() {
     data: { isCancelled: false }, // إعادة لحالة نظيفة للعالم التجريبي
   });
   await recomputeTree(s2.id);
+
+  // سؤال ترتيب (مراحل) — التحقّق من تخزين التسلسل الصحيح بـ orderNum والتصحيح.
+  const stages = [
+    "المستقبل الحسّي",
+    "العصب الحسّي",
+    "المركز العصبي",
+    "العصب الحركي",
+    "العضلة",
+  ];
+  const qOrder = await prisma.question.create({
+    data: {
+      creatorId: bioT,
+      subjectId: bio.id,
+      type: QuestionType.ORDER,
+      content: "رتّب مراحل القوس الانعكاسي:",
+      points: 3,
+      options: {
+        create: stages.map((c, i) => ({
+          label: `ع${i + 1}`,
+          content: c,
+          isCorrect: false,
+          orderNum: i,
+        })),
+      },
+    },
+    include: { options: true },
+  });
+  const correctSeq = [...qOrder.options]
+    .sort((a, b) => a.orderNum - b.orderNum)
+    .map((o) => o.content);
+  assert(
+    "سؤال الترتيب يخزّن التسلسل الصحيح بـ orderNum",
+    JSON.stringify(correctSeq) === JSON.stringify(stages),
+  );
+  const correctIds = [...qOrder.options]
+    .sort((a, b) => a.orderNum - b.orderNum)
+    .map((o) => o.id);
+  assert(
+    "تصحيح الترتيب: المطابق صحيح والمعكوس خاطئ",
+    gradeOrderAnswer(correctIds, correctIds) &&
+      !gradeOrderAnswer(correctIds, [...correctIds].reverse()),
+  );
 
   // إعداد خطّ افتراضي.
   await prisma.appSetting.create({ data: { key: "font", value: "cairo" } });

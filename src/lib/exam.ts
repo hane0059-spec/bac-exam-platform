@@ -257,8 +257,11 @@ export async function loadSanitizedQuestion(
     content: o.content,
     orderNum: o.orderNum,
   }));
-  // خلط الخيارات لكل محاولة (عرضيّ فقط — التصحيح بالمعرّفات).
-  if (optionSeed) options = seededShuffle(options, optionSeed);
+  // الترتيب يُخلَط دائماً (وإلا ظهرت العناصر بترتيبها الصحيح)؛ غيره يُخلَط بالإعداد.
+  const shuffle = q.type === "ORDER" || optionSeed != null;
+  if (shuffle) options = seededShuffle(options, optionSeed ?? `order:${nodeId}`);
+  // لا تكشف موضع الترتيب الصحيح: orderNum يصير مجرّد ترتيب عرض.
+  options = options.map((o, i) => ({ ...o, orderNum: i }));
   return {
     nodeId: node.id,
     questionId: q.id,
@@ -439,6 +442,36 @@ export async function getSessionReview(
     const q = n.question!;
     const ans = answerByNode.get(n.id);
     const selectedIds = new Set(ans?.selectedOptions.map((o) => o.id) ?? []);
+
+    // الترتيب: يُعرَض كنصّ مرقّم (تسلسل الطالب مقابل التسلسل الصحيح).
+    if (q.type === "ORDER") {
+      const byId = new Map(q.options.map((o) => [o.id, o.content]));
+      const correctOrdered = [...q.options]
+        .sort((a, b) => a.orderNum - b.orderNum)
+        .map((o, k) => `${k + 1}. ${o.content}`)
+        .join("   ");
+      const studentIds = (ans?.textAnswer ?? "").split(",").filter(Boolean);
+      const studentOrdered = studentIds
+        .map((id, k) => `${k + 1}. ${byId.get(id) ?? "؟"}`)
+        .join("   ");
+      return {
+        index: i + 1,
+        nodeId: n.id,
+        type: q.type,
+        content: q.content,
+        points: Number(n.pointsOverride ?? q.points),
+        scoreEarned: ans ? Number(ans.scoreEarned) : 0,
+        isCorrect: ans?.isCorrect ?? false,
+        answered: Boolean(ans),
+        needsReview: false,
+        isCancelled: q.isCancelled,
+        explanation: q.explanation ?? null,
+        textAnswer: ans ? studentOrdered : null,
+        acceptedAnswers: [correctOrdered],
+        options: [],
+      };
+    }
+
     return {
       index: i + 1,
       nodeId: n.id,

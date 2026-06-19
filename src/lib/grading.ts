@@ -81,6 +81,22 @@ export function gradeShortAnswer(
   return acceptedAnswers.some((a) => normalizeArabic(a) === answer);
 }
 
+/**
+ * تصحيح سؤال الترتيب: صحيح فقط إذا طابق تسلسلُ خيارات الطالب التسلسلَ الصحيح
+ * تماماً (نفس العناصر وبنفس الترتيب).
+ */
+export function gradeOrderAnswer(
+  correctOrderedIds: readonly string[],
+  studentOrderedIds: readonly string[]
+): boolean {
+  if (correctOrderedIds.length === 0) return false;
+  if (correctOrderedIds.length !== studentOrderedIds.length) return false;
+  for (let i = 0; i < correctOrderedIds.length; i++) {
+    if (correctOrderedIds[i] !== studentOrderedIds[i]) return false;
+  }
+  return true;
+}
+
 // ─────────────────────────────────────────────
 // 3) إعادة حساب الدرجة (نسبة من «الأسئلة الصالحة»)
 // ─────────────────────────────────────────────

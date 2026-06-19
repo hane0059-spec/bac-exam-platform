@@ -12,6 +12,7 @@ const TYPE_LABEL: Record<string, string> = {
   FILL_BLANK: "ملء فراغ",
   DIAGRAM_LABEL: "تسمية رسم",
   CALCULATION: "حساب",
+  ORDER: "ترتيب",
 };
 
 export interface PrintOption {

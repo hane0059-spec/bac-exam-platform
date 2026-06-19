@@ -4,7 +4,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER" | "ESSAY";
+type QType =
+  | "MULTIPLE_CHOICE"
+  | "TRUE_FALSE"
+  | "SHORT_ANSWER"
+  | "ESSAY"
+  | "ORDER";
 
 interface Concept {
   id: string;
@@ -101,6 +106,8 @@ export default function QuestionForm({
   const chapters = subject?.chapters ?? [];
   const concepts = chapters.find((c) => c.id === chapterId)?.concepts ?? [];
 
+  const maxOptions = type === "ORDER" ? 8 : 6;
+
   function setCorrect(idx: number) {
     setOptions((prev) => prev.map((o, i) => ({ ...o, isCorrect: i === idx })));
   }
@@ -110,8 +117,18 @@ export default function QuestionForm({
     );
   }
   function addOption() {
-    if (options.length >= 6) return;
+    if (options.length >= maxOptions) return;
     setOptions((prev) => [...prev, { content: "", isCorrect: false }]);
+  }
+  // إعادة ترتيب العنصر (لسؤال الترتيب: الترتيب المعروض = الترتيب الصحيح).
+  function moveOption(idx: number, dir: -1 | 1) {
+    setOptions((prev) => {
+      const j = idx + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const a = [...prev];
+      [a[idx], a[j]] = [a[j], a[idx]];
+      return a;
+    });
   }
   function removeOption(idx: number) {
     if (options.length <= 2) return;
@@ -155,6 +172,14 @@ export default function QuestionForm({
           content: c,
           isCorrect: i === tfCorrect,
         })),
+      };
+    }
+    if (type === "ORDER") {
+      // الترتيب المعروض هو الترتيب الصحيح؛ لا «إجابة صحيحة».
+      return {
+        ...base,
+        acceptedAnswers: [],
+        options: options.map((o) => ({ content: o.content, isCorrect: false })),
       };
     }
     return { ...base, acceptedAnswers: [], options };
@@ -201,6 +226,7 @@ export default function QuestionForm({
               ["TRUE_FALSE", "صح / خطأ"],
               ["SHORT_ANSWER", "إجابة قصيرة"],
               ["ESSAY", "مقالي"],
+              ["ORDER", "ترتيب"],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -335,6 +361,72 @@ export default function QuestionForm({
               className="mt-2 text-sm text-primary hover:underline"
             >
               + أضف خياراً
+            </button>
+          )}
+        </div>
+      )}
+
+      {type === "ORDER" && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            العناصر بالترتيب الصحيح (يراها الطالب مخلوطةً فيرتّبها)
+          </label>
+          <div className="space-y-2">
+            {options.map((o, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="w-6 text-center text-sm font-medium text-ink/50">
+                  {i + 1}
+                </span>
+                <input
+                  type="text"
+                  className="field flex-1"
+                  value={o.content}
+                  disabled={locked}
+                  onChange={(e) => setOptionText(i, e.target.value)}
+                  placeholder={`العنصر ${i + 1}`}
+                />
+                {!locked && (
+                  <span className="flex">
+                    <button
+                      type="button"
+                      onClick={() => moveOption(i, -1)}
+                      disabled={i === 0}
+                      className="px-1.5 text-ink/40 hover:text-primary disabled:opacity-30"
+                      aria-label="أعلى"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveOption(i, 1)}
+                      disabled={i === options.length - 1}
+                      className="px-1.5 text-ink/40 hover:text-primary disabled:opacity-30"
+                      aria-label="أسفل"
+                    >
+                      ↓
+                    </button>
+                  </span>
+                )}
+                {options.length > 2 && !locked && (
+                  <button
+                    type="button"
+                    onClick={() => removeOption(i)}
+                    className="px-2 text-ink/40 hover:text-red-500"
+                    aria-label="حذف العنصر"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {options.length < maxOptions && !locked && (
+            <button
+              type="button"
+              onClick={addOption}
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              + أضف عنصراً
             </button>
           )}
         </div>

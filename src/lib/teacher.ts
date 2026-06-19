@@ -91,7 +91,13 @@ const optionSchema = z.object({
 
 export const questionInputSchema = z
   .object({
-    type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER", "ESSAY"]),
+    type: z.enum([
+      "MULTIPLE_CHOICE",
+      "TRUE_FALSE",
+      "SHORT_ANSWER",
+      "ESSAY",
+      "ORDER",
+    ]),
     subjectId: z.string().min(1, "المادة مطلوبة"),
     chapterId: z.string().min(1).nullish(),
     conceptId: z.string().min(1).nullish(),
@@ -108,6 +114,17 @@ export const questionInputSchema = z
   .superRefine((data, ctx) => {
     // المقالي يدويّ بالكامل: لا خيارات ولا إجابات مقبولة مطلوبة.
     if (data.type === "ESSAY") return;
+    // الترتيب: عناصر تُدخَل بالترتيب الصحيح (2 إلى 8)، بلا «إجابة صحيحة».
+    if (data.type === "ORDER") {
+      if (data.options.length < 2 || data.options.length > 8) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["options"],
+          message: "سؤال الترتيب يتطلّب من 2 إلى 8 عناصر",
+        });
+      }
+      return;
+    }
     if (data.type === "SHORT_ANSWER") {
       if (data.acceptedAnswers.length < 1) {
         ctx.addIssue({

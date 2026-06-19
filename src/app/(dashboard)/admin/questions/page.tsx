@@ -21,6 +21,7 @@ const TYPE_LABEL: Record<QuestionType, string> = {
   FILL_BLANK: "ملء فراغ",
   DIAGRAM_LABEL: "تسمية رسم",
   CALCULATION: "حساب",
+  ORDER: "ترتيب",
 };
 const DIFF_LABEL: Record<string, string> = {
   EASY: "سهل",

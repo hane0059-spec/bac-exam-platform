@@ -4,7 +4,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { gradeOptionAnswer, gradeShortAnswer } from "@/lib/grading";
+import {
+  gradeOptionAnswer,
+  gradeShortAnswer,
+  gradeOrderAnswer,
+} from "@/lib/grading";
 import {
   getStudentSession,
   parseSettings,
@@ -102,6 +106,7 @@ export async function POST(
   // التصحيح على الخادم.
   let isCorrect: boolean;
   let connectOptionIds: string[] = [];
+  let storedText: string | null = textAnswer ?? null;
   if (q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE") {
     const correctIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
     const validSelected = optionIds.filter((id) =>
@@ -109,6 +114,19 @@ export async function POST(
     );
     connectOptionIds = validSelected;
     isCorrect = gradeOptionAnswer(correctIds, validSelected);
+  } else if (q.type === "ORDER") {
+    // التسلسل الصحيح = الخيارات مرتّبةً بـ orderNum؛ إجابة الطالب تسلسل المعرّفات.
+    const correctIds = [...q.options]
+      .sort((a, b) => a.orderNum - b.orderNum)
+      .map((o) => o.id);
+    const valid = optionIds.filter((id) => q.options.some((o) => o.id === id));
+    const isPermutation =
+      valid.length === correctIds.length &&
+      new Set(valid).size === correctIds.length;
+    connectOptionIds = isPermutation ? valid : [];
+    isCorrect = isPermutation && gradeOrderAnswer(correctIds, valid);
+    // نخزّن تسلسل الطالب في النصّ (للمراجعة، لأن العلاقة مجموعة بلا ترتيب).
+    storedText = (isPermutation ? valid : optionIds).join(",");
   } else if (q.type === "SHORT_ANSWER") {
     isCorrect = gradeShortAnswer(q.acceptedAnswers, textAnswer ?? "");
   } else {
@@ -127,7 +145,7 @@ export async function POST(
         sessionId: exam.id,
         questionId: q.id,
         nodeId,
-        textAnswer: textAnswer ?? null,
+        textAnswer: storedText,
         isCorrect,
         scoreEarned,
         needsReview,
@@ -192,6 +210,10 @@ export async function POST(
             q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE"
               ? q.options
                   .filter((o) => o.isCorrect)
+                  .map((o) => ({ id: o.id, label: o.label, content: o.content }))
+              : q.type === "ORDER"
+              ? [...q.options]
+                  .sort((a, b) => a.orderNum - b.orderNum)
                   .map((o) => ({ id: o.id, label: o.label, content: o.content }))
               : [],
           acceptedAnswers: [],
