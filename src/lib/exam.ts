@@ -321,6 +321,7 @@ export interface SessionReviewItem {
   isCorrect: boolean;
   answered: boolean;
   needsReview: boolean;
+  isCancelled: boolean;
   explanation: string | null;
   textAnswer: string | null;
   acceptedAnswers: string[];
@@ -383,6 +384,7 @@ export async function getSessionReview(
       isCorrect: ans?.isCorrect ?? false,
       answered: Boolean(ans),
       needsReview: ans?.needsReview ?? false,
+      isCancelled: q.isCancelled,
       explanation: q.explanation ?? null,
       textAnswer: ans?.textAnswer ?? null,
       acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],

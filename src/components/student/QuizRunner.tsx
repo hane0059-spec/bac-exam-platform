@@ -41,6 +41,7 @@ interface ResultItem {
   isCorrect: boolean;
   answered: boolean;
   needsReview: boolean;
+  isCancelled: boolean;
   explanation: string | null;
   textAnswer: string | null;
   acceptedAnswers: string[];
@@ -600,7 +601,9 @@ function ResultView({ result }: { result: ResultData }) {
           <div
             key={it.index}
             className={`card border-r-4 p-4 ${
-              it.needsReview
+              it.isCancelled
+                ? "border-r-ink/20 opacity-70"
+                : it.needsReview
                 ? "border-r-gold"
                 : it.isCorrect
                 ? "border-r-primary"
@@ -611,7 +614,11 @@ function ResultView({ result }: { result: ResultData }) {
               <p className="font-medium leading-relaxed">
                 {it.index}. {it.content}
               </p>
-              {it.needsReview ? (
+              {it.isCancelled ? (
+                <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-xs font-medium text-ink/50">
+                  مُلغى — لا يُحتسب
+                </span>
+              ) : it.needsReview ? (
                 <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
                   بانتظار التصحيح
                 </span>

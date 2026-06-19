@@ -26,7 +26,9 @@ export default function SessionReviewView({
           <div
             key={it.index}
             className={`card border-r-4 p-4 ${
-              it.needsReview
+              it.isCancelled
+                ? "border-r-ink/20 opacity-70"
+                : it.needsReview
                 ? "border-r-gold"
                 : it.isCorrect
                 ? "border-r-primary"
@@ -37,7 +39,11 @@ export default function SessionReviewView({
               <p className="font-medium leading-relaxed">
                 {it.index}. {it.content}
               </p>
-              {it.needsReview ? (
+              {it.isCancelled ? (
+                <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-xs font-medium text-ink/50">
+                  مُلغى — لا يُحتسب
+                </span>
+              ) : it.needsReview ? (
                 <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
                   بانتظار المراجعة
                 </span>
