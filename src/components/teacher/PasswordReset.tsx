@@ -3,6 +3,7 @@
 // إعادة تعيين كلمة سرّ الطالب (المدرّس المُنشئ).
 import { useState } from "react";
 import { generateTempPassword } from "@/lib/tempPassword";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function PasswordReset({ studentId }: { studentId: string }) {
   const [password, setPassword] = useState("");
@@ -47,19 +48,16 @@ export default function PasswordReset({ studentId }: { studentId: string }) {
     <div className="card max-w-2xl space-y-3 p-6">
       <h3 className="font-display font-semibold">إعادة تعيين كلمة السرّ</h3>
       <div className="flex flex-wrap items-end gap-2">
-        <div className="flex-1">
-          <input
-            type="text"
-            dir="ltr"
-            className="field"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setGenerated(false);
-            }}
-            placeholder="كلمة سرّ جديدة (6 أحرف على الأقل)"
-          />
-        </div>
+        <PasswordInput
+          className="flex-1"
+          defaultVisible
+          value={password}
+          onChange={(v) => {
+            setPassword(v);
+            setGenerated(false);
+          }}
+          placeholder="كلمة سرّ جديدة (6 أحرف على الأقل)"
+        />
         <button
           type="button"
           onClick={genTemp}

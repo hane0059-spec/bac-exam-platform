@@ -3,6 +3,7 @@
 // إعادة تعيين كلمة سرّ عبر نقطة نهاية مُمرَّرة.
 import { useState } from "react";
 import { generateTempPassword } from "@/lib/tempPassword";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function PasswordResetForm({ endpoint }: { endpoint: string }) {
   const [password, setPassword] = useState("");
@@ -47,13 +48,12 @@ export default function PasswordResetForm({ endpoint }: { endpoint: string }) {
     <div className="card max-w-2xl space-y-3 p-6">
       <h3 className="font-display font-semibold">إعادة تعيين كلمة السرّ</h3>
       <div className="flex flex-wrap items-end gap-2">
-        <input
-          type="text"
-          dir="ltr"
-          className="field flex-1"
+        <PasswordInput
+          className="flex-1"
+          defaultVisible
           value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
+          onChange={(v) => {
+            setPassword(v);
             setGenerated(false);
           }}
           placeholder="كلمة سرّ جديدة (6 أحرف على الأقل)"

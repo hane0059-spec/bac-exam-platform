@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
+import PasswordInput from "@/components/PasswordInput";
 
 type RoleKey = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT";
 
@@ -175,15 +176,13 @@ export default function LoginPage() {
                 >
                   كلمة السر
                 </label>
-                <input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="current-password"
-                  className="field"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  onChange={setPassword}
+                  onEnter={handleSubmit}
                 />
               </div>
 

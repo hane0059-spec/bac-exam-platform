@@ -7,6 +7,8 @@ import { roleLabel } from "@/lib/gender";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import UsersTree, { type TreeNode, type LeafItem } from "@/components/admin/UsersTree";
+import UserSearchBox from "@/components/admin/UserSearchBox";
+import type { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +21,7 @@ type Tab = "students" | "staff";
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: { tab?: string; q?: string };
 }) {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
@@ -29,8 +31,13 @@ export default async function AdminUsersPage({
   // مدير المدرسة محصور بمؤسّسته؛ المدير العام يرى الكل.
   const schoolScope = ctx.isSchoolManager ? { schoolId: ctx.schoolId } : {};
 
+  const q = (searchParams.q ?? "").trim();
+  const results = q ? await searchUsers(q, schoolScope) : null;
+
   const roots =
-    tab === "students"
+    results !== null
+      ? []
+      : tab === "students"
       ? await buildStudentRoots(ctx.isSuper, schoolScope)
       : await buildStaffRoots(ctx.isSuper, schoolScope);
 
@@ -58,21 +65,150 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      <div className="mb-5 flex gap-2">
-        <Link href="/admin/users?tab=students" className={pill(tab === "students")}>
-          الطلاب
-        </Link>
-        <Link href="/admin/users?tab=staff" className={pill(tab === "staff")}>
-          المدرّسون والمدراء
-        </Link>
-      </div>
+      <UserSearchBox initial={q} />
 
-      <UsersTree
-        roots={roots}
-        emptyLabel={tab === "students" ? "لا طلاب." : "لا مدرّسون أو مدراء."}
-      />
+      {results !== null ? (
+        <>
+          <p className="mb-3 text-sm text-ink/50">
+            نتائج البحث عن «{q}»: {results.length}
+          </p>
+          {results.length === 0 ? (
+            <div className="card p-8 text-center text-ink/60">
+              لا مستخدمين مطابقين.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {results.map((u) => (
+                <Link
+                  key={u.id}
+                  href={u.editHref}
+                  className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{u.name}</span>
+                      <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs text-ink/60">
+                        {u.badge}
+                      </span>
+                      {u.inactive && (
+                        <span className="rounded-full bg-ink/10 px-2 py-0.5 text-xs text-ink/50">
+                          موقوف
+                        </span>
+                      )}
+                    </div>
+                    {u.meta && (
+                      <p className="mt-0.5 text-xs text-ink/40" dir="ltr">
+                        {u.meta}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-sm text-primary">تحرير ←</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="mb-5 flex gap-2">
+            <Link href="/admin/users?tab=students" className={pill(tab === "students")}>
+              الطلاب
+            </Link>
+            <Link href="/admin/users?tab=staff" className={pill(tab === "staff")}>
+              المدرّسون والمدراء
+            </Link>
+          </div>
+
+          <UsersTree
+            roots={roots}
+            emptyLabel={tab === "students" ? "لا طلاب." : "لا مدرّسون أو مدراء."}
+          />
+        </>
+      )}
     </DashboardShell>
   );
+}
+
+// ─────────────────────────────────────────────
+// بحث المستخدمين بالاسم/الرمز/البريد/الهاتف (بعزل المؤسّسة لمدير المدرسة).
+interface SearchResult {
+  id: string;
+  name: string;
+  badge: string;
+  meta?: string;
+  inactive: boolean;
+  editHref: string;
+}
+
+function editHrefFor(role: Role, id: string): string {
+  if (role === "STUDENT") return `/admin/students/${id}/edit`;
+  if (role === "PARENT") return `/admin/parents/${id}`;
+  return `/admin/users/${id}/edit`;
+}
+
+async function searchUsers(
+  q: string,
+  schoolScope: { schoolId?: string | null },
+): Promise<SearchResult[]> {
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const ci = { mode: "insensitive" as const };
+  const or: Prisma.UserWhereInput[] = [
+    { firstName: { contains: q, ...ci } },
+    { lastName: { contains: q, ...ci } },
+    { email: { contains: q, ...ci } },
+    { phone: { contains: q } },
+    { studentProfile: { studentCode: { contains: q, ...ci } } },
+    { teacherProfile: { employeeCode: { contains: q, ...ci } } },
+  ];
+  // اسم كامل «الأول الأخير».
+  if (tokens.length >= 2) {
+    or.push({
+      AND: [
+        { firstName: { contains: tokens[0], ...ci } },
+        { lastName: { contains: tokens.slice(1).join(" "), ...ci } },
+      ],
+    });
+  }
+
+  const users = await prisma.user.findMany({
+    where: { ...schoolScope, OR: or },
+    orderBy: [{ role: "asc" }, { firstName: "asc" }],
+    take: 50,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      gender: true,
+      email: true,
+      phone: true,
+      isActive: true,
+      isSuperAdmin: true,
+      studentProfile: { select: { studentCode: true } },
+      teacherProfile: { select: { employeeCode: true } },
+    },
+  });
+
+  return users.map((u) => {
+    const adminScope =
+      u.role === "ADMIN" ? (u.isSuperAdmin ? " عام" : " مؤسّسة") : "";
+    const meta = [
+      u.studentProfile?.studentCode ?? u.teacherProfile?.employeeCode,
+      u.email,
+      u.phone,
+    ]
+      .filter(Boolean)
+      .join(" • ");
+    return {
+      id: u.id,
+      name: `${u.firstName} ${u.lastName}`,
+      badge:
+        roleLabel(u.role as Role, u.gender as "MALE" | "FEMALE") + adminScope,
+      meta: meta || undefined,
+      inactive: !u.isActive,
+      editHref: editHrefFor(u.role as Role, u.id),
+    };
+  });
 }
 
 // ─────────────────────────────────────────────
