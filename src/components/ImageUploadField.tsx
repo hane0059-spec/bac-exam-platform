@@ -35,6 +35,7 @@ export default function ImageUploadField({
     setPreviewUrl(null);
     setPrepared(null);
     setError("");
+    setBusy(false); // مهمّ: بعد نجاح الرفع يجب فكّ التعطيل ليُمكن رفع/إضافة غيرها
     if (inputRef.current) inputRef.current.value = "";
   }
 
