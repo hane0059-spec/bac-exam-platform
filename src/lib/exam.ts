@@ -467,7 +467,7 @@ export async function finalizeSession(
 
   const qNodes = await prisma.quizNode.findMany({
     where: { quizId: session.quizId, nodeType: "QUESTION" },
-    include: { question: { select: { points: true } } },
+    include: { question: { select: { points: true, isCancelled: true } } },
   });
   const answers = await prisma.studentAnswer.findMany({
     where: { sessionId },
@@ -482,6 +482,7 @@ export async function finalizeSession(
         points: Number(n.pointsOverride ?? n.question?.points ?? 0),
         isCorrect: a?.isCorrect ?? false,
         earned: a ? Number(a.scoreEarned) : 0,
+        isCancelled: n.question?.isCancelled ?? false,
       };
     })
   );
@@ -500,6 +501,52 @@ export async function finalizeSession(
       percentage: score.percentage,
       timeSpent,
       currentNodeId: null,
+    },
+  });
+}
+
+/**
+ * يعيد حساب درجة جلسة موجودة من إجاباتها الحالية (يحترم الأسئلة المُلغاة
+ * والدرجات الجزئية) — دون تغيير حالتها. يُستخدم عند إلغاء سؤال.
+ */
+export async function recomputeSessionScore(sessionId: string): Promise<void> {
+  const session = await prisma.examSession.findUnique({
+    where: { id: sessionId },
+    select: { quizId: true },
+  });
+  if (!session) return;
+
+  const qNodes = await prisma.quizNode.findMany({
+    where: { quizId: session.quizId, nodeType: "QUESTION" },
+    select: {
+      id: true,
+      pointsOverride: true,
+      question: { select: { points: true, isCancelled: true } },
+    },
+  });
+  const answers = await prisma.studentAnswer.findMany({
+    where: { sessionId },
+    select: { nodeId: true, isCorrect: true, scoreEarned: true },
+  });
+  const ansByNode = new Map(answers.map((a) => [a.nodeId, a]));
+
+  const score = computeScore(
+    qNodes.map((n) => {
+      const a = ansByNode.get(n.id);
+      return {
+        points: Number(n.pointsOverride ?? n.question?.points ?? 0),
+        isCorrect: a?.isCorrect ?? false,
+        earned: a ? Number(a.scoreEarned) : 0,
+        isCancelled: n.question?.isCancelled ?? false,
+      };
+    })
+  );
+  await prisma.examSession.update({
+    where: { id: sessionId },
+    data: {
+      totalScore: score.earned,
+      maxPossibleScore: score.max,
+      percentage: score.percentage,
     },
   });
 }

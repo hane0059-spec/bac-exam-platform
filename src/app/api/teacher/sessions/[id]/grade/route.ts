@@ -48,13 +48,16 @@ export async function POST(
     return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
   }
 
-  // عُقد الأسئلة لهذه الجلسة (للتحقّق والعلامات).
+  // عُقد الأسئلة لهذه الجلسة (للتحقّق والعلامات وحالة الإلغاء).
   const qNodes = await prisma.quizNode.findMany({
     where: { quizId: exam.quizId, nodeType: "QUESTION" },
-    include: { question: { select: { points: true } } },
+    include: { question: { select: { points: true, isCancelled: true } } },
   });
   const pointsByNode = new Map(
     qNodes.map((n) => [n.id, Number(n.pointsOverride ?? n.question?.points ?? 0)])
+  );
+  const cancelledByNode = new Map(
+    qNodes.map((n) => [n.id, n.question?.isCancelled ?? false])
   );
 
   // تحديث كل إجابة مُصحَّحة (مع حصر الدرجة ضمن علامة السؤال).
@@ -81,6 +84,7 @@ export async function POST(
         points: pointsByNode.get(n.id) ?? 0,
         isCorrect: a?.isCorrect ?? false,
         earned: a ? Number(a.scoreEarned) : 0,
+        isCancelled: cancelledByNode.get(n.id) ?? false,
       };
     })
   );

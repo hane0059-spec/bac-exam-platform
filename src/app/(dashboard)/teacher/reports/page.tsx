@@ -43,7 +43,7 @@ export default async function TeacherReportsPage({
       status: true,
       teacherNote: true,
       createdAt: true,
-      question: { select: { content: true } },
+      question: { select: { id: true, content: true, isCancelled: true } },
       student: { select: { firstName: true, lastName: true } },
     },
   });
@@ -81,7 +81,9 @@ export default async function TeacherReportsPage({
             <ReportRow
               key={r.id}
               id={r.id}
+              questionId={r.question.id}
               questionContent={r.question.content}
+              questionCancelled={r.question.isCancelled}
               reason={r.reason}
               studentName={`${r.student.firstName} ${r.student.lastName}`}
               status={r.status}

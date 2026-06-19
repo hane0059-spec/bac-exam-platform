@@ -553,6 +553,27 @@ async function main() {
   const codeOk = await prisma.quiz.count({ where: { accessCode: { not: null }, allowCodeJoin: true } });
   assert("رموز انضمام مفعّلة", codeOk >= 1, `${codeOk} اختبار`);
 
+  // سيناريو: إلغاء سؤال صح/خطأ وإعادة حساب جلسة هدى.
+  // كانت 2/5=40% (MCQ صحيح فقط)؛ بإلغاء TF: الصالح MCQ+SHORT=4، المكتسب 2 → 50%.
+  await prisma.question.update({
+    where: { id: qTf.id },
+    data: { isCancelled: true },
+  });
+  await recomputeTree(s2.id);
+  const s2recomputed = await prisma.examSession.findUniqueOrThrow({
+    where: { id: s2.id },
+  });
+  assert(
+    "إلغاء سؤال يعيد حساب الجلسة (40%→50%)",
+    Number(s2recomputed.percentage) === 50,
+    `${Number(s2recomputed.percentage)}%`,
+  );
+  await prisma.question.update({
+    where: { id: qTf.id },
+    data: { isCancelled: false }, // إعادة لحالة نظيفة للعالم التجريبي
+  });
+  await recomputeTree(s2.id);
+
   // إعداد خطّ افتراضي.
   await prisma.appSetting.create({ data: { key: "font", value: "cairo" } });
 
@@ -632,13 +653,17 @@ async function simulateTreeAttempt(
 async function recomputeTree(sessionId: string) {
   const answers = await prisma.studentAnswer.findMany({
     where: { sessionId },
-    include: { question: { select: { points: true } }, node: { select: { pointsOverride: true } } },
+    include: {
+      question: { select: { points: true, isCancelled: true } },
+      node: { select: { pointsOverride: true } },
+    },
   });
   const score = computeScore(
     answers.map((a) => ({
       points: Number(a.node.pointsOverride ?? a.question.points),
       isCorrect: a.isCorrect,
       earned: Number(a.scoreEarned),
+      isCancelled: a.question.isCancelled,
     })),
   );
   await prisma.examSession.update({

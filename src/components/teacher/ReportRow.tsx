@@ -12,7 +12,9 @@ const STATUS: Record<string, { text: string; cls: string }> = {
 
 export default function ReportRow({
   id,
+  questionId,
   questionContent,
+  questionCancelled,
   reason,
   studentName,
   status,
@@ -20,7 +22,9 @@ export default function ReportRow({
   createdAt,
 }: {
   id: string;
+  questionId: string;
   questionContent: string;
+  questionCancelled: boolean;
   reason: string;
   studentName: string;
   status: string;
@@ -49,6 +53,29 @@ export default function ReportRow({
     router.refresh();
   }
 
+  async function toggleCancel() {
+    const next = !questionCancelled;
+    if (
+      next &&
+      !confirm("إلغاء هذا السؤال وإعادة حساب درجات كل الجلسات التي تضمّنته؟")
+    )
+      return;
+    setBusy(true);
+    setError("");
+    const res = await fetch(`/api/teacher/questions/${questionId}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isCancelled: next }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّر التنفيذ.");
+      return;
+    }
+    router.refresh();
+  }
+
   const st = STATUS[status] ?? STATUS.OPEN;
   const isOpen = status === "OPEN";
 
@@ -56,8 +83,15 @@ export default function ReportRow({
     <div className="card space-y-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="font-medium leading-relaxed">{questionContent}</p>
-        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${st.cls}`}>
-          {st.text}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {questionCancelled && (
+            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+              السؤال مُلغى
+            </span>
+          )}
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${st.cls}`}>
+            {st.text}
+          </span>
         </span>
       </div>
 
@@ -105,6 +139,17 @@ export default function ReportRow({
             إعادة فتح
           </button>
         )}
+        <button
+          onClick={toggleCancel}
+          disabled={busy}
+          className={`rounded-xl border px-4 py-1.5 text-sm ${
+            questionCancelled
+              ? "border-line hover:bg-ink/5"
+              : "border-red-300 text-red-600 hover:bg-red-50"
+          }`}
+        >
+          {questionCancelled ? "إلغاء الإلغاء وإعادة الحساب" : "إلغاء السؤال وإعادة الحساب"}
+        </button>
       </div>
     </div>
   );
