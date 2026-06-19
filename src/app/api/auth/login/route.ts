@@ -4,6 +4,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import {
   createSessionToken,
   sessionCookieOptions,
@@ -66,6 +67,14 @@ async function resolveUser(
 }
 
 export async function POST(req: Request) {
+  // تحديد معدّل ضدّ التخمين العنيف (best-effort لكل نسخة خادم).
+  if (!checkRateLimit(`login:${clientIp(req)}`, 10, 15 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: "محاولات كثيرة جداً — انتظر قليلاً ثم أعد المحاولة." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

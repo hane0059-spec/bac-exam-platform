@@ -69,10 +69,17 @@ export async function verifySessionToken(
   }
 }
 
+// `secure` افتراضه حسب البيئة، ويُتجاوَز بمتغيّر COOKIE_SECURE:
+// النشر السحابي (HTTPS) = true، والنشر المحلّي على شبكة (HTTP) = false.
+const cookieSecure =
+  process.env.COOKIE_SECURE != null
+    ? process.env.COOKIE_SECURE === "true"
+    : process.env.NODE_ENV === "production";
+
 export const sessionCookieOptions = {
   httpOnly: true as const,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  secure: cookieSecure,
   path: "/",
   maxAge: MAX_AGE_SECONDS,
 };
