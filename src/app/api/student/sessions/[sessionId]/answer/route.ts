@@ -13,6 +13,7 @@ import {
   nextUnansweredNodeId,
   loadSanitizedQuestion,
   countQuestionNodes,
+  attemptSeed,
 } from "@/lib/exam";
 
 export const runtime = "nodejs";
@@ -141,8 +142,19 @@ export async function POST(
     }),
   ]);
 
+  // بذرة الخلط (إن كان مفعّلاً) — ثابتة لهذه المحاولة.
+  const seed = settings.shuffle
+    ? attemptSeed(exam.studentId, exam.quizId, exam.attemptNumber)
+    : undefined;
+
   // السؤال غير المُجاب التالي (يلتفّ للأسئلة المتخطّاة في آخر الاختبار).
-  const nextNode = await nextUnansweredNodeId(exam.quizId, exam.id, nodeId);
+  const nextNode = await nextUnansweredNodeId(
+    exam.quizId,
+    exam.id,
+    nodeId,
+    false,
+    seed
+  );
   const finished = nextNode === null;
 
   if (finished) {
@@ -193,6 +205,11 @@ export async function POST(
   const answered = await prisma.studentAnswer.count({
     where: { sessionId: exam.id },
   });
-  const next = await loadSanitizedQuestion(nextNode!, answered + 1, total);
+  const next = await loadSanitizedQuestion(
+    nextNode!,
+    answered + 1,
+    total,
+    seed ? `${seed}:${nextNode}` : undefined
+  );
   return NextResponse.json({ reveal, finished: false, next });
 }

@@ -116,6 +116,7 @@ export default async function EditQuizPage({
           timeLimitSec: settings.timeLimitSec,
           maxAttempts: settings.maxAttempts,
           revealAnswers: settings.revealAnswers,
+          shuffle: settings.shuffle,
           availableFrom: quiz.availableFrom
             ? quiz.availableFrom.toISOString()
             : null,

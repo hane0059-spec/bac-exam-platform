@@ -24,6 +24,7 @@ export interface QuizBuilderInitial {
   timeLimitSec: number | null;
   maxAttempts: number;
   revealAnswers: "immediate" | "end";
+  shuffle: boolean;
   availableFrom: string | null;
   availableUntil: string | null;
   accessCode: string | null;
@@ -73,6 +74,7 @@ export default function QuizBuilder({
   );
   const [maxAttempts, setMaxAttempts] = useState(initial.maxAttempts);
   const [reveal, setReveal] = useState(initial.revealAnswers);
+  const [shuffle, setShuffle] = useState(initial.shuffle);
   const [from, setFrom] = useState(isoToLocal(initial.availableFrom));
   const [until, setUntil] = useState(isoToLocal(initial.availableUntil));
   const [items, setItems] = useState<Item[]>(initialItems);
@@ -135,6 +137,7 @@ export default function QuizBuilder({
           timeLimitSec: noLimit ? null : Math.max(1, Math.round(minutes * 60)),
           maxAttempts,
           revealAnswers: reveal,
+          shuffle,
         },
         availableFrom: localToIso(from),
         availableUntil: localToIso(until),
@@ -269,6 +272,16 @@ export default function QuizBuilder({
             </select>
           </div>
         </div>
+        <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={shuffle}
+            disabled={ro}
+            onChange={(e) => setShuffle(e.target.checked)}
+            className="accent-primary"
+          />
+          خلط ترتيب الأسئلة والخيارات لكل طالب (للنزاهة)
+        </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">

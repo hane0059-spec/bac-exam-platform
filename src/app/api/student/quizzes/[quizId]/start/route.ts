@@ -12,6 +12,7 @@ import {
   remainingSeconds,
   isExpired,
   finalizeSession,
+  attemptSeed,
 } from "@/lib/exam";
 
 export const runtime = "nodejs";
@@ -70,8 +71,16 @@ export async function POST(
     const answered = await prisma.studentAnswer.count({
       where: { sessionId: existing.id },
     });
+    const seed = settings.shuffle
+      ? attemptSeed(studentId, quizId, existing.attemptNumber)
+      : undefined;
     const question = existing.currentNodeId
-      ? await loadSanitizedQuestion(existing.currentNodeId, answered + 1, total)
+      ? await loadSanitizedQuestion(
+          existing.currentNodeId,
+          answered + 1,
+          total,
+          seed ? `${seed}:${existing.currentNodeId}` : undefined
+        )
       : null;
     return NextResponse.json({
       sessionId: existing.id,
@@ -102,7 +111,11 @@ export async function POST(
     );
   }
 
-  const firstNodeId = await firstQuestionNodeId(quizId, quiz.startNodeId);
+  const attempt = finishedCount + 1;
+  const seed = settings.shuffle
+    ? attemptSeed(studentId, quizId, attempt)
+    : undefined;
+  const firstNodeId = await firstQuestionNodeId(quizId, quiz.startNodeId, seed);
   if (!firstNodeId) {
     return NextResponse.json(
       { error: "هذا الاختبار لا يحتوي أسئلة" },
@@ -116,12 +129,17 @@ export async function POST(
       quizId,
       status: "IN_PROGRESS",
       currentNodeId: firstNodeId,
-      attemptNumber: finishedCount + 1,
+      attemptNumber: attempt,
       pathTaken: [],
     },
   });
 
-  const question = await loadSanitizedQuestion(firstNodeId, 1, total);
+  const question = await loadSanitizedQuestion(
+    firstNodeId,
+    1,
+    total,
+    seed ? `${seed}:${firstNodeId}` : undefined
+  );
   return NextResponse.json({
     sessionId: created.id,
     finished: false,

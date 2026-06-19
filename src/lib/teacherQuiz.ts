@@ -17,6 +17,7 @@ const settingsSchema = z.object({
   timeLimitSec: z.number().int().positive().nullable(),
   maxAttempts: z.number().int().min(1).max(10),
   revealAnswers: z.enum(["immediate", "end"]),
+  shuffle: z.boolean().default(false),
 });
 
 export const quizSaveSchema = z

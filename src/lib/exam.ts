@@ -22,6 +22,7 @@ export interface QuizSettings {
   timeLimitSec: number | null;
   maxAttempts: number;
   revealAnswers: "immediate" | "end";
+  shuffle: boolean; // خلط ترتيب الأسئلة والخيارات لكل محاولة (نزاهة)
 }
 
 export function parseSettings(raw: unknown): QuizSettings {
@@ -36,7 +37,66 @@ export function parseSettings(raw: unknown): QuizSettings {
         ? s.maxAttempts
         : 1,
     revealAnswers: s.revealAnswers === "end" ? "end" : "immediate",
+    shuffle: s.shuffle === true,
   };
+}
+
+// ─────────────────────────────────────────────
+// خلط مبذور ثابت (نفس البذرة = نفس الترتيب) — للنزاهة دون كسر الاستئناف.
+// الخلط عرضيّ فقط؛ التصحيح بمعرّفات الخيارات لا بترتيبها.
+// ─────────────────────────────────────────────
+
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: readonly T[], seed: string): T[] {
+  const rnd = mulberry32(hashStr(seed));
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** بذرة ثابتة لمحاولة (طالب+اختبار+رقم المحاولة) — تستقرّ عبر الاستئناف. */
+export function attemptSeed(
+  studentId: string,
+  quizId: string,
+  attempt: number
+): string {
+  return `${studentId}:${quizId}:${attempt}`;
+}
+
+/** معرّفات عُقد الأسئلة بترتيب العرض، أو مخلوطةً ببذرة. */
+async function orderedQuestionNodeIds(
+  quizId: string,
+  seed?: string
+): Promise<string[]> {
+  const qNodes = await prisma.quizNode.findMany({
+    where: { quizId, nodeType: "QUESTION" },
+    orderBy: { positionX: "asc" },
+    select: { id: true },
+  });
+  const ids = qNodes.map((n) => n.id);
+  return seed ? seededShuffle(ids, seed) : ids;
 }
 
 /** هل الاختبار ضمن نافذة الإتاحة الآن؟ */
@@ -85,11 +145,16 @@ async function nextNodeId(
   return edge?.targetNodeId ?? null;
 }
 
-/** أوّل عقدة سؤال انطلاقاً من عقدة البداية. */
+/** أوّل عقدة سؤال انطلاقاً من عقدة البداية (أو أوّل المخلوط عند الخلط). */
 export async function firstQuestionNodeId(
   quizId: string,
-  startNodeId: string | null
+  startNodeId: string | null,
+  seed?: string
 ): Promise<string | null> {
+  if (seed) {
+    const ids = await orderedQuestionNodeIds(quizId, seed);
+    return ids[0] ?? null;
+  }
   return walkToQuestion(quizId, startNodeId);
 }
 
@@ -112,19 +177,15 @@ export async function nextUnansweredNodeId(
   quizId: string,
   sessionId: string,
   fromNodeId: string,
-  excludeCurrent = false
+  excludeCurrent = false,
+  seed?: string
 ): Promise<string | null> {
-  const qNodes = await prisma.quizNode.findMany({
-    where: { quizId, nodeType: "QUESTION" },
-    orderBy: { positionX: "asc" },
-    select: { id: true },
-  });
+  const ids = await orderedQuestionNodeIds(quizId, seed);
   const answeredRows = await prisma.studentAnswer.findMany({
     where: { sessionId },
     select: { nodeId: true },
   });
   const answered = new Set(answeredRows.map((a) => a.nodeId));
-  const ids = qNodes.map((n) => n.id);
   const idx = ids.indexOf(fromNodeId);
   const ordered =
     idx >= 0 ? [...ids.slice(idx + 1), ...ids.slice(0, idx + 1)] : ids;
@@ -179,7 +240,8 @@ export interface SanitizedQuestion {
 export async function loadSanitizedQuestion(
   nodeId: string,
   index: number,
-  total: number
+  total: number,
+  optionSeed?: string
 ): Promise<SanitizedQuestion | null> {
   const node = await prisma.quizNode.findUnique({
     where: { id: nodeId },
@@ -189,18 +251,21 @@ export async function loadSanitizedQuestion(
   });
   if (!node || !node.question) return null;
   const q = node.question;
+  let options = q.options.map((o) => ({
+    id: o.id,
+    label: o.label,
+    content: o.content,
+    orderNum: o.orderNum,
+  }));
+  // خلط الخيارات لكل محاولة (عرضيّ فقط — التصحيح بالمعرّفات).
+  if (optionSeed) options = seededShuffle(options, optionSeed);
   return {
     nodeId: node.id,
     questionId: q.id,
     type: q.type,
     content: q.content,
     points: Number(node.pointsOverride ?? q.points),
-    options: q.options.map((o) => ({
-      id: o.id,
-      label: o.label,
-      content: o.content,
-      orderNum: o.orderNum,
-    })),
+    options,
     index,
     total,
   };
