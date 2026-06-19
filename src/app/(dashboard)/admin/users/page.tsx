@@ -105,7 +105,7 @@ async function buildStudentRoots(
     name: `${s.firstName} ${s.lastName}`,
     meta: s.studentProfile?.studentCode ?? undefined,
     inactive: !s.isActive,
-    managedNote: "يُدار من مدرّسه", // الطالب يُحرّر من مدرّسه (اتساقاً مع القرار المثبّت)
+    editHref: `/admin/students/${s.id}/edit`, // المدير يدير كل طلاب مؤسّسته
   });
 
   // تجميع حسب الصفّ ضمن مجموعة معطاة.

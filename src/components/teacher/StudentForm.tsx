@@ -33,6 +33,7 @@ export default function StudentForm({
   gradeLevels,
   initial,
   createEndpoint = "/api/teacher/students",
+  updateEndpoint = "/api/teacher/students",
   redirectTo = "/teacher/students",
   showSubject = true,
   customFields = [],
@@ -43,6 +44,7 @@ export default function StudentForm({
   gradeLevels: Option[];
   initial?: StudentInitial;
   createEndpoint?: string;
+  updateEndpoint?: string;
   redirectTo?: string;
   showSubject?: boolean;
   customFields?: FieldDef[];
@@ -98,7 +100,7 @@ export default function StudentForm({
     const url =
       mode === "create"
         ? createEndpoint
-        : `/api/teacher/students/${studentId}`;
+        : `${updateEndpoint}/${studentId}`;
     const payload =
       mode === "create"
         ? {
