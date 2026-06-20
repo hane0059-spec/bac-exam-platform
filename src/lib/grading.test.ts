@@ -6,6 +6,11 @@ import {
   gradeOptionAnswer,
   gradeShortAnswer,
   gradeOrderAnswer,
+  gradeFillBlank,
+  countBlanks,
+  splitFillTemplate,
+  parseBlankAnswers,
+  fillTemplateForDisplay,
   computeScore,
 } from "./grading";
 
@@ -84,6 +89,72 @@ describe("gradeShortAnswer — مطابقة دقيقة لا جزئية", () => {
     expect(gradeShortAnswer(["الكبد"], "")).toBe(false);
     expect(gradeShortAnswer(["الكبد"], null)).toBe(false);
     expect(gradeShortAnswer(["الكبد"], "   ")).toBe(false);
+  });
+});
+
+describe("ملء الفراغات — تحليل القالب والخانات", () => {
+  it("يعدّ الفراغات في القالب", () => {
+    expect(countBlanks("الخلية فيها [[ ]] و[[ ]].")).toBe(2);
+    expect(countBlanks("بلا فراغات")).toBe(0);
+    expect(countBlanks("[[تلميح]] في الأوّل")).toBe(1);
+  });
+
+  it("يقسّم القالب إلى أجزاء حول الفراغات (أجزاء = فراغات + 1)", () => {
+    const parts = splitFillTemplate("أ [[ ]] ب [[ ]] ج");
+    expect(parts).toEqual(["أ ", " ب ", " ج"]);
+    expect(parts.length - 1).toBe(2);
+  });
+
+  it("يستبدل العلامات برمز العرض", () => {
+    expect(fillTemplateForDisplay("الناقل [[ ]] مهمّ")).toBe(
+      "الناقل ______ مهمّ"
+    );
+  });
+
+  it("يفصل المترادفات المقبولة بـ |", () => {
+    expect(parseBlankAnswers("سيتوبلازم | هيولى")).toEqual([
+      "سيتوبلازم",
+      "هيولى",
+    ]);
+    expect(parseBlankAnswers("نواة")).toEqual(["نواة"]);
+  });
+});
+
+describe("gradeFillBlank — درجة جزئية لكل فراغ", () => {
+  it("يحسب الفراغات الصحيحة من إجماليها", () => {
+    const blanks = [["نواة"], ["سيتوبلازم", "هيولى"], ["غشاء"]];
+    expect(gradeFillBlank(blanks, ["نواة", "هيولى", "غشاء"])).toEqual({
+      correctCount: 3,
+      total: 3,
+    });
+    expect(gradeFillBlank(blanks, ["نواة", "خطأ", "غشاء"])).toEqual({
+      correctCount: 2,
+      total: 3,
+    });
+  });
+
+  it("يطبّق التطبيع العربي على كل فراغ", () => {
+    expect(
+      gradeFillBlank([["النواة"], ["الأنسولين"]], ["النَّواة", "الانسولين"])
+    ).toEqual({ correctCount: 2, total: 2 });
+  });
+
+  it("يعامل الفراغ غير المُجاب أو الناقص خطأً", () => {
+    expect(gradeFillBlank([["أ"], ["ب"]], ["أ"])).toEqual({
+      correctCount: 1,
+      total: 2,
+    });
+    expect(gradeFillBlank([["أ"], ["ب"]], ["أ", ""])).toEqual({
+      correctCount: 1,
+      total: 2,
+    });
+  });
+
+  it("مطابقة دقيقة لا جزئية لكل فراغ", () => {
+    expect(gradeFillBlank([["النواة"]], ["نواة"])).toEqual({
+      correctCount: 0,
+      total: 1,
+    });
   });
 });
 

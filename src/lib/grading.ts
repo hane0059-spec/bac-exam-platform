@@ -98,6 +98,60 @@ export function gradeOrderAnswer(
 }
 
 // ─────────────────────────────────────────────
+// ملء الفراغات (FILL_BLANK)
+// ─────────────────────────────────────────────
+
+// علامة الفراغ في نصّ القالب: [[ ]] أو [[تلميح]]. المصدر نصّيّ لإنشاء RegExp جديد
+// عند كل استعمال (تفادياً لحالة lastIndex المشتركة مع الراية g).
+const FILL_MARKER_SRC = "\\[\\[[^\\]]*\\]\\]";
+// فاصل المترادفات المقبولة داخل خانة الفراغ الواحد.
+const FILL_BLANK_SEP = "|";
+
+/** يقسّم نصّ القالب إلى أجزاء نصّية حول الفراغات؛ عدد الفراغات = الأجزاء − 1. */
+export function splitFillTemplate(content: string): string[] {
+  return content.split(new RegExp(FILL_MARKER_SRC, "g"));
+}
+
+/** عدد الفراغات في نصّ القالب. */
+export function countBlanks(content: string): number {
+  const m = content.match(new RegExp(FILL_MARKER_SRC, "g"));
+  return m ? m.length : 0;
+}
+
+/** يستبدل كل علامة فراغ برمز عرض (افتراضياً خطّ سفليّ) للطباعة/المراجعة. */
+export function fillTemplateForDisplay(
+  content: string,
+  blankToken = "______"
+): string {
+  return content.replace(new RegExp(FILL_MARKER_SRC, "g"), blankToken);
+}
+
+/** الإجابات المقبولة لفراغ واحد من تخزينها النصّي (مفصولة بـ |). */
+export function parseBlankAnswers(stored: string): string[] {
+  return stored
+    .split(FILL_BLANK_SEP)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * تصحيح ملء الفراغات: لكل فراغ قائمةُ إجاباته المقبولة، ولإجابة الطالب نصُّها.
+ * يُطبَّق التطبيع العربي ومطابقةٌ دقيقة لكل فراغ مستقلّاً، ويُعاد عددُ الفراغات
+ * الصحيحة من إجماليها لدعم الدرجة الجزئية (مثل 2 من 3).
+ */
+export function gradeFillBlank(
+  blanks: readonly (readonly string[])[],
+  studentAnswers: readonly (string | null | undefined)[]
+): { correctCount: number; total: number } {
+  const total = blanks.length;
+  let correctCount = 0;
+  for (let i = 0; i < total; i++) {
+    if (gradeShortAnswer(blanks[i], studentAnswers[i])) correctCount++;
+  }
+  return { correctCount, total };
+}
+
+// ─────────────────────────────────────────────
 // 3) إعادة حساب الدرجة (نسبة من «الأسئلة الصالحة»)
 // ─────────────────────────────────────────────
 

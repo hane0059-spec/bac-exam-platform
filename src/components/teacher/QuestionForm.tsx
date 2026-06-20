@@ -3,13 +3,15 @@
 // نموذج إنشاء/تعديل سؤال: اختيار من متعدد / صح-خطأ / إجابة قصيرة.
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { countBlanks } from "@/lib/grading";
 
 type QType =
   | "MULTIPLE_CHOICE"
   | "TRUE_FALSE"
   | "SHORT_ANSWER"
   | "ESSAY"
-  | "ORDER";
+  | "ORDER"
+  | "FILL_BLANK";
 
 interface Concept {
   id: string;
@@ -95,6 +97,12 @@ export default function QuestionForm({
   const [acceptedAnswers, setAcceptedAnswers] = useState<string[]>(
     initial?.acceptedAnswers.length ? initial.acceptedAnswers : [""]
   );
+  // ملء الفراغات: لكل فراغ سلسلةُ إجاباته المقبولة مفصولةً بـ | (مخزّنة كـ option.content).
+  const [fillBlanks, setFillBlanks] = useState<string[]>(
+    initial?.type === "FILL_BLANK"
+      ? initial.options.map((o) => o.content)
+      : []
+  );
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -107,6 +115,8 @@ export default function QuestionForm({
   const concepts = chapters.find((c) => c.id === chapterId)?.concepts ?? [];
 
   const maxOptions = type === "ORDER" ? 8 : 6;
+  // عدد الفراغات مُشتقّ من علامات [[ ]] في نصّ السؤال.
+  const blankCount = useMemo(() => countBlanks(content), [content]);
 
   function setCorrect(idx: number) {
     setOptions((prev) => prev.map((o, i) => ({ ...o, isCorrect: i === idx })));
@@ -182,6 +192,17 @@ export default function QuestionForm({
         options: options.map((o) => ({ content: o.content, isCorrect: false })),
       };
     }
+    if (type === "FILL_BLANK") {
+      // خيارٌ لكل فراغ، محتواه إجاباته المقبولة (مفصولة بـ |) بترتيب الفراغات.
+      return {
+        ...base,
+        acceptedAnswers: [],
+        options: Array.from({ length: blankCount }, (_, i) => ({
+          content: (fillBlanks[i] ?? "").trim(),
+          isCorrect: false,
+        })),
+      };
+    }
     return { ...base, acceptedAnswers: [], options };
   }
 
@@ -227,6 +248,7 @@ export default function QuestionForm({
               ["SHORT_ANSWER", "إجابة قصيرة"],
               ["ESSAY", "مقالي"],
               ["ORDER", "ترتيب"],
+              ["FILL_BLANK", "ملء الفراغات"],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -505,6 +527,64 @@ export default function QuestionForm({
           >
             + أضف إجابة مقبولة
           </button>
+        </div>
+      )}
+
+      {type === "FILL_BLANK" && (
+        <div>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <label className="block text-sm font-medium">
+              إجابات الفراغات
+            </label>
+            {!locked && (
+              <button
+                type="button"
+                onClick={() =>
+                  setContent((c) => `${c}${c && !c.endsWith(" ") ? " " : ""}[[ ]]`)
+                }
+                className="text-sm text-primary hover:underline"
+              >
+                + إدراج فراغ في النصّ
+              </button>
+            )}
+          </div>
+          <p className="mb-3 rounded-xl bg-primary-light/60 p-3 text-xs leading-relaxed text-primary-dark">
+            اكتب نصّ السؤال أعلاه وضع علامة{" "}
+            <code className="rounded bg-ink/10 px-1">[[ ]]</code> مكان كل فراغ
+            (أو اضغط «إدراج فراغ»). ثم أدخل أدناه الإجابات المقبولة لكل فراغ —
+            افصل المترادفات بـ <code className="rounded bg-ink/10 px-1">|</code>.
+            تُصحَّح بتطبيع عربي ومطابقة دقيقة، والدرجة جزئية لكل فراغ.
+          </p>
+          {blankCount === 0 ? (
+            <p className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
+              لا فراغات بعد — أضف علامة <code>[[ ]]</code> واحدة على الأقل في
+              نصّ السؤال.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {Array.from({ length: blankCount }, (_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-sm font-medium text-ink/50">
+                    الفراغ {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    className="field flex-1"
+                    value={fillBlanks[i] ?? ""}
+                    disabled={locked}
+                    onChange={(e) =>
+                      setFillBlanks((prev) => {
+                        const next = [...prev];
+                        next[i] = e.target.value;
+                        return next;
+                      })
+                    }
+                    placeholder={`إجابات الفراغ ${i + 1} (مثال: نواة | النواة)`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

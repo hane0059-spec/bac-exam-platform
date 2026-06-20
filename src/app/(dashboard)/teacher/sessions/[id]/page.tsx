@@ -48,7 +48,10 @@ export default async function TeacherSessionReviewPage({
           sessionId={params.id}
           items={review.items
             .filter(
-              (it) => it.type === "SHORT_ANSWER" || it.type === "ESSAY"
+              (it) =>
+                it.type === "SHORT_ANSWER" ||
+                it.type === "ESSAY" ||
+                it.type === "FILL_BLANK"
             )
             .map((it) => ({
               nodeId: it.nodeId,

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { countBlanks } from "@/lib/grading";
 import type { SessionData } from "@/lib/auth";
 
 /** جلسة مدرّس صالحة أو null. */
@@ -77,6 +78,7 @@ export function optionLabel(
   content: string
 ): string {
   if (type === "TRUE_FALSE") return content; // «صح» / «خطأ»
+  if (type === "FILL_BLANK") return String(index + 1); // رقم الفراغ
   return MCQ_LABELS[index] ?? String(index + 1);
 }
 
@@ -97,6 +99,7 @@ export const questionInputSchema = z
       "SHORT_ANSWER",
       "ESSAY",
       "ORDER",
+      "FILL_BLANK",
     ]),
     subjectId: z.string().min(1, "المادة مطلوبة"),
     chapterId: z.string().min(1).nullish(),
@@ -131,6 +134,32 @@ export const questionInputSchema = z
           code: z.ZodIssueCode.custom,
           path: ["acceptedAnswers"],
           message: "أضف إجابة مقبولة واحدة على الأقل",
+        });
+      }
+      return;
+    }
+    // ملء الفراغات: خانة إجابات لكل علامة [[ ]] في النصّ، مطابقةً للعدد.
+    if (data.type === "FILL_BLANK") {
+      const blanks = countBlanks(data.content);
+      if (blanks < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["content"],
+          message: "أضف فراغاً واحداً على الأقل بالعلامة [[ ]] في نصّ السؤال",
+        });
+      }
+      if (blanks > 8) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["content"],
+          message: "الحدّ الأقصى 8 فراغات في السؤال الواحد",
+        });
+      }
+      if (data.options.length !== blanks) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["options"],
+          message: "عدد خانات الإجابات لا يطابق عدد الفراغات في النصّ",
         });
       }
       return;

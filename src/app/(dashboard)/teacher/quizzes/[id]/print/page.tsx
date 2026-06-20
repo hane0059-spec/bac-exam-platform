@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import PrintableExam, {
   type PrintExamData,
 } from "@/components/teacher/PrintableExam";
+import { fillTemplateForDisplay, parseBlankAnswers } from "@/lib/grading";
 
 export const dynamic = "force-dynamic";
 
@@ -57,17 +58,29 @@ export default async function PrintQuizPage({
       const q = n.question!;
       const points = Number(n.pointsOverride ?? q.points);
       totalPoints += points;
+      const isFill = q.type === "FILL_BLANK";
       return {
         index: i + 1,
         type: q.type,
-        content: q.content,
+        // ملء الفراغات: يُعرَض النصّ بخطوط بدل علامات [[ ]].
+        content: isFill ? fillTemplateForDisplay(q.content) : q.content,
         points,
-        options: q.options.map((o) => ({
-          label: o.label,
-          content: o.content,
-          isCorrect: o.isCorrect,
-        })),
-        acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],
+        // الفراغات تحمل الإجابات النموذجية — لا تُعرَض كخيارات في ورقة الأسئلة.
+        options: isFill
+          ? []
+          : q.options.map((o) => ({
+              label: o.label,
+              content: o.content,
+              isCorrect: o.isCorrect,
+            })),
+        acceptedAnswers:
+          q.type === "SHORT_ANSWER"
+            ? q.acceptedAnswers
+            : isFill
+            ? q.options.map(
+                (o, k) => `(${k + 1}) ${parseBlankAnswers(o.content).join(" / ")}`
+              )
+            : [],
         explanation: q.explanation ?? null,
       };
     });

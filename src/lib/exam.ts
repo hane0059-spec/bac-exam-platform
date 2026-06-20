@@ -4,7 +4,11 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import type { SessionData } from "@/lib/auth";
-import { computeScore } from "@/lib/grading";
+import {
+  computeScore,
+  parseBlankAnswers,
+  fillTemplateForDisplay,
+} from "@/lib/grading";
 import { parseFileExamSettings } from "@/lib/fileExam";
 
 // ─────────────────────────────────────────────
@@ -251,12 +255,17 @@ export async function loadSanitizedQuestion(
   });
   if (!node || !node.question) return null;
   const q = node.question;
-  let options = q.options.map((o) => ({
-    id: o.id,
-    label: o.label,
-    content: o.content,
-    orderNum: o.orderNum,
-  }));
+  // ملء الفراغات: الخيارات تحمل الإجابات المقبولة — لا تُرسَل للمتصفّح إطلاقاً.
+  // يبني الطالبُ الفراغاتِ من نصّ القالب (countBlanks) لا من الخيارات.
+  let options =
+    q.type === "FILL_BLANK"
+      ? []
+      : q.options.map((o) => ({
+          id: o.id,
+          label: o.label,
+          content: o.content,
+          orderNum: o.orderNum,
+        }));
   // الترتيب يُخلَط دائماً (وإلا ظهرت العناصر بترتيبها الصحيح)؛ غيره يُخلَط بالإعداد.
   const shuffle = q.type === "ORDER" || optionSeed != null;
   if (shuffle) options = seededShuffle(options, optionSeed ?? `order:${nodeId}`);
@@ -468,6 +477,40 @@ export async function getSessionReview(
         explanation: q.explanation ?? null,
         textAnswer: ans ? studentOrdered : null,
         acceptedAnswers: [correctOrdered],
+        options: [],
+      };
+    }
+
+    // ملء الفراغات: يُعرَض النصّ بالخطوط، وإجابات الطالب/النموذجية مرقّمةً.
+    if (q.type === "FILL_BLANK") {
+      const blanks = [...q.options].sort((a, b) => a.orderNum - b.orderNum);
+      let studentArr: string[] = [];
+      try {
+        const parsed = JSON.parse(ans?.textAnswer ?? "[]");
+        if (Array.isArray(parsed)) studentArr = parsed;
+      } catch {
+        studentArr = [];
+      }
+      const studentText = blanks
+        .map((_, k) => `${k + 1}. ${(studentArr[k] ?? "").trim() || "—"}`)
+        .join("   ");
+      const modelText = blanks
+        .map((o, k) => `${k + 1}. ${parseBlankAnswers(o.content).join(" / ")}`)
+        .join("   ");
+      return {
+        index: i + 1,
+        nodeId: n.id,
+        type: q.type,
+        content: fillTemplateForDisplay(q.content),
+        points: Number(n.pointsOverride ?? q.points),
+        scoreEarned: ans ? Number(ans.scoreEarned) : 0,
+        isCorrect: ans?.isCorrect ?? false,
+        answered: Boolean(ans),
+        needsReview: ans?.needsReview ?? false,
+        isCancelled: q.isCancelled,
+        explanation: q.explanation ?? null,
+        textAnswer: ans ? studentText : null,
+        acceptedAnswers: [modelText],
         options: [],
       };
     }

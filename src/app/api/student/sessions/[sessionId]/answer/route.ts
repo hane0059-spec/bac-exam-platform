@@ -8,6 +8,8 @@ import {
   gradeOptionAnswer,
   gradeShortAnswer,
   gradeOrderAnswer,
+  gradeFillBlank,
+  parseBlankAnswers,
 } from "@/lib/grading";
 import {
   getStudentSession,
@@ -107,6 +109,8 @@ export async function POST(
   let isCorrect: boolean;
   let connectOptionIds: string[] = [];
   let storedText: string | null = textAnswer ?? null;
+  // الدرجة الجزئية (تُستعمل لملء الفراغات)؛ null = حساب ثنائي افتراضي.
+  let partialEarned: number | null = null;
   if (q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE") {
     const correctIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
     const validSelected = optionIds.filter((id) =>
@@ -129,13 +133,40 @@ export async function POST(
     storedText = (isPermutation ? valid : optionIds).join(",");
   } else if (q.type === "SHORT_ANSWER") {
     isCorrect = gradeShortAnswer(q.acceptedAnswers, textAnswer ?? "");
+  } else if (q.type === "FILL_BLANK") {
+    // كل خيار = فراغ (مرتّباً بـ orderNum)، ومحتواه إجاباته المقبولة مفصولةً بـ |.
+    const blanks = [...q.options]
+      .sort((a, b) => a.orderNum - b.orderNum)
+      .map((o) => parseBlankAnswers(o.content));
+    let studentArr: string[] = [];
+    try {
+      const parsed = JSON.parse(textAnswer ?? "[]");
+      if (Array.isArray(parsed)) {
+        studentArr = parsed.map((s) => (typeof s === "string" ? s : ""));
+      }
+    } catch {
+      studentArr = [];
+    }
+    const { correctCount, total } = gradeFillBlank(blanks, studentArr);
+    isCorrect = total > 0 && correctCount === total;
+    // درجة جزئية بنسبة الفراغات الصحيحة، مقرّبة لمنزلتين.
+    partialEarned =
+      total > 0 ? Math.round((points * correctCount) / total * 100) / 100 : 0;
+    // نخزّن إجابات الطالب مصفوفةً (للمراجعة)؛ بطول الفراغات.
+    storedText = JSON.stringify(
+      Array.from({ length: total }, (_, i) => studentArr[i] ?? "")
+    );
   } else {
     // المقالي لا يُصحَّح آلياً — يُترك للمدرّس.
     isCorrect = false;
   }
-  // القصيرة (تصحيح أوّلي) والمقالي يخضعان لمراجعة المدرّس.
-  const needsReview = q.type === "SHORT_ANSWER" || q.type === "ESSAY";
-  const scoreEarned = isCorrect ? points : 0;
+  // القصيرة/ملء الفراغات (تصحيح أوّلي) والمقالي تخضع لمراجعة المدرّس.
+  const needsReview =
+    q.type === "SHORT_ANSWER" ||
+    q.type === "ESSAY" ||
+    q.type === "FILL_BLANK";
+  const scoreEarned =
+    partialEarned != null ? partialEarned : isCorrect ? points : 0;
 
   // عقدة السؤال التالية (أو النهاية).
   // كتابة الإجابة وتسجيل المسار في معاملة واحدة.

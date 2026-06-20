@@ -4,6 +4,7 @@
 // لا يستقبل أي إجابة صحيحة قبل الإرسال؛ المؤقّت عرضيّ فقط والفرض على الخادم.
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { splitFillTemplate, countBlanks } from "@/lib/grading";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -104,11 +105,15 @@ export default function QuizRunner({
   const [result, setResult] = useState<ResultData | null>(null);
   const [skipNote, setSkipNote] = useState("");
   const [ordered, setOrdered] = useState<SanitizedOption[]>([]);
+  const [blanks, setBlanks] = useState<string[]>([]);
   const submitting = useRef(false);
 
   // سؤال الترتيب: ابدأ بالترتيب المعروض (المخلوط) ثم يرتّبه الطالب.
   useEffect(() => {
     if (question?.type === "ORDER") setOrdered(question.options);
+    // ملء الفراغات: خانة فارغة لكل فراغ في نصّ القالب.
+    if (question?.type === "FILL_BLANK")
+      setBlanks(Array(countBlanks(question.content)).fill(""));
   }, [question]);
 
   function moveOrdered(idx: number, dir: -1 | 1) {
@@ -170,13 +175,16 @@ export default function QuizRunner({
         : selected
         ? [selected]
         : [];
+    // ملء الفراغات: تُرسَل الإجابات مصفوفةً مرتّبةً (JSON) في حقل النصّ.
+    const textPayload =
+      question.type === "FILL_BLANK" ? JSON.stringify(blanks) : text;
     const res = await fetch(`/api/student/sessions/${sessionId}/answer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nodeId: question.nodeId,
         optionIds,
-        textAnswer: text,
+        textAnswer: textPayload,
       }),
     });
     const data = await res.json();
@@ -207,7 +215,7 @@ export default function QuizRunner({
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
     setPhase("feedback");
-  }, [question, selected, text, ordered, sessionId, loadResult]);
+  }, [question, selected, text, ordered, blanks, sessionId, loadResult]);
 
   const goNext = useCallback(() => {
     if (pendingFinish) {
@@ -305,8 +313,11 @@ export default function QuizRunner({
 
   if ((phase === "question" || startedFeedback) && question) {
     const isOrder = question.type === "ORDER";
-    const isShort = !isOrder && question.options.length === 0;
-    const canSubmit = isShort
+    const isFill = question.type === "FILL_BLANK";
+    const isShort = !isOrder && !isFill && question.options.length === 0;
+    const canSubmit = isFill
+      ? blanks.some((b) => b.trim().length > 0)
+      : isShort
       ? text.trim().length > 0
       : isOrder
       ? ordered.length > 0
@@ -329,11 +340,38 @@ export default function QuizRunner({
         </div>
 
         <div className="card p-6">
-          <p className="mb-5 text-lg font-medium leading-relaxed">
-            {question.content}
-          </p>
+          {!isFill && (
+            <p className="mb-5 text-lg font-medium leading-relaxed">
+              {question.content}
+            </p>
+          )}
 
-          {isOrder ? (
+          {isFill ? (
+            <div className="text-lg leading-loose">
+              {splitFillTemplate(question.content).map((part, i, arr) => (
+                <span key={i}>
+                  <span className="font-medium">{part}</span>
+                  {i < arr.length - 1 && (
+                    <input
+                      type="text"
+                      value={blanks[i] ?? ""}
+                      disabled={startedFeedback}
+                      onChange={(e) =>
+                        setBlanks((prev) => {
+                          const next = [...prev];
+                          next[i] = e.target.value;
+                          return next;
+                        })
+                      }
+                      placeholder={`${i + 1}`}
+                      className="mx-1 inline-block w-32 rounded-lg border border-line bg-surface px-2 py-1 text-center text-base align-middle focus:border-primary focus:outline-none"
+                      aria-label={`الفراغ ${i + 1}`}
+                    />
+                  )}
+                </span>
+              ))}
+            </div>
+          ) : isOrder ? (
             <div className="space-y-2">
               <p className="mb-1 text-sm text-ink/60">
                 رتّب العناصر بالترتيب الصحيح (استخدم الأسهم):
