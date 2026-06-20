@@ -3,6 +3,7 @@
 // المدير العام: إنشاء/حذف الحقول المخصّصة للمستخدمين.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmButton from "@/components/ConfirmButton";
 
 interface FieldRow {
   id: string;
@@ -92,15 +93,15 @@ export default function FieldsManager({ fields }: { fields: FieldRow[] }) {
                     {f.required ? " · إجباري" : ""}
                   </span>
                 </span>
-                <button
-                  onClick={() =>
-                    confirm(`حذف الحقل «${f.label}»؟`) &&
-                    call({ action: "delete", id: f.id })
-                  }
+                <ConfirmButton
+                  onConfirm={async () => {
+                    await call({ action: "delete", id: f.id });
+                  }}
+                  label="حذف"
+                  confirmLabel="حذف الحقل"
+                  message={`حذف الحقل «${f.label}»؟`}
                   className="text-red-500 hover:underline"
-                >
-                  حذف
-                </button>
+                />
               </div>
             ))}
           </div>

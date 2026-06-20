@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DateTimeField from "@/components/DateTimeField";
+import ConfirmButton from "@/components/ConfirmButton";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
@@ -178,7 +179,6 @@ export default function QuizBuilder({
   }
 
   async function del() {
-    if (!confirm("حذف هذا الاختبار؟ (يُؤرشَف إن كان مُسنَداً أو مُستخدَماً)")) return;
     setBusy(true);
     const res = await fetch(`/api/teacher/quizzes/${quizId}`, {
       method: "DELETE",
@@ -466,13 +466,16 @@ export default function QuizBuilder({
         >
           {status === "PUBLISHED" ? "إلغاء النشر" : "نشر الاختبار"}
         </button>
-        <button
-          onClick={del}
-          disabled={busy}
-          className="mr-auto text-sm text-red-500 hover:underline"
-        >
-          حذف الاختبار
-        </button>
+        <span className="mr-auto">
+          <ConfirmButton
+            onConfirm={del}
+            label="حذف الاختبار"
+            confirmLabel="نعم، احذف الاختبار"
+            message="حذف هذا الاختبار؟ (يُؤرشَف إن كان مُسنَداً أو مُستخدَماً)"
+            disabled={busy}
+            className="text-sm text-red-500 hover:underline"
+          />
+        </span>
       </div>
     </div>
   );

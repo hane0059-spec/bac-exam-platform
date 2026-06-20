@@ -3,6 +3,7 @@
 // المدرّس: معالجة/تجاهل بلاغ خطأ على سؤال (مع ملاحظة اختيارية).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmButton from "@/components/ConfirmButton";
 
 const STATUS: Record<string, { text: string; cls: string }> = {
   OPEN: { text: "مفتوح", cls: "bg-gold/15 text-gold" },
@@ -53,13 +54,7 @@ export default function ReportRow({
     router.refresh();
   }
 
-  async function toggleCancel() {
-    const next = !questionCancelled;
-    if (
-      next &&
-      !confirm("إلغاء هذا السؤال وإعادة حساب درجات كل الجلسات التي تضمّنته؟")
-    )
-      return;
+  async function applyCancel(next: boolean) {
     setBusy(true);
     setError("");
     const res = await fetch(`/api/teacher/questions/${questionId}/cancel`, {
@@ -139,17 +134,24 @@ export default function ReportRow({
             إعادة فتح
           </button>
         )}
-        <button
-          onClick={toggleCancel}
-          disabled={busy}
-          className={`rounded-xl border px-4 py-1.5 text-sm ${
-            questionCancelled
-              ? "border-line hover:bg-ink/5"
-              : "border-red-300 text-red-600 hover:bg-red-50"
-          }`}
-        >
-          {questionCancelled ? "إلغاء الإلغاء وإعادة الحساب" : "إلغاء السؤال وإعادة الحساب"}
-        </button>
+        {questionCancelled ? (
+          <button
+            onClick={() => applyCancel(false)}
+            disabled={busy}
+            className="rounded-xl border border-line px-4 py-1.5 text-sm hover:bg-ink/5"
+          >
+            إلغاء الإلغاء وإعادة الحساب
+          </button>
+        ) : (
+          <ConfirmButton
+            onConfirm={() => applyCancel(true)}
+            label="إلغاء السؤال وإعادة الحساب"
+            confirmLabel="نعم، ألغِ وأعد الحساب"
+            message="إلغاء هذا السؤال وإعادة حساب درجات كل الجلسات التي تضمّنته؟"
+            disabled={busy}
+            className="rounded-xl border border-red-300 px-4 py-1.5 text-sm text-red-600 hover:bg-red-50"
+          />
+        )}
       </div>
     </div>
   );

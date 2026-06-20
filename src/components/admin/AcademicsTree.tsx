@@ -3,6 +3,7 @@
 // المدير: شجرة متداخلة «الصفّ ← مواده» مع تحرير/حذف لكل عنصر.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmButton from "@/components/ConfirmButton";
 
 interface Grade {
   id: string;
@@ -56,8 +57,7 @@ export default function AcademicsTree({
     router.refresh();
   }
 
-  async function del(url: string, confirmMsg: string) {
-    if (!confirm(confirmMsg)) return;
+  async function del(url: string) {
     setError("");
     setBusy(true);
     const res = await fetch(url, { method: "DELETE" });
@@ -124,14 +124,13 @@ export default function AcademicsTree({
                   >
                     تعديل
                   </button>
-                  <button
-                    onClick={() =>
-                      del(`/api/admin/grades/${g.id}`, `حذف الصفّ «${g.name}»؟`)
-                    }
+                  <ConfirmButton
+                    onConfirm={() => del(`/api/admin/grades/${g.id}`)}
+                    label="حذف"
+                    confirmLabel="حذف الصفّ"
+                    message={`حذف الصفّ «${g.name}»؟`}
                     className="text-red-500 hover:underline"
-                  >
-                    حذف
-                  </button>
+                  />
                 </span>
               </div>
             )}
@@ -169,12 +168,7 @@ export default function AcademicsTree({
                         key={s.id}
                         subject={s}
                         onEdit={() => setEditSubject(s)}
-                        onDelete={() =>
-                          del(
-                            `/api/admin/subjects/${s.id}`,
-                            `حذف المادة «${s.name}»؟`,
-                          )
-                        }
+                        onDelete={() => del(`/api/admin/subjects/${s.id}`)}
                       />
                     ),
                   )
@@ -214,12 +208,7 @@ export default function AcademicsTree({
                   key={s.id}
                   subject={s}
                   onEdit={() => setEditSubject(s)}
-                  onDelete={() =>
-                    del(
-                      `/api/admin/subjects/${s.id}`,
-                      `حذف المادة «${s.name}»؟`,
-                    )
-                  }
+                  onDelete={() => del(`/api/admin/subjects/${s.id}`)}
                 />
               ),
             )}
@@ -266,9 +255,13 @@ function SubjectRow({
         <button onClick={onEdit} className="text-primary hover:underline">
           تعديل
         </button>
-        <button onClick={onDelete} className="text-red-500 hover:underline">
-          حذف
-        </button>
+        <ConfirmButton
+          onConfirm={onDelete}
+          label="حذف"
+          confirmLabel="حذف المادة"
+          message={`حذف المادة «${s.name}»؟`}
+          className="text-red-500 hover:underline"
+        />
       </span>
     </div>
   );

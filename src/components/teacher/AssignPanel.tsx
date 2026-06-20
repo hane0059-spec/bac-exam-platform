@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/datetime";
 import DateTimeField from "@/components/DateTimeField";
+import ConfirmButton from "@/components/ConfirmButton";
 
 export interface AssignStudent {
   id: string;
@@ -110,11 +111,6 @@ export default function AssignPanel({
   }
 
   async function attempts(studentId: string, action: "grant" | "reset") {
-    if (
-      action === "reset" &&
-      !confirm("تصفير محاولات الطالب؟ ستُحذف نتيجته ومراجعته السابقة لهذا الاختبار.")
-    )
-      return;
     setError("");
     setBusy(true);
     const res = await fetch(
@@ -273,13 +269,14 @@ export default function AssignPanel({
                       >
                         منح محاولة
                       </button>
-                      <button
-                        onClick={() => attempts(s.id, "reset")}
+                      <ConfirmButton
+                        onConfirm={() => attempts(s.id, "reset")}
+                        label="تصفير"
+                        confirmLabel="نعم، صفّر المحاولات"
+                        message="تصفير محاولات الطالب؟ ستُحذف نتيجته ومراجعته السابقة لهذا الاختبار."
                         disabled={busy}
                         className="text-sm text-gold hover:underline disabled:opacity-50"
-                      >
-                        تصفير
-                      </button>
+                      />
                     </>
                   )}
                   <button

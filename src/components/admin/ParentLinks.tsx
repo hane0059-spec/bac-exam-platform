@@ -3,6 +3,7 @@
 // المدير: إدارة روابط ولي الأمر بأبنائه (إضافة بالرموز / فكّ ربط).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmButton from "@/components/ConfirmButton";
 
 interface Child {
   id: string;
@@ -48,8 +49,7 @@ export default function ParentLinks({
     router.refresh();
   }
 
-  async function remove(studentId: string, name: string) {
-    if (!confirm(`فكّ ربط «${name}»؟`)) return;
+  async function remove(studentId: string) {
     setError("");
     setBusy(true);
     const res = await fetch(`/api/admin/parents/${parentId}/links`, {
@@ -86,13 +86,14 @@ export default function ParentLinks({
                   {c.gradeName && <span className="text-ink/50">{c.gradeName}</span>}
                 </p>
               </div>
-              <button
-                onClick={() => remove(c.id, c.name)}
+              <ConfirmButton
+                onConfirm={() => remove(c.id)}
+                label="فكّ الربط"
+                confirmLabel="فكّ الربط"
+                message={`فكّ ربط «${c.name}»؟`}
                 disabled={busy}
                 className="text-sm text-red-500 hover:underline"
-              >
-                فكّ الربط
-              </button>
+              />
             </div>
           ))
         )}
