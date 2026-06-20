@@ -28,6 +28,9 @@ model School {
   name      String
   type      String? // "مدرسة" / "معهد"
   isActive  Boolean  @default(true) @map("is_active")
+  // ملاحظات خاصّة يكتبها مُنشئها (المدير العام) ويطّلع عليها هو فقط.
+  notes       String?
+  createdById String? @map("created_by_id")
   createdAt DateTime @default(now()) @map("created_at")
   users     User[]
 
@@ -165,6 +168,8 @@ model User {
   school       School?  @relation(fields: [schoolId], references: [id])
   customData   Json?    @map("custom_data") // قيم الحقول المخصّصة
   createdById  String?  @map("created_by_id") // المُنشئ للحساب
+  // ملاحظات خاصّة يكتبها مُنشئ الحساب عنه، ويطّلع عليها هو فقط (تُحرَّر دائماً).
+  creatorNotes String?  @map("creator_notes")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

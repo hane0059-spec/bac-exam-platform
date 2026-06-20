@@ -60,6 +60,8 @@ export default async function EditUserPage({
     isSuperAdmin: user.isSuperAdmin,
     isIndependent: user.teacherProfile?.isIndependent ?? false,
     studentLimit: user.teacherProfile?.studentLimit ?? null,
+    creatorNotes: user.creatorNotes ?? "",
+    canEditNotes: user.createdById === session.sub,
   };
 
   return (

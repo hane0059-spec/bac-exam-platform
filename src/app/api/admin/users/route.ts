@@ -109,6 +109,7 @@ export async function POST(req: Request) {
       schoolId: newSchoolId,
       customData: cf.data,
       createdById: session.sub,
+      creatorNotes: d.creatorNotes || null,
       ...(d.role === "TEACHER"
         ? {
             teacherProfile: {

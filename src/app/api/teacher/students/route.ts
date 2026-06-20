@@ -154,6 +154,7 @@ export async function POST(req: Request) {
           schoolId: teacher?.schoolId ?? null,
           customData: cf.data,
           createdById: session.sub,
+          creatorNotes: d.creatorNotes || null,
           studentProfile: {
             create: {
               studentCode,

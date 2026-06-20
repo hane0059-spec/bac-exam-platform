@@ -73,6 +73,7 @@ export const studentCreateSchema = z.object({
     .max(2100)
     .default(new Date().getFullYear()),
   subjectId: z.string().min(1, "المادة مطلوبة"),
+  creatorNotes: z.string().trim().max(5000).optional(),
 });
 
 export const studentUpdateSchema = z.object({
@@ -87,6 +88,7 @@ export const studentUpdateSchema = z.object({
   studentPhone: z.string().trim().optional(),
   parentPhone: z.string().trim().optional(),
   isActive: z.boolean().default(true),
+  creatorNotes: z.string().trim().max(5000).optional(),
 });
 
 export const passwordSchema = z.object({

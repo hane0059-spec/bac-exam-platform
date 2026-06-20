@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FieldDef } from "@/lib/customFields";
 import CustomFieldsInput from "@/components/CustomFieldsInput";
+import CreatorNotesField from "@/components/CreatorNotesField";
 
 interface Option {
   id: string;
@@ -24,6 +25,8 @@ export interface StudentInitial {
   isActive: boolean;
   email: string;
   studentCode: string;
+  creatorNotes?: string;
+  canEditNotes?: boolean;
 }
 
 export default function StudentForm({
@@ -72,6 +75,7 @@ export default function StudentForm({
   );
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "");
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [creatorNotes, setCreatorNotes] = useState(initial?.creatorNotes ?? "");
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -96,6 +100,7 @@ export default function StudentForm({
       address,
       studentPhone,
       parentPhone,
+      creatorNotes,
     };
     const url =
       mode === "create"
@@ -286,6 +291,14 @@ export default function StudentForm({
           />
           الحساب مُفعّل
         </label>
+      )}
+
+      {(mode === "create" || initial?.canEditNotes) && (
+        <CreatorNotesField
+          value={creatorNotes}
+          onChange={setCreatorNotes}
+          about="هذا الطالب"
+        />
       )}
 
       {error && (

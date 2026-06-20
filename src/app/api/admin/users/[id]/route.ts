@@ -109,6 +109,10 @@ export async function PATCH(
         email,
         isActive: d.isActive,
         isSuperAdmin: target.role === "ADMIN" ? newSuper : false,
+        // ملاحظات المُنشئ: لا تُعدَّل إلا من مُنشئ الحساب نفسه.
+        ...(target.createdById === session.sub
+          ? { creatorNotes: d.creatorNotes || null }
+          : {}),
         ...(isTeacher
           ? {
               teacherProfile: {

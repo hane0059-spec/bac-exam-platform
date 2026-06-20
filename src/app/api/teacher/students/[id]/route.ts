@@ -117,6 +117,7 @@ export async function PATCH(
       gender: d.gender,
       isActive: d.isActive,
       phone: d.studentPhone || null,
+      creatorNotes: d.creatorNotes || null,
       studentProfile: {
         update: {
           gradeLevelId: d.gradeLevelId,

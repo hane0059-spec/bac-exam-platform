@@ -30,6 +30,8 @@ const schema = z.object({
   studentPhone: z.string().trim().optional(),
   parentPhone: z.string().trim().optional(),
   enrollmentYear: z.number().int().min(2000).max(2100).default(new Date().getFullYear()),
+  // ملاحظات المُنشئ الخاصّة عن الطالب.
+  creatorNotes: z.string().trim().max(5000).optional(),
 });
 
 export async function POST(req: Request) {
@@ -94,6 +96,7 @@ export async function POST(req: Request) {
           schoolId: ctx.schoolId,
           customData: cf.data,
           createdById: ctx.session.sub,
+          creatorNotes: d.creatorNotes || null,
           studentProfile: {
             create: {
               studentCode,

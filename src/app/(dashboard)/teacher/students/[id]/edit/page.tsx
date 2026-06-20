@@ -68,6 +68,9 @@ export default async function EditStudentPage({
     isActive: student.isActive,
     email: student.email ?? "",
     studentCode: student.studentProfile?.studentCode ?? "",
+    creatorNotes: student.creatorNotes ?? "",
+    // الملكية مفروضة أعلاه (المدرّس المُنشئ فقط)، فهو دائماً صاحب الملاحظات.
+    canEditNotes: true,
   };
 
   return (

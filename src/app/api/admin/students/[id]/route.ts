@@ -17,7 +17,7 @@ export async function PATCH(
 
   const student = await prisma.user.findUnique({
     where: { id: params.id },
-    select: { id: true, role: true, schoolId: true },
+    select: { id: true, role: true, schoolId: true, createdById: true },
   });
   if (!student || student.role !== "STUDENT")
     return NextResponse.json({ error: "الطالب غير موجود" }, { status: 404 });
@@ -69,6 +69,10 @@ export async function PATCH(
       gender: d.gender,
       isActive: d.isActive,
       phone: d.studentPhone || null,
+      // ملاحظات المُنشئ: لا تُعدَّل إلا من مُنشئ الطالب نفسه.
+      ...(student.createdById === ctx.session.sub
+        ? { creatorNotes: d.creatorNotes || null }
+        : {}),
       studentProfile: {
         update: {
           gradeLevelId: d.gradeLevelId,

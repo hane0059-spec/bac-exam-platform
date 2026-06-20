@@ -82,6 +82,9 @@ export default async function AdminEditStudentPage({
     isActive: student.isActive,
     email: student.email ?? "",
     studentCode: student.studentProfile?.studentCode ?? "",
+    creatorNotes: student.creatorNotes ?? "",
+    // ملاحظات المُنشئ تُعرَض/تُحرَّر لمُنشئ الطالب فقط.
+    canEditNotes: student.createdById === ctx.session.sub,
   };
 
   return (

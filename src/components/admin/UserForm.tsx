@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FieldDef } from "@/lib/customFields";
 import CustomFieldsInput from "@/components/CustomFieldsInput";
+import CreatorNotesField from "@/components/CreatorNotesField";
 
 interface Subject {
   id: string;
@@ -24,6 +25,8 @@ export interface UserInitial {
   isSuperAdmin: boolean;
   isIndependent: boolean;
   studentLimit: number | null;
+  creatorNotes?: string;
+  canEditNotes?: boolean; // المُنشئ وحده يرى/يعدّل ملاحظاته
 }
 
 export default function UserForm({
@@ -70,6 +73,7 @@ export default function UserForm({
   const [canManageStudents, setCanManageStudents] = useState(
     initial?.canManageStudents ?? false
   );
+  const [creatorNotes, setCreatorNotes] = useState(initial?.creatorNotes ?? "");
   // مدرّس مستقلّ (للمدير العام فقط) + حدّ طلابه.
   const [isIndependent, setIsIndependent] = useState(initial?.isIndependent ?? false);
   const [studentLimit, setStudentLimit] = useState(
@@ -120,6 +124,7 @@ export default function UserForm({
               isTeacher && canManageAdmins && isIndependent
                 ? Number(studentLimit)
                 : null,
+            creatorNotes,
             customData,
           }
         : {
@@ -137,6 +142,7 @@ export default function UserForm({
               isTeacher && canManageAdmins && initial?.isIndependent
                 ? Number(studentLimit)
                 : null,
+            creatorNotes,
           };
     const res = await fetch(url, {
       method: mode === "create" ? "POST" : "PATCH",
@@ -411,6 +417,10 @@ export default function UserForm({
           value={customData}
           onChange={setCustomData}
         />
+      )}
+
+      {(mode === "create" || initial?.canEditNotes) && (
+        <CreatorNotesField value={creatorNotes} onChange={setCreatorNotes} />
       )}
 
       {error && (

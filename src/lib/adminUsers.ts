@@ -25,6 +25,8 @@ export const userCreateSchema = z.object({
   // مدرّس مستقلّ + حدّ طلابه (للمدير العام فقط).
   isIndependent: z.boolean().default(false),
   studentLimit: z.number().int().min(1).max(100000).nullish(),
+  // ملاحظات المُنشئ الخاصّة عن الحساب.
+  creatorNotes: z.string().trim().max(5000).optional(),
 });
 
 export const userUpdateSchema = z.object({
@@ -40,6 +42,8 @@ export const userUpdateSchema = z.object({
   isSuperAdmin: z.boolean().default(false),
   // تعديل حدّ طلاب المدرّس المستقلّ (للمدير العام).
   studentLimit: z.number().int().min(1).max(100000).nullish(),
+  // تعديل ملاحظات المُنشئ الخاصّة (للمُنشئ فقط).
+  creatorNotes: z.string().trim().max(5000).optional(),
 });
 
 export const passwordSchema = z.object({
