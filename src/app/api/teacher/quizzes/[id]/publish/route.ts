@@ -10,7 +10,9 @@ import { ownedQuiz, nextAccessCode } from "@/lib/teacherQuiz";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const schema = z.object({ action: z.enum(["publish", "unpublish"]) });
+const schema = z.object({
+  action: z.enum(["publish", "unpublish", "restore"]),
+});
 
 export async function POST(
   req: Request,
@@ -91,15 +93,22 @@ export async function POST(
     );
   }
 
-  // إلغاء النشر: ممكن فقط إن لم توجد جلسات.
-  const sessions = await prisma.examSession.count({
-    where: { quizId: quiz.id },
-  });
-  if (sessions > 0) {
-    return NextResponse.json(
-      { error: "لا يمكن إلغاء النشر بعد بدء الطلاب الأداء" },
-      { status: 409 }
-    );
+  // إلغاء النشر (بعد أداء الطلاب مسموح) أو الاستعادة من الأرشيف → مسوّدة.
+  // الجلسات والنتائج السابقة تبقى محفوظة؛ الاختبار يختفي عن الطلاب حتى يُنشَر ثانيةً.
+  if (parsed.data.action === "unpublish") {
+    // يُمنع فقط أثناء محاولة جارية حاليّاً (حفاظاً على من يؤدّي الآن).
+    const active = await prisma.examSession.count({
+      where: { quizId: quiz.id, status: "IN_PROGRESS" },
+    });
+    if (active > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "طالب يؤدّي الاختبار الآن — انتظر انتهاء محاولته قبل إلغاء النشر",
+        },
+        { status: 409 }
+      );
+    }
   }
   await prisma.quiz.update({
     where: { id: quiz.id },

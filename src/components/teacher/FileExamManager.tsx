@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
+import ConfirmButton from "@/components/ConfirmButton";
 
 function toLocal(iso: string | null): string {
   if (!iso) return "";
@@ -116,6 +117,48 @@ export default function FileExamManager({
     router.refresh();
   }
 
+  async function archive() {
+    setBusy(true);
+    setError("");
+    const res = await fetch(`/api/teacher/quizzes/${quizId}`, {
+      method: "DELETE",
+    });
+    setBusy(false);
+    if (res.ok) {
+      router.push("/teacher/quizzes");
+      router.refresh();
+    } else setError("تعذّر الحذف.");
+  }
+
+  async function restore() {
+    setBusy(true);
+    setError("");
+    const res = await fetch(`/api/teacher/quizzes/${quizId}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restore" }),
+    });
+    setBusy(false);
+    if (res.ok) router.refresh();
+    else setError("تعذّر الاستعادة.");
+  }
+
+  async function permanentDelete() {
+    setBusy(true);
+    setError("");
+    const res = await fetch(`/api/teacher/quizzes/${quizId}?permanent=1`, {
+      method: "DELETE",
+    });
+    setBusy(false);
+    if (res.ok) {
+      router.push("/teacher/quizzes");
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّر الحذف النهائي.");
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* الحالة والنشر */}
@@ -125,10 +168,16 @@ export default function FileExamManager({
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
               status === "PUBLISHED"
                 ? "bg-primary text-white"
+                : status === "ARCHIVED"
+                ? "bg-gold/15 text-gold"
                 : "bg-ink/10 text-ink/60"
             }`}
           >
-            {status === "PUBLISHED" ? "منشور" : "مسوّدة"}
+            {status === "PUBLISHED"
+              ? "منشور"
+              : status === "ARCHIVED"
+              ? "مؤرشف"
+              : "مسوّدة"}
           </span>
           {accessCode && (
             <span className="text-sm text-ink/60">
@@ -139,7 +188,7 @@ export default function FileExamManager({
             </span>
           )}
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {status === "PUBLISHED" && (
             <Link
               href={`/teacher/quizzes/${quizId}/assign`}
@@ -154,13 +203,43 @@ export default function FileExamManager({
           >
             الإجابات والتصحيح
           </Link>
-          <button
-            onClick={togglePublish}
-            disabled={busy}
-            className="btn-primary px-4 py-2 text-sm"
-          >
-            {status === "PUBLISHED" ? "إلغاء النشر" : "نشر"}
-          </button>
+          {status === "ARCHIVED" ? (
+            <>
+              <button
+                onClick={restore}
+                disabled={busy}
+                className="btn-primary px-4 py-2 text-sm"
+              >
+                إعادة إلى المسوّدة
+              </button>
+              <ConfirmButton
+                onConfirm={permanentDelete}
+                label="حذف نهائي"
+                confirmLabel="نعم، احذف نهائياً"
+                message="حذف الاختبار الورقي نهائياً؟ ستُحذف معه كل جلسات الطلاب ودرجاتهم وأوراقهم المرفوعة وإسناداته بلا رجعة."
+                disabled={busy}
+                className="text-sm text-red-500 hover:underline"
+              />
+            </>
+          ) : (
+            <>
+              <button
+                onClick={togglePublish}
+                disabled={busy}
+                className="btn-primary px-4 py-2 text-sm"
+              >
+                {status === "PUBLISHED" ? "إلغاء النشر" : "نشر"}
+              </button>
+              <ConfirmButton
+                onConfirm={archive}
+                label="حذف"
+                confirmLabel="نعم، احذف الاختبار"
+                message="حذف هذا الاختبار؟ يُنقَل إلى الأرشيف (يمكن استعادته أو حذفه نهائياً لاحقاً)."
+                disabled={busy}
+                className="text-sm text-red-500 hover:underline"
+              />
+            </>
+          )}
         </div>
       </div>
 

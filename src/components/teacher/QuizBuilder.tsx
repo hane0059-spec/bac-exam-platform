@@ -191,14 +191,49 @@ export default function QuizBuilder({
     } else setError("تعذّر الحذف.");
   }
 
+  async function permanentDelete() {
+    setBusy(true);
+    const res = await fetch(`/api/teacher/quizzes/${quizId}?permanent=1`, {
+      method: "DELETE",
+    });
+    setBusy(false);
+    if (res.ok) {
+      router.push("/teacher/quizzes");
+      router.refresh();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّر الحذف النهائي.");
+    }
+  }
+
+  async function restore() {
+    setError("");
+    setBusy(true);
+    const res = await fetch(`/api/teacher/quizzes/${quizId}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restore" }),
+    });
+    setBusy(false);
+    if (res.ok) router.refresh();
+    else setError("تعذّر الاستعادة.");
+  }
+
   return (
     <div className="space-y-5">
-      {ro && (
+      {status === "ARCHIVED" ? (
         <div className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
-          {status === "PUBLISHED"
-            ? "الاختبار منشور: يمكن تعديل العنوان والوصف ونافذة التوقيت فقط. لتغيير الأسئلة ألغِ النشر أولاً (قبل بدء أي طالب)."
-            : "الاختبار مُستخدَم في جلسات: بنيته مقفلة حفاظاً على النتائج."}
+          هذا الاختبار مؤرشف: مخفيٌّ عن الطلاب، ونتائجه السابقة محفوظة. أعِده
+          إلى المسوّدة لتعديله ونشره، أو احذفه نهائياً من الأرشيف.
         </div>
+      ) : (
+        ro && (
+          <div className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
+            {status === "PUBLISHED"
+              ? "الاختبار منشور: يمكن تعديل العنوان والوصف ونافذة التوقيت فقط. لتغيير الأسئلة ألغِ النشر أولاً (قبل بدء أي طالب)."
+              : "الاختبار مُستخدَم في جلسات: بنيته مقفلة حفاظاً على النتائج."}
+          </div>
+        )
       )}
 
       {/* بيانات أساسية */}
@@ -452,32 +487,54 @@ export default function QuizBuilder({
       )}
 
       {/* أزرار */}
-      <div className="flex flex-wrap gap-2">
-        <button onClick={save} disabled={busy} className="btn-primary">
-          {busy ? "…" : "حفظ"}
-        </button>
-        <button
-          onClick={togglePublish}
-          disabled={busy}
-          className={`rounded-xl px-5 py-3 font-medium transition ${
-            status === "PUBLISHED"
-              ? "border border-line hover:bg-ink/5"
-              : "bg-gold text-white hover:opacity-90"
-          }`}
-        >
-          {status === "PUBLISHED" ? "إلغاء النشر" : "نشر الاختبار"}
-        </button>
-        <span className="mr-auto">
-          <ConfirmButton
-            onConfirm={del}
-            label="حذف الاختبار"
-            confirmLabel="نعم، احذف الاختبار"
-            message="حذف هذا الاختبار؟ (يُؤرشَف إن كان مُسنَداً أو مُستخدَماً)"
+      {status === "ARCHIVED" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={restore}
             disabled={busy}
-            className="text-sm text-red-500 hover:underline"
-          />
-        </span>
-      </div>
+            className="rounded-xl bg-primary px-5 py-3 font-medium text-white transition hover:opacity-90"
+          >
+            إعادة إلى المسوّدة
+          </button>
+          <span className="mr-auto">
+            <ConfirmButton
+              onConfirm={permanentDelete}
+              label="حذف نهائي من الأرشيف"
+              confirmLabel="نعم، احذف نهائياً"
+              message="حذف الاختبار نهائياً؟ ستُحذف معه كل جلسات الطلاب ودرجاتهم وإجاباتهم وإسناداته بلا رجعة."
+              disabled={busy}
+              className="text-sm text-red-500 hover:underline"
+            />
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button onClick={save} disabled={busy} className="btn-primary">
+            {busy ? "…" : "حفظ"}
+          </button>
+          <button
+            onClick={togglePublish}
+            disabled={busy}
+            className={`rounded-xl px-5 py-3 font-medium transition ${
+              status === "PUBLISHED"
+                ? "border border-line hover:bg-ink/5"
+                : "bg-gold text-white hover:opacity-90"
+            }`}
+          >
+            {status === "PUBLISHED" ? "إلغاء النشر" : "نشر الاختبار"}
+          </button>
+          <span className="mr-auto">
+            <ConfirmButton
+              onConfirm={del}
+              label="حذف الاختبار"
+              confirmLabel="نعم، احذف الاختبار"
+              message="حذف هذا الاختبار؟ يُنقَل إلى الأرشيف (يمكن استعادته أو حذفه نهائياً لاحقاً)."
+              disabled={busy}
+              className="text-sm text-red-500 hover:underline"
+            />
+          </span>
+        </div>
+      )}
     </div>
   );
 }

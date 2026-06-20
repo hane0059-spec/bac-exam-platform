@@ -95,7 +95,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   const session = await getTeacherSession();
@@ -107,20 +107,46 @@ export async function DELETE(
     return NextResponse.json({ error: "الاختبار غير موجود" }, { status: 404 });
   }
 
-  const [sessions, assignments] = await Promise.all([
-    prisma.examSession.count({ where: { quizId: quiz.id } }),
-    prisma.quizAssignment.count({ where: { quizId: quiz.id } }),
-  ]);
+  const permanent =
+    new URL(req.url).searchParams.get("permanent") === "1";
 
-  // مُستخدَم (جلسات/إسناد) → أرشفة بدل الحذف حفاظاً على البيانات.
-  if (sessions > 0 || assignments > 0) {
-    await prisma.quiz.update({
-      where: { id: quiz.id },
-      data: { status: "ARCHIVED" },
+  // الحذف النهائي: للمؤرشف فقط، يحذف الجلسات/الإجابات/الإسنادات متسلسلاً.
+  if (permanent) {
+    if (quiz.status !== "ARCHIVED") {
+      return NextResponse.json(
+        { error: "أرشِف الاختبار أولاً قبل حذفه نهائياً" },
+        { status: 409 }
+      );
+    }
+    await prisma.$transaction(async (tx) => {
+      const sids = (
+        await tx.examSession.findMany({
+          where: { quizId: quiz.id },
+          select: { id: true },
+        })
+      ).map((s) => s.id);
+      if (sids.length > 0) {
+        // إجابات الطلاب أوّلاً (بلا cascade من الجلسة)، ثم الجلسات
+        // (تُسقِط مرفقاتها وتعليقاتها بالـ cascade).
+        await tx.studentAnswer.deleteMany({
+          where: { sessionId: { in: sids } },
+        });
+        await tx.examSession.deleteMany({ where: { id: { in: sids } } });
+      }
+      await tx.quizAssignment.deleteMany({ where: { quizId: quiz.id } });
+      // حذف الاختبار يُسقِط العُقد والحوافّ وملف الاختبار بالـ cascade.
+      await tx.quiz.delete({ where: { id: quiz.id } });
     });
-    return NextResponse.json({ archived: true });
+    return NextResponse.json({ deleted: true });
   }
 
-  await prisma.quiz.delete({ where: { id: quiz.id } });
-  return NextResponse.json({ deleted: true });
+  // الحذف العادي → أرشفة دائماً (قابلة للاستعادة أو الحذف النهائي لاحقاً).
+  if (quiz.status === "ARCHIVED") {
+    return NextResponse.json({ archived: true });
+  }
+  await prisma.quiz.update({
+    where: { id: quiz.id },
+    data: { status: "ARCHIVED" },
+  });
+  return NextResponse.json({ archived: true });
 }
