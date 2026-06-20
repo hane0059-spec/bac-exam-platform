@@ -11,6 +11,7 @@ import {
 } from "@/lib/grading";
 import { parseFileExamSettings } from "@/lib/fileExam";
 import { createNotification } from "@/lib/notifications";
+import { updateStudentConceptPerformance } from "@/lib/studentProgress";
 
 // ─────────────────────────────────────────────
 // الحراسة والإعدادات
@@ -793,6 +794,13 @@ export async function finalizeSession(
     }
   }
 
+  // تحديث تحليلات تقدّم الطالب (best-effort؛ فشله لا يكسر التسليم).
+  try {
+    await updateStudentConceptPerformance(session.studentId);
+  } catch {
+    // تجاهل أخطاء التحليلات.
+  }
+
   return updated;
 }
 
@@ -803,7 +811,7 @@ export async function finalizeSession(
 export async function recomputeSessionScore(sessionId: string): Promise<void> {
   const session = await prisma.examSession.findUnique({
     where: { id: sessionId },
-    select: { quizId: true },
+    select: { quizId: true, studentId: true },
   });
   if (!session) return;
 
@@ -840,4 +848,11 @@ export async function recomputeSessionScore(sessionId: string): Promise<void> {
       percentage: score.percentage,
     },
   });
+
+  // تحديث تحليلات تقدّم الطالب بعد إعادة الحساب (best-effort).
+  try {
+    await updateStudentConceptPerformance(session.studentId);
+  } catch {
+    // تجاهل أخطاء التحليلات.
+  }
 }

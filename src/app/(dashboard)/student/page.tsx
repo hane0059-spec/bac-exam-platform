@@ -17,10 +17,12 @@ export default async function StudentDashboard() {
             عرض الاختبارات المُسنَدة إليك والبدء بأدائها.
           </p>
         </Link>
-        <PlaceholderCard
-          title="نتائجي"
-          description="مراجعة درجاتك وإجاباتك بعد التصحيح الفوري."
-        />
+        <Link href="/student/progress" className="card p-5 transition hover:border-primary/40">
+          <h3 className="mb-2 font-display text-lg font-semibold">تقدّمي</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            نقاط قوّتك وضعفك حسب الدروس، لتعرف ما يحتاج مراجعةً.
+          </p>
+        </Link>
         <PlaceholderCard
           title="مواد دراستي"
           description="المواد المسجَّل فيها ومدرّسوها."
