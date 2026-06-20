@@ -136,22 +136,15 @@ export default async function TeacherStudentsPage({
                 </p>
               </div>
             );
-            return canManage ? (
+            return (
               <Link
                 key={s.id}
-                href={`/teacher/students/${s.id}/edit`}
+                href={`/teacher/students/${s.id}`}
                 className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
               >
                 {inner}
-                <span className="text-sm text-primary">تحرير ←</span>
+                <span className="text-sm text-primary">إسناد اختبار ←</span>
               </Link>
-            ) : (
-              <div
-                key={s.id}
-                className="card flex flex-wrap items-center justify-between gap-3 p-4"
-              >
-                {inner}
-              </div>
             );
           })}
         </div>
