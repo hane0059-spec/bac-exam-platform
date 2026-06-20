@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
+import UserSearchBox from "@/components/admin/UserSearchBox";
 
 export default async function AdminDashboard() {
   const ctx = await getAdminContext();
@@ -11,6 +12,8 @@ export default async function AdminDashboard() {
 
   return (
     <DashboardShell session={session}>
+      <UserSearchBox initial="" />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ctx.isSuper && (
           <Link
