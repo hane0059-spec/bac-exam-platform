@@ -20,7 +20,7 @@ export default async function DashboardShell({
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-line bg-surface">
+      <header className="border-b border-line bg-surface print:hidden">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <Link
             href={dashboardPath(session.role)}
@@ -80,7 +80,7 @@ export default async function DashboardShell({
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-8 print:hidden">
           <h1 className="font-display text-2xl font-bold">
             {welcome(session.gender)}، {session.firstName}
           </h1>

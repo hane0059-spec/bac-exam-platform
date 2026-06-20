@@ -580,6 +580,8 @@ model QuizAssignment {
   dueDate    DateTime? @map("due_date")
   // محاولات إضافية ممنوحة لهذا الطالب فوق حدّ الاختبار (لإعادة الامتحان).
   extraAttempts Int    @default(0) @map("extra_attempts")
+  // أرشفة الطالب لهذا الاختبار بطلبه (بعد مشاهدة نتيجته) — عرضيٌّ فقط.
+  studentArchivedAt DateTime? @map("student_archived_at")
 
   @@map("quiz_assignments")
 }

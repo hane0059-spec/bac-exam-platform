@@ -320,6 +320,8 @@ export interface StudentQuizListItem {
   state: QuizState;
   canStart: boolean;
   bestPercentage: number | null;
+  archived: boolean; // أرشفها الطالب بطلبه (عرضيّ)
+  hasFinished: boolean; // أنهى محاولةً (يمكنه عرض النتيجة/الأرشفة)
 }
 
 export async function listStudentQuizzes(
@@ -381,6 +383,8 @@ export async function listStudentQuizzes(
       state,
       canStart,
       bestPercentage,
+      archived: a.studentArchivedAt != null,
+      hasFinished: finished.length > 0,
     };
   });
 }

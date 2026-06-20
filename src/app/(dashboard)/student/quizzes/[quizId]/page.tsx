@@ -187,6 +187,7 @@ export default async function TakeQuizPage({
               }
             : null
         }
+        archived={assignment.studentArchivedAt != null}
       />
     </DashboardShell>
   );

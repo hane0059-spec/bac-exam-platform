@@ -19,7 +19,7 @@ export async function GET(
   // فحص الملكية والحالة قبل بناء المراجعة.
   const exam = await prisma.examSession.findUnique({
     where: { id: params.sessionId },
-    select: { studentId: true, status: true },
+    select: { studentId: true, status: true, quizId: true },
   });
   if (!exam || exam.studentId !== session.sub) {
     return NextResponse.json({ error: "الجلسة غير موجودة" }, { status: 404 });
@@ -44,10 +44,18 @@ export async function GET(
     select: { status: true, reason: true, teacherResponse: true },
   });
 
+  // حالة أرشفة الطالب لهذا الاختبار (للزرّ في صفحة النتيجة).
+  const assignment = await prisma.quizAssignment.findFirst({
+    where: { quizId: exam.quizId, studentId: session.sub },
+    select: { studentArchivedAt: true },
+  });
+
   return NextResponse.json({
     ...review,
     sessionId: params.sessionId,
+    quizId: exam.quizId,
     appealable,
     appeal: last,
+    archived: assignment?.studentArchivedAt != null,
   });
 }

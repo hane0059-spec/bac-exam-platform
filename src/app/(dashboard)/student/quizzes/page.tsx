@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import DashboardShell from "@/components/DashboardShell";
 import QuizCountdown from "@/components/student/QuizCountdown";
 import JoinByCode from "@/components/student/JoinByCode";
+import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import { listStudentQuizzes, type StudentQuizListItem } from "@/lib/exam";
 
 export const dynamic = "force-dynamic";
@@ -31,12 +32,25 @@ function formatMinutes(sec: number | null): string | null {
   return `${m} دقيقة`;
 }
 
-export default async function StudentQuizzesPage() {
+export default async function StudentQuizzesPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string };
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "STUDENT") redirect("/");
 
-  const quizzes = await listStudentQuizzes(session.sub);
+  const tab = searchParams.tab === "archive" ? "archive" : "active";
+  const all = await listStudentQuizzes(session.sub);
+  const activeList = all.filter((q) => !q.archived);
+  const archiveList = all.filter((q) => q.archived);
+  const quizzes = tab === "archive" ? archiveList : activeList;
+
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-1.5 text-sm transition ${
+      active ? "bg-primary text-white" : "bg-ink/5 text-ink/70 hover:bg-primary-light"
+    }`;
 
   return (
     <DashboardShell session={session}>
@@ -47,11 +61,22 @@ export default async function StudentQuizzesPage() {
         </Link>
       </div>
 
-      <JoinByCode />
+      {tab === "active" && <JoinByCode />}
+
+      <div className="mb-5 flex gap-2">
+        <Link href="/student/quizzes?tab=active" className={pill(tab === "active")}>
+          النشطة ({activeList.length})
+        </Link>
+        <Link href="/student/quizzes?tab=archive" className={pill(tab === "archive")}>
+          الأرشيف ({archiveList.length})
+        </Link>
+      </div>
 
       {quizzes.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
-          لا توجد اختبارات مُسنَدة إليك حالياً.
+          {tab === "archive"
+            ? "لا اختبارات في أرشيفك. انقل اختباراتك المنتهية إلى الأرشيف بعد الاطّلاع على نتيجتها."
+            : "لا توجد اختبارات مُسنَدة إليك حالياً."}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -97,22 +122,41 @@ export default async function StudentQuizzesPage() {
                     />
                   </div>
                 )}
-                <div className="mt-auto">
-                  {q.canStart ? (
+                <div className="mt-auto space-y-2">
+                  {q.canStart && (
                     <Link
                       href={`/student/quizzes/${q.quizId}`}
-                      className="btn-primary w-full"
+                      className="btn-primary block w-full text-center"
                     >
-                      {q.state === "in_progress" ? "استئناف" : "ابدأ الاختبار"}
+                      {q.state === "in_progress"
+                        ? "استئناف"
+                        : q.hasFinished
+                        ? "محاولة جديدة"
+                        : "ابدأ الاختبار"}
                     </Link>
-                  ) : q.state === "completed" ? (
+                  )}
+                  {/* الورقي: نتيجته قابلة لإعادة العرض دائماً. */}
+                  {q.isFileBased && q.hasFinished && (
+                    <Link
+                      href={`/student/quizzes/${q.quizId}`}
+                      className="block text-center text-sm text-primary hover:underline"
+                    >
+                      عرض النتيجة
+                    </Link>
+                  )}
+                  {!q.canStart && !q.hasFinished && (
                     <span className="block text-center text-sm text-ink/50">
-                      انتهت محاولاتك
+                      {q.availableFrom || q.availableUntil
+                        ? "غير متاح الآن"
+                        : "غير متاح الآن"}
                     </span>
-                  ) : q.availableFrom || q.availableUntil ? null : (
-                    <span className="block text-center text-sm text-ink/50">
-                      غير متاح الآن
-                    </span>
+                  )}
+                  {q.hasFinished && (
+                    <StudentArchiveToggle
+                      quizId={q.quizId}
+                      archived={q.archived}
+                      className="w-full rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5 disabled:opacity-50"
+                    />
                   )}
                 </div>
               </div>

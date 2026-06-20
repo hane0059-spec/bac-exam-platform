@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { splitFillTemplate, countBlanks } from "@/lib/grading";
 import AppealBox, { type AppealState } from "@/components/student/AppealBox";
+import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
+import PrintButton from "@/components/student/PrintButton";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -63,8 +65,10 @@ interface ResultData {
   percentage: number;
   items: ResultItem[];
   sessionId?: string;
+  quizId?: string;
   appealable?: boolean;
   appeal?: AppealState | null;
+  archived?: boolean;
 }
 
 type Phase =
@@ -702,8 +706,18 @@ function ResultView({ result }: { result: ResultData }) {
         )}
       </div>
 
+      {!pending && result.quizId && (
+        <div className="flex flex-wrap gap-2 print:hidden">
+          <PrintButton />
+          <StudentArchiveToggle
+            quizId={result.quizId}
+            archived={result.archived ?? false}
+          />
+        </div>
+      )}
+
       {result.sessionId && result.appealable && (
-        <div className="card p-5">
+        <div className="card p-5 print:hidden">
           <h3 className="mb-2 font-display font-semibold">
             اعتراض على التصحيح
           </h3>
@@ -800,7 +814,7 @@ function ResultView({ result }: { result: ResultData }) {
         ))}
       </div>
 
-      <Link href="/student/quizzes" className="btn-primary">
+      <Link href="/student/quizzes" className="btn-primary print:hidden">
         العودة لاختباراتي
       </Link>
     </div>

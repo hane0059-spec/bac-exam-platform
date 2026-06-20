@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
 import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
 import AppealBox, { type AppealState } from "@/components/student/AppealBox";
+import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
+import PrintButton from "@/components/student/PrintButton";
 
 function fmtClock(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -96,6 +98,7 @@ export default function FileExamRunner({
   sessionId,
   inProgressUploads,
   finished,
+  archived = false,
 }: {
   quizId: string;
   title: string;
@@ -108,6 +111,7 @@ export default function FileExamRunner({
   sessionId: string | null;
   inProgressUploads: Upload[];
   finished: Finished | null;
+  archived?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -337,6 +341,10 @@ export default function FileExamRunner({
 
       {view === "graded" && finished && (
         <div className="card space-y-4 p-6">
+          <div className="flex flex-wrap justify-end gap-2 print:hidden">
+            <PrintButton />
+            <StudentArchiveToggle quizId={quizId} archived={archived} />
+          </div>
           <div className="text-center">
             <p
               className={`font-display text-5xl font-bold ${
