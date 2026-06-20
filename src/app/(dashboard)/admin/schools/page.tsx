@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import SchoolsManager from "@/components/admin/SchoolsManager";
+import SchoolNotes from "@/components/admin/SchoolNotes";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,10 @@ export default async function AdminSchoolsPage() {
                     .map((u) => `${u.firstName} ${u.lastName}`)
                     .join("، ")}`}
               </span>
+              {/* ملاحظات المؤسّسة الخاصّة: لمُنشئها وحده. */}
+              {s.createdById === ctx.session.sub && (
+                <SchoolNotes schoolId={s.id} initialNotes={s.notes ?? ""} />
+              )}
             </div>
           ))
         )}

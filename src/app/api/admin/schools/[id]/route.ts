@@ -1,5 +1,5 @@
-// src/app/api/admin/schools/route.ts
-// POST: إنشاء مدرسة/معهد. (المدير العام للمنصّة حصراً.)
+// src/app/api/admin/schools/[id]/route.ts
+// PATCH: تعديل ملاحظات المؤسّسة الخاصّة. (المدير العام المُنشئ لها وحده.)
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -9,21 +9,31 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  name: z.string().trim().min(1, "اسم المؤسّسة مطلوب"),
-  type: z.enum(["مدرسة", "معهد"]).default("مدرسة"),
-  // ملاحظات المُنشئ الخاصّة عن المؤسّسة (يراها/يحرّرها هو وحده).
   notes: z.string().trim().max(5000).optional(),
 });
 
-export async function POST(req: Request) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   const ctx = await getAdminContext();
   if (!ctx) return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
   if (!ctx.isSuper) {
     return NextResponse.json(
-      { error: "إنشاء المؤسّسات للمدير العام للمنصّة فقط" },
+      { error: "إدارة المؤسّسات للمدير العام للمنصّة فقط" },
       { status: 403 }
     );
   }
+
+  const school = await prisma.school.findUnique({
+    where: { id: params.id },
+    select: { id: true, createdById: true },
+  });
+  // الملاحظات خاصّة بمُنشئ المؤسّسة وحده.
+  if (!school || school.createdById !== ctx.session.sub) {
+    return NextResponse.json({ error: "المؤسّسة غير موجودة" }, { status: 404 });
+  }
+
   let raw: unknown;
   try {
     raw = await req.json();
@@ -37,14 +47,11 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  const created = await prisma.school.create({
-    data: {
-      name: parsed.data.name,
-      type: parsed.data.type,
-      notes: parsed.data.notes || null,
-      createdById: ctx.session.sub,
-    },
-    select: { id: true },
+
+  await prisma.school.update({
+    where: { id: params.id },
+    data: { notes: parsed.data.notes || null },
   });
-  return NextResponse.json({ id: created.id }, { status: 201 });
+
+  return NextResponse.json({ id: params.id });
 }

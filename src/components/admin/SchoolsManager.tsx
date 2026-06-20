@@ -3,11 +3,13 @@
 // المدير العام: إنشاء مدرسة/معهد.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CreatorNotesField from "@/components/CreatorNotesField";
 
 export default function SchoolsManager() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [type, setType] = useState<"مدرسة" | "معهد">("مدرسة");
+  const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,7 +19,7 @@ export default function SchoolsManager() {
     const res = await fetch("/api/admin/schools", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type }),
+      body: JSON.stringify({ name, type, notes }),
     });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
@@ -26,6 +28,7 @@ export default function SchoolsManager() {
       return;
     }
     setName("");
+    setNotes("");
     router.refresh();
   }
 
@@ -46,6 +49,11 @@ export default function SchoolsManager() {
         <option value="مدرسة">مدرسة</option>
         <option value="معهد">معهد</option>
       </select>
+      <CreatorNotesField
+        value={notes}
+        onChange={setNotes}
+        about="هذه المؤسّسة"
+      />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         onClick={add}
