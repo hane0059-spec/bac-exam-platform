@@ -7,6 +7,7 @@ import { getAdminContext } from "@/lib/admin";
 import { getParentChildren } from "@/lib/parent";
 import DashboardShell from "@/components/DashboardShell";
 import ParentLinks from "@/components/admin/ParentLinks";
+import CreatorNotesEditor from "@/components/admin/CreatorNotesEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,8 @@ export default async function ParentDetailPage({
       email: true,
       role: true,
       schoolId: true,
+      createdById: true,
+      creatorNotes: true,
       school: { select: { name: true } },
     },
   });
@@ -60,6 +63,17 @@ export default async function ParentDetailPage({
           gradeName: c.gradeName,
         }))}
       />
+
+      {/* ملاحظات المُنشئ الخاصّة عن وليّ الأمر: لمُنشئ حسابه وحده. */}
+      {parent.createdById === ctx.session.sub && (
+        <div className="mt-5 max-w-xl">
+          <CreatorNotesEditor
+            endpoint={`/api/admin/parents/${parent.id}`}
+            initialNotes={parent.creatorNotes ?? ""}
+            about="وليّ الأمر"
+          />
+        </div>
+      )}
     </DashboardShell>
   );
 }

@@ -1,16 +1,19 @@
 "use client";
-// src/components/admin/SchoolNotes.tsx
-// محرّر ملاحظات مؤسّسة مضمّن في القائمة — يظهر لمُنشئها وحده ويُحرَّر دائماً.
+// src/components/admin/CreatorNotesEditor.tsx
+// محرّر ملاحظات مُنشئ مضمّن (مؤسّسة/وليّ أمر/…) — يظهر لمُنشئ العنصر وحده،
+// ويُحرَّر دائماً عبر PATCH على endpoint يستقبل { notes }.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CreatorNotesField from "@/components/CreatorNotesField";
 
-export default function SchoolNotes({
-  schoolId,
+export default function CreatorNotesEditor({
+  endpoint,
   initialNotes,
+  about,
 }: {
-  schoolId: string;
+  endpoint: string;
   initialNotes: string;
+  about?: string;
 }) {
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
@@ -23,7 +26,7 @@ export default function SchoolNotes({
     setError("");
     setSaved(false);
     setBusy(true);
-    const res = await fetch(`/api/admin/schools/${schoolId}`, {
+    const res = await fetch(endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes }),
@@ -39,14 +42,14 @@ export default function SchoolNotes({
   }
 
   return (
-    <div className="mt-3 w-full space-y-2 border-t border-line pt-3">
+    <div className="space-y-2">
       <CreatorNotesField
         value={notes}
         onChange={(v) => {
           setNotes(v);
           setSaved(false);
         }}
-        about="هذه المؤسّسة"
+        about={about}
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       {saved && !error && (

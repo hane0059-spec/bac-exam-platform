@@ -63,6 +63,7 @@ export async function POST(req: Request) {
       lastName: d.lastName,
       schoolId,
       createdById: ctx.session.sub,
+      creatorNotes: d.creatorNotes || null,
       parentLinks: {
         create: ids.map((studentId) => ({ studentId })),
       },

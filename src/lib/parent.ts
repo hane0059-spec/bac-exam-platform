@@ -19,11 +19,18 @@ export const parentCreateSchema = z.object({
   password: z.string().min(6, "كلمة السر 6 أحرف على الأقل"),
   studentCodes: z.array(z.string().trim().min(1)).default([]),
   schoolId: z.string().min(1).nullish(), // للمدير العام
+  // ملاحظات المُنشئ الخاصّة عن وليّ الأمر (يراها/يحرّرها هو وحده).
+  creatorNotes: z.string().trim().max(5000).optional(),
 });
 
 // إضافة/إزالة روابط لاحقاً.
 export const parentLinkSchema = z.object({
   studentCodes: z.array(z.string().trim().min(1)).default([]),
+});
+
+// تعديل ملاحظات المُنشئ عن وليّ الأمر.
+export const parentNotesSchema = z.object({
+  notes: z.string().trim().max(5000).optional(),
 });
 
 /** جلسة ولي أمر صالحة أو null. */

@@ -3,6 +3,7 @@
 // المدير: نموذج إنشاء ولي أمر وربطه بطلاب بلصق رموزهم.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CreatorNotesField from "@/components/CreatorNotesField";
 
 function splitCodes(text: string): string[] {
   return text
@@ -24,6 +25,7 @@ export default function ParentForm({
   const [password, setPassword] = useState("");
   const [codes, setCodes] = useState("");
   const [schoolId, setSchoolId] = useState(schools?.[0]?.id ?? "");
+  const [creatorNotes, setCreatorNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,6 +42,7 @@ export default function ParentForm({
         email: email || undefined,
         password,
         studentCodes: splitCodes(codes),
+        creatorNotes,
         ...(schools ? { schoolId: schoolId || null } : {}),
       }),
     });
@@ -122,6 +125,12 @@ export default function ParentForm({
           onChange={(e) => setCodes(e.target.value)}
         />
       </div>
+
+      <CreatorNotesField
+        value={creatorNotes}
+        onChange={setCreatorNotes}
+        about="وليّ الأمر"
+      />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
