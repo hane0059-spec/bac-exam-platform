@@ -10,6 +10,7 @@ import StudentForm, {
 } from "@/components/teacher/StudentForm";
 import PasswordReset from "@/components/teacher/PasswordReset";
 import EnrollmentManager from "@/components/teacher/EnrollmentManager";
+import DeleteStudentButton from "@/components/teacher/DeleteStudentButton";
 import { teacherCanManageStudents } from "@/lib/teacher";
 
 export const dynamic = "force-dynamic";
@@ -100,6 +101,10 @@ export default async function EditStudentPage({
           enrolledIds={student.studentEnrollments.map((e) => e.subjectId)}
         />
         <PasswordReset studentId={student.id} />
+        <DeleteStudentButton
+          studentId={student.id}
+          studentName={`${student.firstName} ${student.lastName}`}
+        />
       </div>
     </DashboardShell>
   );

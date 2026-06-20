@@ -16,6 +16,35 @@ export async function ownedStudent(teacherId: string, studentId: string) {
   return student;
 }
 
+/**
+ * حذف نهائي لحساب طالب وكل بياناته ضمن معاملة واحدة.
+ * يحذف بالترتيب الصحيح لأنّ معظم العلاقات بلا cascade من جهة الطالب:
+ * الإجابات قبل الجلسات، ثم المرفقات/الاعتراضات/البلاغات/الإسنادات/التسجيلات،
+ * ثم الملفّ الشخصي، ثم المستخدم (روابط الوليّ والإشعارات تُحذف cascade تلقائياً).
+ * الحراسة (الملكية/الصلاحية) مسؤوليّة المستدعي.
+ */
+export async function deleteStudentCompletely(studentId: string) {
+  await prisma.$transaction([
+    // إجابات جلسات الطالب (StudentAnswer مرتبط بالطالب عبر الجلسة فقط، بلا cascade).
+    prisma.studentAnswer.deleteMany({ where: { session: { studentId } } }),
+    // الاعتراضات والبلاغات (بلا cascade من جهة الطالب).
+    prisma.gradeAppeal.deleteMany({ where: { studentId } }),
+    prisma.questionReport.deleteMany({ where: { studentId } }),
+    // مرفقات الطالب (رفع صور الإجابات) — تحذف تعليقاتها cascade.
+    prisma.attachment.deleteMany({ where: { uploadedById: studentId } }),
+    // الجلسات (تحذف ما بقي من مرفقات/اعتراضات مرتبطة بها cascade).
+    prisma.examSession.deleteMany({ where: { studentId } }),
+    // الإسنادات والتسجيلات.
+    prisma.quizAssignment.deleteMany({ where: { studentId } }),
+    prisma.studentEnrollment.deleteMany({ where: { studentId } }),
+    // تحليلات الأداء (حقل studentId بلا مفتاح أجنبي — تنظيف يدويّ).
+    prisma.studentConceptPerformance.deleteMany({ where: { studentId } }),
+    // الملفّ الشخصي ثم المستخدم (روابط الوليّ والإشعارات cascade).
+    prisma.studentProfile.deleteMany({ where: { userId: studentId } }),
+    prisma.user.delete({ where: { id: studentId } }),
+  ]);
+}
+
 /** السنة الدراسية المعتمدة لمادة المدرّس (أو الحالية افتراضياً). */
 export async function academicYearFor(
   teacherId: string,

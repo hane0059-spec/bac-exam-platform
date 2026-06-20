@@ -3,7 +3,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
-import { ownedStudent, studentUpdateSchema } from "@/lib/teacherStudents";
+import {
+  ownedStudent,
+  studentUpdateSchema,
+  deleteStudentCompletely,
+} from "@/lib/teacherStudents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,4 +135,28 @@ export async function PATCH(
   });
 
   return NextResponse.json({ id: params.id });
+}
+
+// DELETE: حذف نهائي لحساب الطالب وكل بياناته. (المدرّس المُنشئ فقط، بصلاحية الإدارة.)
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getTeacherSession();
+  if (!session) {
+    return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "إدارة الطلاب غير مفعّلة لحسابك — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
+  }
+  if (!(await ownedStudent(session.sub, params.id))) {
+    return NextResponse.json({ error: "الطالب غير موجود" }, { status: 404 });
+  }
+
+  await deleteStudentCompletely(params.id);
+
+  return NextResponse.json({ ok: true });
 }
