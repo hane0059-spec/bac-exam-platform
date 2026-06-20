@@ -28,6 +28,8 @@ interface Question {
   total: number;
   matchLefts?: { id: string; text: string }[];
   matchRights?: string[];
+  blankCount?: number;
+  imageId?: string | null;
 }
 interface Reveal {
   needsReview: boolean;
@@ -125,6 +127,9 @@ export default function QuizRunner({
     // ملء الفراغات: خانة فارغة لكل فراغ في نصّ القالب.
     if (question?.type === "FILL_BLANK")
       setBlanks(Array(countBlanks(question.content)).fill(""));
+    // توسيم الرسم: خانة لكل فراغ مرقّم (عددها من الخادم).
+    if (question?.type === "DIAGRAM_LABEL")
+      setBlanks(Array(question.blankCount ?? 0).fill(""));
     // المطابقة: اختيار فارغ لكل عنصر أيسر.
     if (question?.type === "MATCHING")
       setMatches(Array(question.matchLefts?.length ?? 0).fill(""));
@@ -189,9 +194,9 @@ export default function QuizRunner({
         : selected
         ? [selected]
         : [];
-    // ملء الفراغات/المطابقة: تُرسَل الإجابات مصفوفةً مرتّبةً (JSON) في حقل النصّ.
+    // الفراغات/توسيم الرسم/المطابقة: تُرسَل الإجابات مصفوفةً مرتّبةً (JSON) في حقل النصّ.
     const textPayload =
-      question.type === "FILL_BLANK"
+      question.type === "FILL_BLANK" || question.type === "DIAGRAM_LABEL"
         ? JSON.stringify(blanks)
         : question.type === "MATCHING"
         ? JSON.stringify(matches)
@@ -332,10 +337,15 @@ export default function QuizRunner({
   if ((phase === "question" || startedFeedback) && question) {
     const isOrder = question.type === "ORDER";
     const isFill = question.type === "FILL_BLANK";
+    const isDiagram = question.type === "DIAGRAM_LABEL";
     const isMatch = question.type === "MATCHING";
     const isShort =
-      !isOrder && !isFill && !isMatch && question.options.length === 0;
-    const canSubmit = isFill
+      !isOrder &&
+      !isFill &&
+      !isDiagram &&
+      !isMatch &&
+      question.options.length === 0;
+    const canSubmit = isFill || isDiagram
       ? blanks.some((b) => b.trim().length > 0)
       : isMatch
       ? matches.some((m) => m)
@@ -368,7 +378,45 @@ export default function QuizRunner({
             </p>
           )}
 
-          {isFill ? (
+          {isDiagram ? (
+            <div className="space-y-3">
+              {question.imageId && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`/api/attachments/${question.imageId}`}
+                  alt="رسم السؤال"
+                  className="max-h-[28rem] w-full rounded-xl border border-line object-contain"
+                />
+              )}
+              <p className="text-sm text-ink/60">
+                املأ الفراغات المرقّمة حسب الأسهم في الرسم:
+              </p>
+              <div className="space-y-2">
+                {blanks.map((b, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-7 shrink-0 text-center text-sm font-bold text-primary">
+                      {i + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={b}
+                      disabled={startedFeedback}
+                      onChange={(e) =>
+                        setBlanks((prev) => {
+                          const next = [...prev];
+                          next[i] = e.target.value;
+                          return next;
+                        })
+                      }
+                      placeholder={`التسمية ${i + 1}`}
+                      className="field flex-1"
+                      aria-label={`التسمية ${i + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : isFill ? (
             <div className="text-lg leading-loose">
               {splitFillTemplate(question.content).map((part, i, arr) => (
                 <span key={i}>

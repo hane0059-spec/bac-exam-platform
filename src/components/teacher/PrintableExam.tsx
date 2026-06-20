@@ -10,7 +10,7 @@ const TYPE_LABEL: Record<string, string> = {
   ESSAY: "مقالي",
   MATCHING: "مطابقة",
   FILL_BLANK: "ملء فراغ",
-  DIAGRAM_LABEL: "تسمية رسم",
+  DIAGRAM_LABEL: "توسيم رسم",
   CALCULATION: "حساب",
   ORDER: "ترتيب",
 };
@@ -27,6 +27,7 @@ export interface PrintQuestion {
   points: number;
   options: PrintOption[];
   acceptedAnswers: string[];
+  imageId?: string | null;
   explanation: string | null;
 }
 export interface PrintExamData {
@@ -106,6 +107,15 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
               </span>
             </div>
             <p className="mb-2 text-xs text-ink/40">{TYPE_LABEL[q.type] ?? q.type}</p>
+
+            {q.imageId && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`/api/attachments/${q.imageId}`}
+                alt="رسم السؤال"
+                className="mb-2 max-h-72 rounded-lg border border-line object-contain"
+              />
+            )}
 
             {/* خيارات الاختيار/الصح-خطأ */}
             {q.options.length > 0 ? (

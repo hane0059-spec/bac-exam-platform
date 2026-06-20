@@ -128,6 +128,7 @@ enum SessionStatus {
 enum AttachmentKind {
   EXAM_FILE
   ANSWER_UPLOAD
+  QUESTION_IMAGE
 }
 
 // حالة بلاغ خطأ في سؤال.
@@ -268,11 +269,13 @@ model Attachment {
   data         Bytes // المحتوى الثنائي (bytea)
   uploadedById String         @map("uploaded_by_id")
   uploadedBy   User           @relation("UploadedBy", fields: [uploadedById], references: [id])
-  // ربط حسب النوع: ملف الاختبار بالاختبار، ورفع الإجابة بالجلسة.
+  // ربط حسب النوع: ملف الاختبار بالاختبار، ورفع الإجابة بالجلسة، وصورة توسيم الرسم بالسؤال.
   quizId       String?        @map("quiz_id")
   quiz         Quiz?          @relation(fields: [quizId], references: [id], onDelete: Cascade)
   sessionId    String?        @map("session_id")
   session      ExamSession?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId   String?        @map("question_id")
+  question     Question?      @relation(fields: [questionId], references: [id], onDelete: Cascade)
   annotations  Annotation[]
   createdAt    DateTime       @default(now()) @map("created_at")
 
@@ -471,6 +474,7 @@ model Question {
   quizNodes       QuizNode[]
   studentAnswers  StudentAnswer[]
   reports         QuestionReport[]
+  attachments     Attachment[]
 
   @@map("questions")
 }

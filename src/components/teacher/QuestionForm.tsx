@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countBlanks } from "@/lib/grading";
+import ImageUploadField from "@/components/ImageUploadField";
 
 type QType =
   | "MULTIPLE_CHOICE"
@@ -13,7 +14,8 @@ type QType =
   | "ORDER"
   | "FILL_BLANK"
   | "MATCHING"
-  | "CALCULATION";
+  | "CALCULATION"
+  | "DIAGRAM_LABEL";
 
 interface Concept {
   id: string;
@@ -42,6 +44,7 @@ export interface QuestionInitial {
   acceptedAnswers: string[];
   options: { content: string; isCorrect: boolean }[];
   matchingPairs: { left: string; right: string }[];
+  imageId?: string | null;
   used: boolean;
 }
 
@@ -122,6 +125,13 @@ export default function QuestionForm({
   const [calcTolerance, setCalcTolerance] = useState(
     initial?.type === "CALCULATION" ? initial.acceptedAnswers[1] ?? "" : ""
   );
+  // توسيم الرسم: إجابات مقبولة لكل فراغ مرقّم (تُخزَّن كـ option.content مثل ملء الفراغات).
+  const [diagramBlanks, setDiagramBlanks] = useState<string[]>(
+    initial?.type === "DIAGRAM_LABEL" && initial.options.length
+      ? initial.options.map((o) => o.content)
+      : [""]
+  );
+  const [hasImage, setHasImage] = useState(Boolean(initial?.imageId));
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -237,7 +247,40 @@ export default function QuestionForm({
           .filter((p) => p.left && p.right),
       };
     }
+    if (type === "DIAGRAM_LABEL") {
+      // فراغٌ مرقّم لكل سهم، محتواه إجاباته المقبولة (مفصولة بـ |).
+      return {
+        ...base,
+        acceptedAnswers: [],
+        options: diagramBlanks
+          .map((c) => ({ content: c.trim(), isCorrect: false }))
+          .filter((o) => o.content),
+      };
+    }
     return { ...base, acceptedAnswers: [], options };
+  }
+
+  // توسيم الرسم: رفع/حذف صورة السؤال (في وضع التعديل، بعد وجود السؤال).
+  async function uploadImage(file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/teacher/questions/${questionId}/image`, {
+      method: "POST",
+      body: fd,
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error ?? "تعذّر رفع الصورة.");
+    }
+    setHasImage(true);
+    router.refresh();
+  }
+  async function deleteImage() {
+    await fetch(`/api/teacher/questions/${questionId}/image`, {
+      method: "DELETE",
+    });
+    setHasImage(false);
+    router.refresh();
   }
 
   async function submit() {
@@ -257,6 +300,15 @@ export default function QuestionForm({
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "تعذّر الحفظ.");
       return;
+    }
+    // توسيم الرسم عند الإنشاء: انتقل لصفحة التعديل لرفع صورة الرسم.
+    if (mode === "create" && type === "DIAGRAM_LABEL") {
+      const data = await res.json().catch(() => ({}));
+      if (data.id) {
+        router.push(`/teacher/questions/${data.id}/edit`);
+        router.refresh();
+        return;
+      }
     }
     router.push("/teacher/questions");
     router.refresh();
@@ -285,6 +337,7 @@ export default function QuestionForm({
               ["FILL_BLANK", "ملء الفراغات"],
               ["MATCHING", "مطابقة"],
               ["CALCULATION", "حساب"],
+              ["DIAGRAM_LABEL", "توسيم رسم"],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -715,6 +768,101 @@ export default function QuestionForm({
               onChange={(e) => setCalcTolerance(e.target.value)}
               placeholder="مثال: 0.01"
             />
+          </div>
+        </div>
+      )}
+
+      {type === "DIAGRAM_LABEL" && (
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              إجابات الفراغات المرقّمة
+            </label>
+            <p className="mb-2 rounded-xl bg-primary-light/60 p-3 text-xs leading-relaxed text-primary-dark">
+              ارفع صورةً فيها أسهم مرقّمة (1، 2، 3…) تشير إلى الأجزاء، وأدخل أدناه
+              الإجابة المقبولة لكل رقم بنفس ترتيب الرسم (افصل المترادفات بـ{" "}
+              <code className="rounded bg-ink/10 px-1">|</code>). يملأ الطالب
+              الفراغات المرقّمة، وتُصحَّح آلياً عند المطابقة وإلا راجعها المدرّس —
+              بدرجة جزئية كملء الفراغات.
+            </p>
+            <div className="space-y-2">
+              {diagramBlanks.map((b, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-7 shrink-0 text-center text-sm font-medium text-ink/50">
+                    {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    className="field flex-1"
+                    value={b}
+                    disabled={locked}
+                    onChange={(e) =>
+                      setDiagramBlanks((prev) =>
+                        prev.map((x, j) => (j === i ? e.target.value : x))
+                      )
+                    }
+                    placeholder={`إجابة الفراغ ${i + 1} (مثال: النواة | نواة)`}
+                  />
+                  {diagramBlanks.length > 1 && !locked && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDiagramBlanks((prev) => prev.filter((_, j) => j !== i))
+                      }
+                      className="px-2 text-ink/40 hover:text-red-500"
+                      aria-label="حذف الفراغ"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {diagramBlanks.length < 12 && !locked && (
+              <button
+                type="button"
+                onClick={() => setDiagramBlanks((prev) => [...prev, ""])}
+                className="mt-2 text-sm text-primary hover:underline"
+              >
+                + أضف فراغاً
+              </button>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              صورة الرسم (بأسهم مرقّمة)
+            </label>
+            {mode === "create" ? (
+              <p className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
+                احفظ السؤال أولاً، ثم ستُنقَل تلقائياً لرفع صورة الرسم.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {hasImage && questionId && (
+                  <div className="space-y-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/attachments/${initial?.imageId}?t=${hasImage}`}
+                      alt="رسم السؤال"
+                      className="max-h-72 rounded-xl border border-line object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={deleteImage}
+                      className="text-sm text-red-500 hover:underline"
+                    >
+                      حذف الصورة
+                    </button>
+                  </div>
+                )}
+                <ImageUploadField
+                  onUpload={uploadImage}
+                  label={hasImage ? "استبدال الصورة" : "رفع صورة الرسم"}
+                  hint="صورة بأسهم مرقّمة بوضوح — تُضغط تلقائياً قبل الرفع."
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

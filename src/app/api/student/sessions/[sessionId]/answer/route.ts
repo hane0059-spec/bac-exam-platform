@@ -165,8 +165,8 @@ export async function POST(
     storedText = JSON.stringify(
       Array.from({ length: total }, (_, i) => studentArr[i] ?? "")
     );
-  } else if (q.type === "FILL_BLANK") {
-    // كل خيار = فراغ (مرتّباً بـ orderNum)، ومحتواه إجاباته المقبولة مفصولةً بـ |.
+  } else if (q.type === "FILL_BLANK" || q.type === "DIAGRAM_LABEL") {
+    // توسيم الرسم كملء الفراغات: كل خيار فراغٌ مرقّم، محتواه إجاباته المقبولة بـ |.
     const blanks = [...q.options]
       .sort((a, b) => a.orderNum - b.orderNum)
       .map((o) => parseBlankAnswers(o.content));
@@ -200,7 +200,7 @@ export async function POST(
   const needsReview =
     q.type === "SHORT_ANSWER" ||
     q.type === "ESSAY" ||
-    (q.type === "FILL_BLANK" && fillNeedsReview);
+    ((q.type === "FILL_BLANK" || q.type === "DIAGRAM_LABEL") && fillNeedsReview);
   const scoreEarned =
     partialEarned != null ? partialEarned : isCorrect ? points : 0;
 

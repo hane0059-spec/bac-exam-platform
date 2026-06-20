@@ -242,6 +242,9 @@ export interface SanitizedQuestion {
   // المطابقة: العناصر اليسرى (بترتيبها) والعناصر اليمنى مخلوطةً (بلا كشف الاقتران).
   matchLefts?: { id: string; text: string }[];
   matchRights?: string[];
+  // توسيم الرسم: عدد الفراغات المرقّمة ومعرّف صورة السؤال (تُبَثّ عبر /api/attachments).
+  blankCount?: number;
+  imageId?: string | null;
 }
 
 /** يحمّل عقدة سؤال ويعقّمها — يُستبعد isCorrect والإجابات المقبولة والشرح. */
@@ -258,14 +261,22 @@ export async function loadSanitizedQuestion(
         include: {
           options: { orderBy: { orderNum: "asc" } },
           matchingPairs: { orderBy: { orderNum: "asc" } },
+          attachments: {
+            where: { kind: "QUESTION_IMAGE" },
+            select: { id: true },
+            take: 1,
+          },
         },
       },
     },
   });
   if (!node || !node.question) return null;
   const q = node.question;
-  // ملء الفراغات/المطابقة: لا تُرسَل الخيارات (تحمل الإجابات) إطلاقاً.
-  const noOptions = q.type === "FILL_BLANK" || q.type === "MATCHING";
+  // ملء الفراغات/المطابقة/توسيم الرسم: لا تُرسَل الخيارات (تحمل الإجابات) إطلاقاً.
+  const noOptions =
+    q.type === "FILL_BLANK" ||
+    q.type === "MATCHING" ||
+    q.type === "DIAGRAM_LABEL";
   let options = noOptions
     ? []
     : q.options.map((o) => ({
@@ -301,6 +312,10 @@ export async function loadSanitizedQuestion(
     options,
     matchLefts,
     matchRights,
+    // توسيم الرسم: عدد الفراغات (= عدد الخيارات) وصورة السؤال.
+    blankCount: q.type === "DIAGRAM_LABEL" ? q.options.length : undefined,
+    imageId:
+      q.type === "DIAGRAM_LABEL" ? q.attachments[0]?.id ?? null : undefined,
     index,
     total,
   };
@@ -513,8 +528,8 @@ export async function getSessionReview(
       };
     }
 
-    // ملء الفراغات: يُعرَض النصّ بالخطوط، وإجابات الطالب/النموذجية مرقّمةً.
-    if (q.type === "FILL_BLANK") {
+    // ملء الفراغات/توسيم الرسم: إجابات الطالب/النموذجية مرقّمةً.
+    if (q.type === "FILL_BLANK" || q.type === "DIAGRAM_LABEL") {
       const blanks = [...q.options].sort((a, b) => a.orderNum - b.orderNum);
       let studentArr: string[] = [];
       try {

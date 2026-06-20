@@ -21,6 +21,7 @@ const TYPE_LABEL: Record<string, string> = {
   FILL_BLANK: "ملء الفراغات",
   MATCHING: "مطابقة",
   CALCULATION: "حساب",
+  DIAGRAM_LABEL: "توسيم رسم",
 };
 const DIFF_LABEL: Record<string, string> = {
   EASY: "سهل",

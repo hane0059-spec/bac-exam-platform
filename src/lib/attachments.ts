@@ -39,6 +39,7 @@ interface AttachmentRef {
   kind: string;
   quizId: string | null;
   sessionId: string | null;
+  questionId: string | null;
   uploadedById: string;
 }
 
@@ -48,6 +49,31 @@ export async function canAccessAttachment(
   att: AttachmentRef,
 ): Promise<boolean> {
   if (att.uploadedById === session.sub) return true; // الرافِع دائماً
+
+  // صورة سؤال توسيم الرسم: المدرّس المالك، أو طالب مُسنَد/له جلسة على اختبار يضمّ السؤال.
+  if (att.kind === "QUESTION_IMAGE" && att.questionId) {
+    const q = await prisma.question.findUnique({
+      where: { id: att.questionId },
+      select: { creatorId: true },
+    });
+    if (q?.creatorId === session.sub) return true;
+    if (session.role === "STUDENT") {
+      const node = await prisma.quizNode.findFirst({
+        where: {
+          questionId: att.questionId,
+          quiz: {
+            OR: [
+              { assignments: { some: { studentId: session.sub } } },
+              { sessions: { some: { studentId: session.sub } } },
+            ],
+          },
+        },
+        select: { id: true },
+      });
+      if (node) return true;
+    }
+    return false;
+  }
 
   if (att.kind === "EXAM_FILE" && att.quizId) {
     const quiz = await prisma.quiz.findUnique({

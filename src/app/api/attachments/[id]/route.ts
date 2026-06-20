@@ -24,6 +24,7 @@ export async function GET(
       data: true,
       quizId: true,
       sessionId: true,
+      questionId: true,
       uploadedById: true,
     },
   });

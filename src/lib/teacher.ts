@@ -78,7 +78,8 @@ export function optionLabel(
   content: string
 ): string {
   if (type === "TRUE_FALSE") return content; // «صح» / «خطأ»
-  if (type === "FILL_BLANK") return String(index + 1); // رقم الفراغ
+  if (type === "FILL_BLANK" || type === "DIAGRAM_LABEL")
+    return String(index + 1); // رقم الفراغ
   return MCQ_LABELS[index] ?? String(index + 1);
 }
 
@@ -107,6 +108,7 @@ export const questionInputSchema = z
       "FILL_BLANK",
       "MATCHING",
       "CALCULATION",
+      "DIAGRAM_LABEL",
     ]),
     subjectId: z.string().min(1, "المادة مطلوبة"),
     chapterId: z.string().min(1).nullish(),
@@ -160,6 +162,17 @@ export const questionInputSchema = z
           code: z.ZodIssueCode.custom,
           path: ["acceptedAnswers"],
           message: "هامش الخطأ يجب أن يكون عدداً",
+        });
+      }
+      return;
+    }
+    // توسيم الرسم: فراغات مرقّمة كملء الفراغات (1 إلى 12)، الصورة تُرفَع لاحقاً.
+    if (data.type === "DIAGRAM_LABEL") {
+      if (data.options.length < 1 || data.options.length > 12) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["options"],
+          message: "أضف من 1 إلى 12 فراغاً مرقّماً",
         });
       }
       return;

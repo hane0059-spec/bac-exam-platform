@@ -26,6 +26,11 @@ export default async function EditQuestionPage({
     include: {
       options: { orderBy: { orderNum: "asc" } },
       matchingPairs: { orderBy: { orderNum: "asc" } },
+      attachments: {
+        where: { kind: "QUESTION_IMAGE" },
+        select: { id: true },
+        take: 1,
+      },
       _count: { select: { studentAnswers: true } },
     },
   });
@@ -52,6 +57,7 @@ export default async function EditQuestionPage({
       left: p.leftItem,
       right: p.rightItem,
     })),
+    imageId: q.attachments[0]?.id ?? null,
     used: q._count.studentAnswers > 0,
   };
 

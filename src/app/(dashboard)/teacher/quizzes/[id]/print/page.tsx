@@ -47,6 +47,11 @@ export default async function PrintQuizPage({
                 orderBy: { orderNum: "asc" },
                 select: { leftItem: true, rightItem: true },
               },
+              attachments: {
+                where: { kind: "QUESTION_IMAGE" },
+                select: { id: true },
+                take: 1,
+              },
             },
           },
         },
@@ -65,15 +70,19 @@ export default async function PrintQuizPage({
       const isFill = q.type === "FILL_BLANK";
       const isMatch = q.type === "MATCHING";
       const isCalc = q.type === "CALCULATION";
+      const isDiagram = q.type === "DIAGRAM_LABEL";
+      const numberedBlanks = q.options.map(
+        (o, k) => `(${k + 1}) ${parseBlankAnswers(o.content).join(" / ")}`
+      );
       return {
         index: i + 1,
         type: q.type,
         // ملء الفراغات: يُعرَض النصّ بخطوط بدل علامات [[ ]].
         content: isFill ? fillTemplateForDisplay(q.content) : q.content,
         points,
-        // الفراغات/المطابقة تحمل الإجابات النموذجية — لا تُعرَض كخيارات في ورقة الأسئلة.
+        // الفراغات/المطابقة/توسيم الرسم تحمل الإجابات النموذجية — لا تُعرَض كخيارات.
         options:
-          isFill || isMatch
+          isFill || isMatch || isDiagram
             ? []
             : q.options.map((o) => ({
                 label: o.label,
@@ -83,10 +92,8 @@ export default async function PrintQuizPage({
         acceptedAnswers:
           q.type === "SHORT_ANSWER"
             ? q.acceptedAnswers
-            : isFill
-            ? q.options.map(
-                (o, k) => `(${k + 1}) ${parseBlankAnswers(o.content).join(" / ")}`
-              )
+            : isFill || isDiagram
+            ? numberedBlanks
             : isMatch
             ? q.matchingPairs.map((p) => `${p.leftItem} ← ${p.rightItem}`)
             : isCalc
@@ -96,6 +103,7 @@ export default async function PrintQuizPage({
                   : q.acceptedAnswers[0] ?? "",
               ]
             : [],
+        imageId: isDiagram ? q.attachments[0]?.id ?? null : null,
         explanation: q.explanation ?? null,
       };
     });
