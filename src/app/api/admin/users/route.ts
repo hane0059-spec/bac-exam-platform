@@ -45,8 +45,20 @@ export async function POST(req: Request) {
       { status: 403 }
     );
   }
+  // مدرّس مستقلّ: للمدير العام فقط، ويُنشأ له مؤسّسة خاصّة لاحقاً (تتجاوز الاختيار).
+  const independent = d.role === "TEACHER" && actorIsSuper && d.isIndependent;
   // مؤسّسة الحساب الجديد: مدير المدرسة يورّث مؤسّسته؛ المدير العام يختار.
-  const newSchoolId = ctx.isSuper ? d.schoolId ?? null : ctx.schoolId;
+  let newSchoolId = ctx.isSuper ? d.schoolId ?? null : ctx.schoolId;
+  // المدرّس المستقلّ يُنشأ له School خاصّة باسمه لعزل طلابه.
+  if (independent) {
+    const ownSchool = await prisma.school.create({
+      data: {
+        name: `مؤسّسة ${d.firstName} ${d.lastName}`,
+        type: "مدرّس مستقل",
+      },
+    });
+    newSchoolId = ownSchool.id;
+  }
 
   // الحقول المخصّصة حسب الدور.
   const cf = validateAndClean(
@@ -104,7 +116,10 @@ export async function POST(req: Request) {
                 employeeCode: await nextEmployeeCode(),
                 qualification: d.qualification || null,
                 canFileExams: d.canFileExams,
-                canManageStudents: d.canManageStudents,
+                // المستقلّ يدير طلابه دائماً.
+                canManageStudents: independent ? true : d.canManageStudents,
+                isIndependent: independent,
+                studentLimit: independent ? d.studentLimit ?? null : null,
               },
             },
             teacherSubjects: {

@@ -62,6 +62,25 @@ export async function POST(req: Request) {
     );
   }
 
+  // حدّ الطلاب للمدرّس المستقلّ (أساس الاشتراك): يُمنع تجاوزه.
+  const profile = await prisma.teacherProfile.findUnique({
+    where: { userId: session.sub },
+    select: { isIndependent: true, studentLimit: true },
+  });
+  if (profile?.isIndependent && profile.studentLimit != null) {
+    const current = await prisma.user.count({
+      where: { role: "STUDENT", createdById: session.sub },
+    });
+    if (current >= profile.studentLimit) {
+      return NextResponse.json(
+        {
+          error: `بلغتَ حدّ الطلاب المسموح في اشتراكك (${profile.studentLimit}). احذف طالباً أو رقِّ اشتراكك.`,
+        },
+        { status: 403 }
+      );
+    }
+  }
+
   let raw: unknown;
   try {
     raw = await req.json();

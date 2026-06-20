@@ -320,6 +320,10 @@ model TeacherProfile {
   canFileExams  Boolean @default(false) @map("can_file_exams")
   // إذن المدير للمدرّس بإضافة وإدارة حسابات الطلاب (الإسناد يبقى حرّاً دائماً).
   canManageStudents Boolean @default(false) @map("can_manage_students")
+  // مدرّس مستقلّ يدير مؤسّسته بنفسه (هو المدير والمدرّس)، يُنشئه المدير العام.
+  isIndependent     Boolean @default(false) @map("is_independent")
+  // حدّ عدد الطلاب المسموح (أساس الاشتراك؛ null = بلا حدّ). يفرضه الخادم على الإنشاء.
+  studentLimit      Int?    @map("student_limit")
 
   @@map("teacher_profiles")
 }

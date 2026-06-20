@@ -27,6 +27,8 @@ export default async function EditUserPage({
           qualification: true,
           canFileExams: true,
           canManageStudents: true,
+          isIndependent: true,
+          studentLimit: true,
         },
       },
       teacherSubjects: { select: { subjectId: true } },
@@ -56,6 +58,8 @@ export default async function EditUserPage({
     canFileExams: user.teacherProfile?.canFileExams ?? false,
     canManageStudents: user.teacherProfile?.canManageStudents ?? false,
     isSuperAdmin: user.isSuperAdmin,
+    isIndependent: user.teacherProfile?.isIndependent ?? false,
+    studentLimit: user.teacherProfile?.studentLimit ?? null,
   };
 
   return (

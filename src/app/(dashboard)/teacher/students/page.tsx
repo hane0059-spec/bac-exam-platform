@@ -54,7 +54,7 @@ export default async function TeacherStudentsPage({
     ? { role: "STUDENT", AND: [{ OR: scopeOr }, { OR: searchConditions(q) }] }
     : { role: "STUDENT", createdById: session.sub };
 
-  const [students, canManage] = await Promise.all([
+  const [students, canManage, profile, createdCount] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: q ? [{ firstName: "asc" }] : { createdAt: "desc" },
@@ -68,17 +68,45 @@ export default async function TeacherStudentsPage({
       },
     }),
     teacherCanManageStudents(session.sub),
+    prisma.teacherProfile.findUnique({
+      where: { userId: session.sub },
+      select: { isIndependent: true, studentLimit: true },
+    }),
+    prisma.user.count({ where: { role: "STUDENT", createdById: session.sub } }),
   ]);
+  // مدرّس مستقلّ: حصّة الطلاب حسب الاشتراك.
+  const quota =
+    profile?.isIndependent && profile.studentLimit != null
+      ? { used: createdCount, limit: profile.studentLimit }
+      : null;
+  const quotaFull = quota != null && quota.used >= quota.limit;
 
   return (
     <DashboardShell session={session}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-xl font-bold">طلابي</h2>
-        {canManage && (
-          <Link href="/teacher/students/new" className="btn-primary">
-            + طالب جديد
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="font-display text-xl font-bold">طلابي</h2>
+          {quota && (
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-medium ${
+                quotaFull ? "bg-red-100 text-red-700" : "bg-primary-light text-primary-dark"
+              }`}
+              dir="ltr"
+            >
+              {quota.used} / {quota.limit}
+            </span>
+          )}
+        </div>
+        {canManage &&
+          (quotaFull ? (
+            <span className="cursor-not-allowed rounded-xl bg-ink/10 px-4 py-2 text-sm font-medium text-ink/40">
+              بلغتَ حدّ الاشتراك
+            </span>
+          ) : (
+            <Link href="/teacher/students/new" className="btn-primary">
+              + طالب جديد
+            </Link>
+          ))}
       </div>
 
       <UserSearchBox

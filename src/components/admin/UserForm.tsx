@@ -22,6 +22,8 @@ export interface UserInitial {
   canFileExams: boolean;
   canManageStudents: boolean;
   isSuperAdmin: boolean;
+  isIndependent: boolean;
+  studentLimit: number | null;
 }
 
 export default function UserForm({
@@ -68,6 +70,11 @@ export default function UserForm({
   const [canManageStudents, setCanManageStudents] = useState(
     initial?.canManageStudents ?? false
   );
+  // مدرّس مستقلّ (للمدير العام فقط) + حدّ طلابه.
+  const [isIndependent, setIsIndependent] = useState(initial?.isIndependent ?? false);
+  const [studentLimit, setStudentLimit] = useState(
+    initial?.studentLimit != null ? String(initial.studentLimit) : "20"
+  );
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -108,6 +115,11 @@ export default function UserForm({
             canManageStudents: isTeacher ? canManageStudents : false,
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
             schoolId: schools ? schoolId || null : undefined,
+            isIndependent: isTeacher && canManageAdmins ? isIndependent : false,
+            studentLimit:
+              isTeacher && canManageAdmins && isIndependent
+                ? Number(studentLimit)
+                : null,
             customData,
           }
         : {
@@ -121,6 +133,10 @@ export default function UserForm({
             canFileExams: isTeacher ? canFileExams : false,
             canManageStudents: isTeacher ? canManageStudents : false,
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
+            studentLimit:
+              isTeacher && canManageAdmins && initial?.isIndependent
+                ? Number(studentLimit)
+                : null,
           };
     const res = await fetch(url, {
       method: mode === "create" ? "POST" : "PATCH",
@@ -166,7 +182,7 @@ export default function UserForm({
         </div>
       )}
 
-      {schools && mode === "create" && (
+      {schools && mode === "create" && !(isTeacher && isIndependent) && (
         <div>
           <label className="mb-1 block text-sm font-medium">
             {role === "ADMIN" ? "المؤسّسة التي يديرها" : "المؤسّسة"}
@@ -305,15 +321,75 @@ export default function UserForm({
             />
             السماح بإنشاء اختبارات ورقية/مرفوعة (صور/PDF)
           </label>
-          <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
-            <input
-              type="checkbox"
-              checked={canManageStudents}
-              onChange={(e) => setCanManageStudents(e.target.checked)}
-              className="accent-primary"
-            />
-            السماح بإضافة وإدارة حسابات الطلاب (الإسناد متاح دائماً)
-          </label>
+          {!isIndependent && (
+            <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={canManageStudents}
+                onChange={(e) => setCanManageStudents(e.target.checked)}
+                className="accent-primary"
+              />
+              السماح بإضافة وإدارة حسابات الطلاب (الإسناد متاح دائماً)
+            </label>
+          )}
+
+          {/* تعديل حدّ طلاب مدرّس مستقلّ قائم (للمدير العام). */}
+          {canManageAdmins && mode === "edit" && initial?.isIndependent && (
+            <div className="rounded-xl border border-primary/30 bg-primary-light/40 p-3 text-sm">
+              <p className="mb-2 font-medium text-primary-dark">
+                مدرّس مستقلّ يدير مؤسّسته
+              </p>
+              <label className="block">
+                <span className="mb-1 block font-medium text-ink">
+                  حدّ عدد الطلاب (حسب الاشتراك)
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  dir="ltr"
+                  className="field w-32"
+                  value={studentLimit}
+                  onChange={(e) => setStudentLimit(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+
+          {/* مدرّس مستقلّ — للمدير العام عند الإنشاء فقط. */}
+          {canManageAdmins && mode === "create" && (
+            <div className="rounded-xl border border-primary/30 bg-primary-light/40 p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={isIndependent}
+                  onChange={(e) => setIsIndependent(e.target.checked)}
+                  className="accent-primary"
+                />
+                مدرّس مستقلّ يدير مؤسّسته بنفسه (هو المدير والمدرّس)
+              </label>
+              {isIndependent && (
+                <div className="mt-3 space-y-2 text-sm text-ink/70">
+                  <p>
+                    تُنشأ له مؤسّسة خاصّة تلقائياً، ويُمنح إدارة الطلاب، ويسجّل
+                    طلابه ويتحكّم بهم ضمن الحدّ أدناه.
+                  </p>
+                  <label className="block">
+                    <span className="mb-1 block font-medium text-ink">
+                      حدّ عدد الطلاب (حسب الاشتراك)
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      dir="ltr"
+                      className="field w-32"
+                      value={studentLimit}
+                      onChange={(e) => setStudentLimit(e.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

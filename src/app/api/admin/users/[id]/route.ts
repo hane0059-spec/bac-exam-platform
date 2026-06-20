@@ -18,7 +18,10 @@ export async function PATCH(
   }
   const session = ctx.session;
 
-  const target = await prisma.user.findUnique({ where: { id: params.id } });
+  const target = await prisma.user.findUnique({
+    where: { id: params.id },
+    include: { teacherProfile: { select: { isIndependent: true } } },
+  });
   if (!target) {
     return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
   }
@@ -113,6 +116,10 @@ export async function PATCH(
                   qualification: d.qualification || null,
                   canFileExams: d.canFileExams,
                   canManageStudents: d.canManageStudents,
+                  // تعديل حدّ طلاب المدرّس المستقلّ (للمدير العام فقط).
+                  ...(actorIsSuper && target.teacherProfile?.isIndependent
+                    ? { studentLimit: d.studentLimit ?? null }
+                    : {}),
                 },
               },
             }
