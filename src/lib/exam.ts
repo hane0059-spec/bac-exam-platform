@@ -10,6 +10,7 @@ import {
   fillTemplateForDisplay,
 } from "@/lib/grading";
 import { parseFileExamSettings } from "@/lib/fileExam";
+import { createNotification } from "@/lib/notifications";
 
 // ─────────────────────────────────────────────
 // الحراسة والإعدادات
@@ -553,6 +554,32 @@ export async function getSessionReview(
 }
 
 /**
+ * يُشعر مدرّس الاختبار الورقي بأنّ الطالب سلّم ورقته (بانتظار تصحيحه).
+ * فشل الإشعار لا يكسر التسليم. يُربَط بصفحة إجابات الاختبار الورقي.
+ */
+export async function notifyFileExamSubmitted(sessionId: string): Promise<void> {
+  try {
+    const s = await prisma.examSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        quizId: true,
+        quiz: { select: { creatorId: true, title: true } },
+        student: { select: { firstName: true, lastName: true } },
+      },
+    });
+    if (!s) return;
+    await createNotification({
+      userId: s.quiz.creatorId,
+      type: "exam_needs_grading",
+      message: `سلّم «${s.student.firstName} ${s.student.lastName}» ورقة اختبار «${s.quiz.title}» — بانتظار تصحيحك.`,
+      linkUrl: `/teacher/file-exams/${s.quizId}/submissions`,
+    });
+  } catch {
+    // تجاهل أخطاء الإشعار.
+  }
+}
+
+/**
  * يفرض مهلة الاختبار الورقي على الخادم: إن انتهى الوقت لجلسة جارية،
  * تُرسَل للتصحيح إن وُجدت صور (COMPLETED + needsGrading)، وإلا TIMED_OUT.
  * يُعيد true إن أنهى الجلسة بسبب انتهاء الوقت.
@@ -596,6 +623,8 @@ export async function finalizeFileSessionIfExpired(
           maxPossibleScore: settings.maxScore,
         },
   });
+  // إن سُلّمت ورقةٌ (صور موجودة) عند انتهاء الوقت، أشعِر المدرّس بالتصحيح.
+  if (pages > 0) await notifyFileExamSubmitted(s.id);
   return true;
 }
 
@@ -605,6 +634,10 @@ export async function finalizeSession(
 ) {
   const session = await prisma.examSession.findUnique({
     where: { id: sessionId },
+    include: {
+      quiz: { select: { creatorId: true, title: true } },
+      student: { select: { firstName: true, lastName: true } },
+    },
   });
   if (!session) return null;
 
@@ -614,7 +647,7 @@ export async function finalizeSession(
   });
   const answers = await prisma.studentAnswer.findMany({
     where: { sessionId },
-    select: { nodeId: true, isCorrect: true, scoreEarned: true },
+    select: { nodeId: true, isCorrect: true, scoreEarned: true, needsReview: true },
   });
   const ansByNode = new Map(answers.map((a) => [a.nodeId, a]));
 
@@ -634,7 +667,7 @@ export async function finalizeSession(
     (Date.now() - session.startedAt.getTime()) / 1000
   );
 
-  return prisma.examSession.update({
+  const updated = await prisma.examSession.update({
     where: { id: sessionId },
     data: {
       status,
@@ -646,6 +679,28 @@ export async function finalizeSession(
       currentNodeId: null,
     },
   });
+
+  // إشعار المدرّس مالك الاختبار بأنّ الطالب سلّم — مرّةً واحدة عند الانتقال من
+  // «قيد الأداء». تُبرَز حاجة التصحيح إن وُجدت إجابة بانتظار المراجعة.
+  // فشل الإشعار لا يكسر تسليم الطالب (الجلسة حُدّثت أصلاً).
+  if (session.status === "IN_PROGRESS") {
+    try {
+      const anyReview = answers.some((a) => a.needsReview);
+      const studentName = `${session.student.firstName} ${session.student.lastName}`;
+      await createNotification({
+        userId: session.quiz.creatorId,
+        type: anyReview ? "exam_needs_grading" : "exam_submitted",
+        message: anyReview
+          ? `سلّم «${studentName}» اختبار «${session.quiz.title}» — بانتظار تصحيحك.`
+          : `أنهى «${studentName}» اختبار «${session.quiz.title}» (${score.percentage}%).`,
+        linkUrl: `/teacher/sessions/${sessionId}`,
+      });
+    } catch {
+      // تجاهل أخطاء الإشعار.
+    }
+  }
+
+  return updated;
 }
 
 /**

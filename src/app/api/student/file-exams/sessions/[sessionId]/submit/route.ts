@@ -2,7 +2,11 @@
 // POST: إرسال الإجابة للتصحيح. يلزم صفحة واحدة على الأقل. الطالب صاحب الجلسة.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStudentSession, finalizeFileSessionIfExpired } from "@/lib/exam";
+import {
+  getStudentSession,
+  finalizeFileSessionIfExpired,
+  notifyFileExamSubmitted,
+} from "@/lib/exam";
 import { parseFileExamSettings } from "@/lib/fileExam";
 
 export const runtime = "nodejs";
@@ -65,5 +69,7 @@ export async function POST(
       percentage: 0,
     },
   });
+  // إشعار المدرّس بوجود ورقة بانتظار تصحيحه.
+  await notifyFileExamSubmitted(exam.id);
   return NextResponse.json({ ok: true });
 }
