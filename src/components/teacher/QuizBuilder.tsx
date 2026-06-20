@@ -15,6 +15,8 @@ interface BankQuestion {
   type: QType;
   points: number;
   difficulty: string;
+  chapterId: string | null;
+  chapterTitle: string | null;
 }
 interface Item {
   questionId: string;
@@ -97,9 +99,27 @@ export default function QuizBuilder({
     () => new Map(bank.map((q) => [q.id, q])),
     [bank]
   );
-  const available = bank.filter(
-    (q) => !items.some((it) => it.questionId === q.id)
-  );
+
+  // فلترة بنك الأسئلة (لأنّه قد يعرض كل أسئلة المادة): بالفصل وبالبحث النصّي.
+  const [bankChapter, setBankChapter] = useState("");
+  const [bankSearch, setBankSearch] = useState("");
+  const chapters = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const q of bank)
+      if (q.chapterId && q.chapterTitle) m.set(q.chapterId, q.chapterTitle);
+    return [...m.entries()].map(([id, title]) => ({ id, title }));
+  }, [bank]);
+  const hasNoChapter = useMemo(() => bank.some((q) => !q.chapterId), [bank]);
+
+  const available = bank.filter((q) => {
+    if (items.some((it) => it.questionId === q.id)) return false;
+    if (bankChapter === "__none__" && q.chapterId) return false;
+    if (bankChapter && bankChapter !== "__none__" && q.chapterId !== bankChapter)
+      return false;
+    const s = bankSearch.trim();
+    if (s && !q.content.includes(s)) return false;
+    return true;
+  });
 
   const totalPoints = items.reduce((sum, it) => {
     const q = bankMap.get(it.questionId);
@@ -451,11 +471,42 @@ export default function QuizBuilder({
 
       {/* إضافة من البنك */}
       {!ro && (
-        <div className="card space-y-2 p-5">
+        <div className="card space-y-3 p-5">
           <h3 className="font-display font-semibold">أضف من بنك الأسئلة</h3>
+
+          {/* فلترة البنك بالفصل والبحث */}
+          {bank.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {chapters.length > 0 && (
+                <select
+                  className="field w-auto flex-1"
+                  value={bankChapter}
+                  onChange={(e) => setBankChapter(e.target.value)}
+                >
+                  <option value="">كل الفصول</option>
+                  {chapters.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                  {hasNoChapter && <option value="__none__">بلا فصل</option>}
+                </select>
+              )}
+              <input
+                type="search"
+                className="field flex-1"
+                value={bankSearch}
+                onChange={(e) => setBankSearch(e.target.value)}
+                placeholder="ابحث في نصّ السؤال…"
+              />
+            </div>
+          )}
+
           {available.length === 0 ? (
             <p className="text-sm text-ink/50">
-              لا أسئلة متاحة لهذه المادة. أنشئ أسئلة في بنك الأسئلة أولاً.
+              {bank.length === 0
+                ? "لا أسئلة متاحة لهذه المادة. أنشئ أسئلة في بنك الأسئلة أولاً."
+                : "لا أسئلة مطابقة للفلترة."}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -468,6 +519,7 @@ export default function QuizBuilder({
                     <p className="truncate text-sm">{q.content}</p>
                     <span className="text-xs text-ink/40">
                       {TYPE_LABEL[q.type]} • {q.points} نقطة
+                      {q.chapterTitle && ` • ${q.chapterTitle}`}
                     </span>
                   </div>
                   <button

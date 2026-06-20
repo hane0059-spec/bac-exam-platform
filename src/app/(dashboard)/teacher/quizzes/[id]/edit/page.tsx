@@ -47,6 +47,8 @@ export default async function EditQuizPage({
       type: true,
       points: true,
       difficulty: true,
+      chapterId: true,
+      chapter: { select: { title: true } },
     },
   });
 
@@ -114,6 +116,8 @@ export default async function EditQuizPage({
           type: q.type as QType,
           points: Number(q.points),
           difficulty: q.difficulty,
+          chapterId: q.chapterId,
+          chapterTitle: q.chapter?.title ?? null,
         }))}
         initialItems={initialItems}
         initial={{

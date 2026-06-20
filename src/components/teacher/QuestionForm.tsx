@@ -57,6 +57,13 @@ const DIFFICULTIES = [
 
 const TF_OPTIONS = ["صح", "خطأ"];
 
+// يُلحق فاصل المرادفات « | » بقيمة الحقل (دون أن يبحث المدرّس عنه في لوحة المفاتيح).
+function appendSep(x: string): string {
+  const t = (x ?? "").replace(/\s+$/, "");
+  if (t === "") return "";
+  return t.endsWith("|") ? `${t} ` : `${t} | `;
+}
+
 function emptyMcq() {
   return [
     { content: "", isCorrect: true },
@@ -670,6 +677,20 @@ export default function QuestionForm({
                     }
                     placeholder={`إجابات الفراغ ${i + 1} (مثال: نواة | النواة)`}
                   />
+                  {!locked && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFillBlanks((prev) =>
+                          prev.map((x, j) => (j === i ? appendSep(x) : x))
+                        )
+                      }
+                      title="إدراج فاصل المرادفات"
+                      className="shrink-0 rounded-lg border border-line px-2 py-2 text-sm text-ink/50 hover:bg-ink/5"
+                    >
+                      + مرادف |
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -803,6 +824,20 @@ export default function QuestionForm({
                     }
                     placeholder={`إجابة الفراغ ${i + 1} (مثال: النواة | نواة)`}
                   />
+                  {!locked && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDiagramBlanks((prev) =>
+                          prev.map((x, j) => (j === i ? appendSep(x) : x))
+                        )
+                      }
+                      title="إدراج فاصل المرادفات"
+                      className="shrink-0 rounded-lg border border-line px-2 py-2 text-sm text-ink/50 hover:bg-ink/5"
+                    >
+                      + مرادف |
+                    </button>
+                  )}
                   {diagramBlanks.length > 1 && !locked && (
                     <button
                       type="button"

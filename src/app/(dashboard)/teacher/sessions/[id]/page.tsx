@@ -51,7 +51,8 @@ export default async function TeacherSessionReviewPage({
               (it) =>
                 it.type === "SHORT_ANSWER" ||
                 it.type === "ESSAY" ||
-                it.type === "FILL_BLANK"
+                it.type === "FILL_BLANK" ||
+                it.type === "DIAGRAM_LABEL"
             )
             .map((it) => ({
               nodeId: it.nodeId,
