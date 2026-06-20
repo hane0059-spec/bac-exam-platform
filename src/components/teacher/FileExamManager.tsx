@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
 import ConfirmButton from "@/components/ConfirmButton";
+import DateTimeField from "@/components/DateTimeField";
 
 function toLocal(iso: string | null): string {
   if (!iso) return "";
@@ -319,23 +320,11 @@ export default function FileExamManager({
           </div>
           <div>
             <label className="mb-1 block text-sm text-ink/60">يتاح من</label>
-            <input
-              type="datetime-local"
-              dir="ltr"
-              className="field"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
+            <DateTimeField value={from} onChange={setFrom} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-ink/60">يتاح حتى</label>
-            <input
-              type="datetime-local"
-              dir="ltr"
-              className="field"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
-            />
+            <DateTimeField value={until} onChange={setUntil} />
           </div>
         </div>
 
