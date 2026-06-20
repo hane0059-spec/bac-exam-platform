@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
+import UserSearchBox from "@/components/admin/UserSearchBox";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,12 @@ export default async function TeacherDashboard() {
 
   return (
     <DashboardShell session={session}>
+      <UserSearchBox
+        initial=""
+        basePath="/teacher/students"
+        placeholder="ابحث في طلابك بالاسم أو الرمز أو البريد أو الهاتف"
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/teacher/questions"
