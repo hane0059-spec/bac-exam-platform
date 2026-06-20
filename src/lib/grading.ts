@@ -152,6 +152,62 @@ export function gradeFillBlank(
 }
 
 // ─────────────────────────────────────────────
+// المطابقة (MATCHING)
+// ─────────────────────────────────────────────
+
+/**
+ * تصحيح المطابقة: لكل عنصر أيسر إجابته الصحيحة (العنصر الأيمن المقابل)،
+ * وإجابة الطالب اختيارُه. مطابقة دقيقة بعد التطبيع العربي، بدرجة جزئية.
+ */
+export function gradeMatching(
+  correctRights: readonly string[],
+  studentRights: readonly (string | null | undefined)[]
+): { correctCount: number; total: number } {
+  const total = correctRights.length;
+  let correctCount = 0;
+  for (let i = 0; i < total; i++) {
+    const chosen = normalizeArabic(studentRights[i] ?? "");
+    if (chosen && chosen === normalizeArabic(correctRights[i])) correctCount++;
+  }
+  return { correctCount, total };
+}
+
+// ─────────────────────────────────────────────
+// الحساب (CALCULATION) — إجابة عددية بهامش خطأ اختياري
+// ─────────────────────────────────────────────
+
+/**
+ * يحوّل نصّاً إلى عدد: أرقام عربية/فارسية → لاتينية، فاصلة عشرية عربية «٫» → نقطة،
+ * وإزالة الفواصل الألفية والمسافات. يعيد null لغير العددي.
+ */
+export function parseNumber(input: string | null | undefined): number | null {
+  if (input == null) return null;
+  let s = normalizeArabic(String(input)); // يحوّل الأرقام العربية ويقلّم المسافات
+  s = s
+    .replace(/٫/g, ".") // الفاصلة العشرية العربية
+    .replace(/[٬,]/g, "") // الفاصلة الألفية العربية واللاتينية
+    .replace(/\s+/g, "");
+  if (s === "" || !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * تصحيح سؤال الحساب: `accepted[0]` القيمة الصحيحة، و`accepted[1]` هامش الخطأ
+ * المسموح (±، اختياري). صحيح إذا كان الفرق المطلق ضمن الهامش.
+ */
+export function gradeCalculation(
+  accepted: readonly string[],
+  studentAnswer: string | null | undefined
+): boolean {
+  const value = parseNumber(accepted[0]);
+  const tol = parseNumber(accepted[1] ?? "0") ?? 0;
+  const ans = parseNumber(studentAnswer);
+  if (value == null || ans == null) return false;
+  return Math.abs(ans - value) <= Math.abs(tol);
+}
+
+// ─────────────────────────────────────────────
 // 3) إعادة حساب الدرجة (نسبة من «الأسئلة الصالحة»)
 // ─────────────────────────────────────────────
 

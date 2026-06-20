@@ -31,6 +31,7 @@ export async function GET(
     where: { id: params.id },
     include: {
       options: { orderBy: { orderNum: "asc" } },
+      matchingPairs: { orderBy: { orderNum: "asc" } },
       _count: { select: { studentAnswers: true } },
     },
   });
@@ -53,6 +54,10 @@ export async function GET(
       options: q.options.map((o) => ({
         content: o.content,
         isCorrect: o.isCorrect,
+      })),
+      matchingPairs: q.matchingPairs.map((p) => ({
+        left: p.leftItem,
+        right: p.rightItem,
       })),
       used: q._count.studentAnswers > 0,
     },
@@ -107,7 +112,9 @@ export async function PATCH(
     );
   }
 
-  const isShort = data.type === "SHORT_ANSWER";
+  const usesAccepted =
+    data.type === "SHORT_ANSWER" || data.type === "CALCULATION";
+  const isMatching = data.type === "MATCHING";
 
   const scalar = {
     subjectId: data.subjectId,
@@ -129,25 +136,36 @@ export async function PATCH(
     return NextResponse.json({ id: existing.id, optionsLocked: true });
   }
 
-  // غير مُستخدَم: استبدال كامل للخيارات/الإجابات ضمن معاملة.
+  // غير مُستخدَم: استبدال كامل للخيارات/الإجابات/الأزواج ضمن معاملة.
   await prisma.$transaction([
     prisma.questionOption.deleteMany({ where: { questionId: existing.id } }),
+    prisma.questionMatchingPair.deleteMany({ where: { questionId: existing.id } }),
     prisma.question.update({
       where: { id: existing.id },
       data: {
         ...scalar,
         type: data.type,
-        acceptedAnswers: isShort ? data.acceptedAnswers : [],
-        options: isShort
-          ? undefined
-          : {
-              create: data.options.map((o, i) => ({
-                label: optionLabel(data.type, i, o.content),
-                content: o.content,
-                isCorrect: o.isCorrect,
+        acceptedAnswers: usesAccepted ? data.acceptedAnswers : [],
+        options:
+          usesAccepted || isMatching
+            ? undefined
+            : {
+                create: data.options.map((o, i) => ({
+                  label: optionLabel(data.type, i, o.content),
+                  content: o.content,
+                  isCorrect: o.isCorrect,
+                  orderNum: i,
+                })),
+              },
+        matchingPairs: isMatching
+          ? {
+              create: data.matchingPairs.map((p, i) => ({
+                leftItem: p.left,
+                rightItem: p.right,
                 orderNum: i,
               })),
-            },
+            }
+          : undefined,
       },
     }),
   ]);

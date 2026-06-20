@@ -26,6 +26,8 @@ interface Question {
   options: SanitizedOption[];
   index: number;
   total: number;
+  matchLefts?: { id: string; text: string }[];
+  matchRights?: string[];
 }
 interface Reveal {
   needsReview: boolean;
@@ -114,6 +116,7 @@ export default function QuizRunner({
   const [skipNote, setSkipNote] = useState("");
   const [ordered, setOrdered] = useState<SanitizedOption[]>([]);
   const [blanks, setBlanks] = useState<string[]>([]);
+  const [matches, setMatches] = useState<string[]>([]);
   const submitting = useRef(false);
 
   // سؤال الترتيب: ابدأ بالترتيب المعروض (المخلوط) ثم يرتّبه الطالب.
@@ -122,6 +125,9 @@ export default function QuizRunner({
     // ملء الفراغات: خانة فارغة لكل فراغ في نصّ القالب.
     if (question?.type === "FILL_BLANK")
       setBlanks(Array(countBlanks(question.content)).fill(""));
+    // المطابقة: اختيار فارغ لكل عنصر أيسر.
+    if (question?.type === "MATCHING")
+      setMatches(Array(question.matchLefts?.length ?? 0).fill(""));
   }, [question]);
 
   function moveOrdered(idx: number, dir: -1 | 1) {
@@ -183,9 +189,13 @@ export default function QuizRunner({
         : selected
         ? [selected]
         : [];
-    // ملء الفراغات: تُرسَل الإجابات مصفوفةً مرتّبةً (JSON) في حقل النصّ.
+    // ملء الفراغات/المطابقة: تُرسَل الإجابات مصفوفةً مرتّبةً (JSON) في حقل النصّ.
     const textPayload =
-      question.type === "FILL_BLANK" ? JSON.stringify(blanks) : text;
+      question.type === "FILL_BLANK"
+        ? JSON.stringify(blanks)
+        : question.type === "MATCHING"
+        ? JSON.stringify(matches)
+        : text;
     const res = await fetch(`/api/student/sessions/${sessionId}/answer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -223,7 +233,7 @@ export default function QuizRunner({
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
     setPhase("feedback");
-  }, [question, selected, text, ordered, blanks, sessionId, loadResult]);
+  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult]);
 
   const goNext = useCallback(() => {
     if (pendingFinish) {
@@ -322,9 +332,13 @@ export default function QuizRunner({
   if ((phase === "question" || startedFeedback) && question) {
     const isOrder = question.type === "ORDER";
     const isFill = question.type === "FILL_BLANK";
-    const isShort = !isOrder && !isFill && question.options.length === 0;
+    const isMatch = question.type === "MATCHING";
+    const isShort =
+      !isOrder && !isFill && !isMatch && question.options.length === 0;
     const canSubmit = isFill
       ? blanks.some((b) => b.trim().length > 0)
+      : isMatch
+      ? matches.some((m) => m)
       : isShort
       ? text.trim().length > 0
       : isOrder
@@ -418,6 +432,42 @@ export default function QuizRunner({
                 </div>
               ))}
             </div>
+          ) : isMatch ? (
+            <div className="space-y-2">
+              <p className="mb-1 text-sm text-ink/60">
+                طابِق كل عنصر بما يناسبه:
+              </p>
+              {question.matchLefts?.map((left, i) => (
+                <div
+                  key={left.id}
+                  className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-3"
+                >
+                  <span className="min-w-[6rem] flex-1 font-medium">
+                    {left.text}
+                  </span>
+                  <span className="text-ink/40">←</span>
+                  <select
+                    value={matches[i] ?? ""}
+                    disabled={startedFeedback}
+                    onChange={(e) =>
+                      setMatches((prev) => {
+                        const next = [...prev];
+                        next[i] = e.target.value;
+                        return next;
+                      })
+                    }
+                    className="field w-48"
+                  >
+                    <option value="">— اختر —</option>
+                    {question.matchRights?.map((r, k) => (
+                      <option key={k} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
           ) : isShort ? (
             question.type === "ESSAY" ? (
               <textarea
@@ -430,10 +480,18 @@ export default function QuizRunner({
             ) : (
               <input
                 type="text"
+                dir={question.type === "CALCULATION" ? "ltr" : undefined}
+                inputMode={
+                  question.type === "CALCULATION" ? "decimal" : undefined
+                }
                 value={text}
                 disabled={startedFeedback}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="اكتب إجابتك هنا…"
+                placeholder={
+                  question.type === "CALCULATION"
+                    ? "أدخل القيمة العددية…"
+                    : "اكتب إجابتك هنا…"
+                }
                 className="field"
               />
             )

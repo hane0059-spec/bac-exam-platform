@@ -11,7 +11,9 @@ type QType =
   | "SHORT_ANSWER"
   | "ESSAY"
   | "ORDER"
-  | "FILL_BLANK";
+  | "FILL_BLANK"
+  | "MATCHING"
+  | "CALCULATION";
 
 interface Concept {
   id: string;
@@ -39,6 +41,7 @@ export interface QuestionInitial {
   tags: string[];
   acceptedAnswers: string[];
   options: { content: string; isCorrect: boolean }[];
+  matchingPairs: { left: string; right: string }[];
   used: boolean;
 }
 
@@ -102,6 +105,22 @@ export default function QuestionForm({
     initial?.type === "FILL_BLANK"
       ? initial.options.map((o) => o.content)
       : []
+  );
+  // المطابقة: أزواج (أيسر ↔ أيمن).
+  const [pairs, setPairs] = useState<{ left: string; right: string }[]>(
+    initial?.type === "MATCHING" && initial.matchingPairs.length
+      ? initial.matchingPairs
+      : [
+          { left: "", right: "" },
+          { left: "", right: "" },
+        ]
+  );
+  // الحساب: القيمة الصحيحة + هامش الخطأ (acceptedAnswers = [القيمة, الهامش؟]).
+  const [calcValue, setCalcValue] = useState(
+    initial?.type === "CALCULATION" ? initial.acceptedAnswers[0] ?? "" : ""
+  );
+  const [calcTolerance, setCalcTolerance] = useState(
+    initial?.type === "CALCULATION" ? initial.acceptedAnswers[1] ?? "" : ""
   );
 
   const [error, setError] = useState("");
@@ -203,6 +222,21 @@ export default function QuestionForm({
         })),
       };
     }
+    if (type === "CALCULATION") {
+      const acc = [calcValue.trim()];
+      if (calcTolerance.trim()) acc.push(calcTolerance.trim());
+      return { ...base, acceptedAnswers: acc, options: [] };
+    }
+    if (type === "MATCHING") {
+      return {
+        ...base,
+        acceptedAnswers: [],
+        options: [],
+        matchingPairs: pairs
+          .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
+          .filter((p) => p.left && p.right),
+      };
+    }
     return { ...base, acceptedAnswers: [], options };
   }
 
@@ -249,6 +283,8 @@ export default function QuestionForm({
               ["ESSAY", "مقالي"],
               ["ORDER", "ترتيب"],
               ["FILL_BLANK", "ملء الفراغات"],
+              ["MATCHING", "مطابقة"],
+              ["CALCULATION", "حساب"],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -585,6 +621,101 @@ export default function QuestionForm({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {type === "MATCHING" && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            أزواج المطابقة (الأيسر ↔ الأيمن)
+          </label>
+          <p className="mb-2 text-xs text-ink/50">
+            يرى الطالب العناصر اليسرى ويختار لكل منها العنصر الأيمن المناسب
+            (تُعرَض اليمنى مخلوطةً). الدرجة جزئية لكل زوج.
+          </p>
+          <div className="space-y-2">
+            {pairs.map((p, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="field flex-1"
+                  value={p.left}
+                  disabled={locked}
+                  onChange={(e) =>
+                    setPairs((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, left: e.target.value } : x))
+                    )
+                  }
+                  placeholder={`العنصر الأيسر ${i + 1}`}
+                />
+                <span className="text-ink/40">↔</span>
+                <input
+                  type="text"
+                  className="field flex-1"
+                  value={p.right}
+                  disabled={locked}
+                  onChange={(e) =>
+                    setPairs((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, right: e.target.value } : x))
+                    )
+                  }
+                  placeholder={`المطابِق ${i + 1}`}
+                />
+                {pairs.length > 2 && !locked && (
+                  <button
+                    type="button"
+                    onClick={() => setPairs((prev) => prev.filter((_, j) => j !== i))}
+                    className="px-2 text-ink/40 hover:text-red-500"
+                    aria-label="حذف الزوج"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {pairs.length < 8 && !locked && (
+            <button
+              type="button"
+              onClick={() => setPairs((prev) => [...prev, { left: "", right: "" }])}
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              + أضف زوجاً
+            </button>
+          )}
+        </div>
+      )}
+
+      {type === "CALCULATION" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              القيمة الصحيحة
+            </label>
+            <input
+              type="text"
+              dir="ltr"
+              inputMode="decimal"
+              className="field"
+              value={calcValue}
+              onChange={(e) => setCalcValue(e.target.value)}
+              placeholder="مثال: 3.14"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              هامش الخطأ المسموح (± اختياري)
+            </label>
+            <input
+              type="text"
+              dir="ltr"
+              inputMode="decimal"
+              className="field"
+              value={calcTolerance}
+              onChange={(e) => setCalcTolerance(e.target.value)}
+              placeholder="مثال: 0.01"
+            />
+          </div>
         </div>
       )}
 

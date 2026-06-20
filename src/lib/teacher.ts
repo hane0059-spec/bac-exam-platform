@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { countBlanks } from "@/lib/grading";
+import { countBlanks, parseNumber } from "@/lib/grading";
 import type { SessionData } from "@/lib/auth";
 
 /** جلسة مدرّس صالحة أو null. */
@@ -91,6 +91,11 @@ const optionSchema = z.object({
   isCorrect: z.boolean(),
 });
 
+const matchingPairSchema = z.object({
+  left: z.string().trim().min(1, "العنصر الأيسر مطلوب"),
+  right: z.string().trim().min(1, "العنصر الأيمن مطلوب"),
+});
+
 export const questionInputSchema = z
   .object({
     type: z.enum([
@@ -100,6 +105,8 @@ export const questionInputSchema = z
       "ESSAY",
       "ORDER",
       "FILL_BLANK",
+      "MATCHING",
+      "CALCULATION",
     ]),
     subjectId: z.string().min(1, "المادة مطلوبة"),
     chapterId: z.string().min(1).nullish(),
@@ -113,6 +120,7 @@ export const questionInputSchema = z
     tags: z.array(z.string().trim().min(1)).default([]),
     options: z.array(optionSchema).default([]),
     acceptedAnswers: z.array(z.string().trim().min(1)).default([]),
+    matchingPairs: z.array(matchingPairSchema).default([]),
   })
   .superRefine((data, ctx) => {
     // المقالي يدويّ بالكامل: لا خيارات ولا إجابات مقبولة مطلوبة.
@@ -134,6 +142,35 @@ export const questionInputSchema = z
           code: z.ZodIssueCode.custom,
           path: ["acceptedAnswers"],
           message: "أضف إجابة مقبولة واحدة على الأقل",
+        });
+      }
+      return;
+    }
+    // الحساب: القيمة الصحيحة عددية (acceptedAnswers[0])، والهامش اختياري.
+    if (data.type === "CALCULATION") {
+      if (data.acceptedAnswers.length < 1 || parseNumber(data.acceptedAnswers[0]) == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["acceptedAnswers"],
+          message: "أدخل القيمة الصحيحة كعدد",
+        });
+      }
+      if (data.acceptedAnswers[1] != null && parseNumber(data.acceptedAnswers[1]) == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["acceptedAnswers"],
+          message: "هامش الخطأ يجب أن يكون عدداً",
+        });
+      }
+      return;
+    }
+    // المطابقة: من 2 إلى 8 أزواج (أيسر ↔ أيمن).
+    if (data.type === "MATCHING") {
+      if (data.matchingPairs.length < 2 || data.matchingPairs.length > 8) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["matchingPairs"],
+          message: "سؤال المطابقة يتطلّب من 2 إلى 8 أزواج",
         });
       }
       return;

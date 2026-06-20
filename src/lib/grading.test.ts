@@ -11,6 +11,9 @@ import {
   splitFillTemplate,
   parseBlankAnswers,
   fillTemplateForDisplay,
+  gradeMatching,
+  gradeCalculation,
+  parseNumber,
   computeScore,
 } from "./grading";
 
@@ -155,6 +158,67 @@ describe("gradeFillBlank — درجة جزئية لكل فراغ", () => {
       correctCount: 0,
       total: 1,
     });
+  });
+});
+
+describe("gradeMatching — درجة جزئية لكل زوج", () => {
+  it("يحسب الأزواج الصحيحة من إجماليها", () => {
+    const correct = ["القلب", "الرئة", "الكبد"];
+    expect(gradeMatching(correct, ["القلب", "الرئة", "الكبد"])).toEqual({
+      correctCount: 3,
+      total: 3,
+    });
+    expect(gradeMatching(correct, ["القلب", "الكبد", "الرئة"])).toEqual({
+      correctCount: 1,
+      total: 3,
+    });
+  });
+  it("يطبّق التطبيع العربي ويعامل الفارغ خطأً", () => {
+    expect(gradeMatching(["النواة"], ["النَّواة"])).toEqual({
+      correctCount: 1,
+      total: 1,
+    });
+    expect(gradeMatching(["أ", "ب"], ["أ", ""])).toEqual({
+      correctCount: 1,
+      total: 2,
+    });
+  });
+});
+
+describe("parseNumber — تطبيع عددي", () => {
+  it("يحوّل الأرقام العربية والفاصلة العشرية", () => {
+    expect(parseNumber("٣٫١٤")).toBeCloseTo(3.14);
+    expect(parseNumber("١٢٣")).toBe(123);
+  });
+  it("يزيل الفواصل الألفية والمسافات", () => {
+    expect(parseNumber("1,234")).toBe(1234);
+    expect(parseNumber("  12.5 ")).toBe(12.5);
+    expect(parseNumber("-3.5")).toBe(-3.5);
+  });
+  it("يعيد null لغير العددي", () => {
+    expect(parseNumber("abc")).toBeNull();
+    expect(parseNumber("")).toBeNull();
+    expect(parseNumber(null)).toBeNull();
+    expect(parseNumber("3.2.1")).toBeNull();
+  });
+});
+
+describe("gradeCalculation — قيمة بهامش خطأ", () => {
+  it("يقبل ضمن الهامش ويرفض خارجه", () => {
+    expect(gradeCalculation(["3.14", "0.01"], "3.14")).toBe(true);
+    expect(gradeCalculation(["3.14", "0.01"], "3.15")).toBe(true);
+    expect(gradeCalculation(["3.14", "0.01"], "3.2")).toBe(false);
+  });
+  it("بلا هامش = مطابقة تامّة", () => {
+    expect(gradeCalculation(["10"], "10")).toBe(true);
+    expect(gradeCalculation(["10"], "10.1")).toBe(false);
+  });
+  it("يقبل الأرقام العربية في إجابة الطالب", () => {
+    expect(gradeCalculation(["42"], "٤٢")).toBe(true);
+  });
+  it("يرفض الإجابة غير العددية", () => {
+    expect(gradeCalculation(["5"], "خمسة")).toBe(false);
+    expect(gradeCalculation(["5"], "")).toBe(false);
   });
 });
 

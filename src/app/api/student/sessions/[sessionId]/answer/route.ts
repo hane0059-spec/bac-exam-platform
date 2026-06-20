@@ -10,6 +10,8 @@ import {
   gradeOrderAnswer,
   gradeFillBlank,
   parseBlankAnswers,
+  gradeMatching,
+  gradeCalculation,
 } from "@/lib/grading";
 import {
   getStudentSession,
@@ -96,7 +98,12 @@ export async function POST(
   const node = await prisma.quizNode.findUnique({
     where: { id: nodeId },
     include: {
-      question: { include: { options: { orderBy: { orderNum: "asc" } } } },
+      question: {
+        include: {
+          options: { orderBy: { orderNum: "asc" } },
+          matchingPairs: { orderBy: { orderNum: "asc" } },
+        },
+      },
     },
   });
   if (!node || !node.question || node.quizId !== exam.quizId) {
@@ -135,6 +142,29 @@ export async function POST(
     storedText = (isPermutation ? valid : optionIds).join(",");
   } else if (q.type === "SHORT_ANSWER") {
     isCorrect = gradeShortAnswer(q.acceptedAnswers, textAnswer ?? "");
+  } else if (q.type === "CALCULATION") {
+    // إجابة عددية بهامش خطأ اختياري (acceptedAnswers = [القيمة, الهامش؟]).
+    isCorrect = gradeCalculation(q.acceptedAnswers, textAnswer ?? "");
+  } else if (q.type === "MATCHING") {
+    // لكل عنصر أيسر إجابته الصحيحة (الأيمن المقابل)، بدرجة جزئية.
+    const pairs = [...q.matchingPairs].sort((a, b) => a.orderNum - b.orderNum);
+    const correctRights = pairs.map((p) => p.rightItem);
+    let studentArr: string[] = [];
+    try {
+      const parsed = JSON.parse(textAnswer ?? "[]");
+      if (Array.isArray(parsed)) {
+        studentArr = parsed.map((s) => (typeof s === "string" ? s : ""));
+      }
+    } catch {
+      studentArr = [];
+    }
+    const { correctCount, total } = gradeMatching(correctRights, studentArr);
+    isCorrect = total > 0 && correctCount === total;
+    partialEarned =
+      total > 0 ? Math.round((points * correctCount) / total * 100) / 100 : 0;
+    storedText = JSON.stringify(
+      Array.from({ length: total }, (_, i) => studentArr[i] ?? "")
+    );
   } else if (q.type === "FILL_BLANK") {
     // كل خيار = فراغ (مرتّباً بـ orderNum)، ومحتواه إجاباته المقبولة مفصولةً بـ |.
     const blanks = [...q.options]
@@ -253,7 +283,15 @@ export async function POST(
                   .sort((a, b) => a.orderNum - b.orderNum)
                   .map((o) => ({ id: o.id, label: o.label, content: o.content }))
               : [],
-          acceptedAnswers: [],
+          // الحساب: تُكشَف القيمة النموذجية بعد الإجابة (إن لم تكن «في النهاية»).
+          acceptedAnswers:
+            q.type === "CALCULATION" && q.acceptedAnswers[0]
+              ? [
+                  q.acceptedAnswers[1]
+                    ? `${q.acceptedAnswers[0]} (± ${q.acceptedAnswers[1]})`
+                    : q.acceptedAnswers[0],
+                ]
+              : [],
         };
 
   if (finished) {

@@ -25,6 +25,7 @@ export default async function EditQuestionPage({
     where: { id: params.id },
     include: {
       options: { orderBy: { orderNum: "asc" } },
+      matchingPairs: { orderBy: { orderNum: "asc" } },
       _count: { select: { studentAnswers: true } },
     },
   });
@@ -46,6 +47,10 @@ export default async function EditQuestionPage({
     options: q.options.map((o) => ({
       content: o.content,
       isCorrect: o.isCorrect,
+    })),
+    matchingPairs: q.matchingPairs.map((p) => ({
+      left: p.leftItem,
+      right: p.rightItem,
     })),
     used: q._count.studentAnswers > 0,
   };

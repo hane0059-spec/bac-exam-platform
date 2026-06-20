@@ -43,6 +43,10 @@ export default async function PrintQuizPage({
                 orderBy: { orderNum: "asc" },
                 select: { label: true, content: true, isCorrect: true },
               },
+              matchingPairs: {
+                orderBy: { orderNum: "asc" },
+                select: { leftItem: true, rightItem: true },
+              },
             },
           },
         },
@@ -59,20 +63,23 @@ export default async function PrintQuizPage({
       const points = Number(n.pointsOverride ?? q.points);
       totalPoints += points;
       const isFill = q.type === "FILL_BLANK";
+      const isMatch = q.type === "MATCHING";
+      const isCalc = q.type === "CALCULATION";
       return {
         index: i + 1,
         type: q.type,
         // ملء الفراغات: يُعرَض النصّ بخطوط بدل علامات [[ ]].
         content: isFill ? fillTemplateForDisplay(q.content) : q.content,
         points,
-        // الفراغات تحمل الإجابات النموذجية — لا تُعرَض كخيارات في ورقة الأسئلة.
-        options: isFill
-          ? []
-          : q.options.map((o) => ({
-              label: o.label,
-              content: o.content,
-              isCorrect: o.isCorrect,
-            })),
+        // الفراغات/المطابقة تحمل الإجابات النموذجية — لا تُعرَض كخيارات في ورقة الأسئلة.
+        options:
+          isFill || isMatch
+            ? []
+            : q.options.map((o) => ({
+                label: o.label,
+                content: o.content,
+                isCorrect: o.isCorrect,
+              })),
         acceptedAnswers:
           q.type === "SHORT_ANSWER"
             ? q.acceptedAnswers
@@ -80,6 +87,14 @@ export default async function PrintQuizPage({
             ? q.options.map(
                 (o, k) => `(${k + 1}) ${parseBlankAnswers(o.content).join(" / ")}`
               )
+            : isMatch
+            ? q.matchingPairs.map((p) => `${p.leftItem} ← ${p.rightItem}`)
+            : isCalc
+            ? [
+                q.acceptedAnswers[1]
+                  ? `${q.acceptedAnswers[0]} (± ${q.acceptedAnswers[1]})`
+                  : q.acceptedAnswers[0] ?? "",
+              ]
             : [],
         explanation: q.explanation ?? null,
       };

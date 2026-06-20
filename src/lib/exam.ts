@@ -239,6 +239,9 @@ export interface SanitizedQuestion {
   options: SanitizedOption[]; // فارغة للإجابة القصيرة
   index: number; // ترتيب السؤال (1-أساس)
   total: number; // إجمالي الأسئلة
+  // المطابقة: العناصر اليسرى (بترتيبها) والعناصر اليمنى مخلوطةً (بلا كشف الاقتران).
+  matchLefts?: { id: string; text: string }[];
+  matchRights?: string[];
 }
 
 /** يحمّل عقدة سؤال ويعقّمها — يُستبعد isCorrect والإجابات المقبولة والشرح. */
@@ -251,27 +254,44 @@ export async function loadSanitizedQuestion(
   const node = await prisma.quizNode.findUnique({
     where: { id: nodeId },
     include: {
-      question: { include: { options: { orderBy: { orderNum: "asc" } } } },
+      question: {
+        include: {
+          options: { orderBy: { orderNum: "asc" } },
+          matchingPairs: { orderBy: { orderNum: "asc" } },
+        },
+      },
     },
   });
   if (!node || !node.question) return null;
   const q = node.question;
-  // ملء الفراغات: الخيارات تحمل الإجابات المقبولة — لا تُرسَل للمتصفّح إطلاقاً.
-  // يبني الطالبُ الفراغاتِ من نصّ القالب (countBlanks) لا من الخيارات.
-  let options =
-    q.type === "FILL_BLANK"
-      ? []
-      : q.options.map((o) => ({
-          id: o.id,
-          label: o.label,
-          content: o.content,
-          orderNum: o.orderNum,
-        }));
+  // ملء الفراغات/المطابقة: لا تُرسَل الخيارات (تحمل الإجابات) إطلاقاً.
+  const noOptions = q.type === "FILL_BLANK" || q.type === "MATCHING";
+  let options = noOptions
+    ? []
+    : q.options.map((o) => ({
+        id: o.id,
+        label: o.label,
+        content: o.content,
+        orderNum: o.orderNum,
+      }));
   // الترتيب يُخلَط دائماً (وإلا ظهرت العناصر بترتيبها الصحيح)؛ غيره يُخلَط بالإعداد.
   const shuffle = q.type === "ORDER" || optionSeed != null;
   if (shuffle) options = seededShuffle(options, optionSeed ?? `order:${nodeId}`);
   // لا تكشف موضع الترتيب الصحيح: orderNum يصير مجرّد ترتيب عرض.
   options = options.map((o, i) => ({ ...o, orderNum: i }));
+
+  // المطابقة: العناصر اليسرى بترتيبها، واليمنى مخلوطةً دائماً (وإلا انكشف الاقتران).
+  let matchLefts: { id: string; text: string }[] | undefined;
+  let matchRights: string[] | undefined;
+  if (q.type === "MATCHING") {
+    const pairs = [...q.matchingPairs].sort((a, b) => a.orderNum - b.orderNum);
+    matchLefts = pairs.map((p) => ({ id: p.id, text: p.leftItem }));
+    matchRights = seededShuffle(
+      pairs.map((p) => p.rightItem),
+      optionSeed ?? `match:${nodeId}`
+    );
+  }
+
   return {
     nodeId: node.id,
     questionId: q.id,
@@ -279,6 +299,8 @@ export async function loadSanitizedQuestion(
     content: q.content,
     points: Number(node.pointsOverride ?? q.points),
     options,
+    matchLefts,
+    matchRights,
     index,
     total,
   };
@@ -443,7 +465,12 @@ export async function getSessionReview(
     where: { quizId: exam.quizId, nodeType: "QUESTION" },
     orderBy: { positionX: "asc" },
     include: {
-      question: { include: { options: { orderBy: { orderNum: "asc" } } } },
+      question: {
+        include: {
+          options: { orderBy: { orderNum: "asc" } },
+          matchingPairs: { orderBy: { orderNum: "asc" } },
+        },
+      },
     },
   });
   const answers = await prisma.studentAnswer.findMany({
@@ -520,6 +547,50 @@ export async function getSessionReview(
       };
     }
 
+    // المطابقة: يُعرَض اقتران الطالب مقابل الاقتران الصحيح.
+    if (q.type === "MATCHING") {
+      const pairs = [...q.matchingPairs].sort((a, b) => a.orderNum - b.orderNum);
+      let studentArr: string[] = [];
+      try {
+        const parsed = JSON.parse(ans?.textAnswer ?? "[]");
+        if (Array.isArray(parsed)) studentArr = parsed;
+      } catch {
+        studentArr = [];
+      }
+      const studentText = pairs
+        .map((p, k) => `${p.leftItem} ← ${(studentArr[k] ?? "").trim() || "—"}`)
+        .join("   |   ");
+      const modelText = pairs
+        .map((p) => `${p.leftItem} ← ${p.rightItem}`)
+        .join("   |   ");
+      return {
+        index: i + 1,
+        nodeId: n.id,
+        type: q.type,
+        content: q.content,
+        points: Number(n.pointsOverride ?? q.points),
+        scoreEarned: ans ? Number(ans.scoreEarned) : 0,
+        isCorrect: ans?.isCorrect ?? false,
+        answered: Boolean(ans),
+        needsReview: false,
+        isCancelled: q.isCancelled,
+        explanation: q.explanation ?? null,
+        textAnswer: ans ? studentText : null,
+        acceptedAnswers: [modelText],
+        options: [],
+      };
+    }
+
+    // الحساب: القيمة النموذجية (مع الهامش إن وُجد).
+    const calcModel =
+      q.type === "CALCULATION" && q.acceptedAnswers[0]
+        ? [
+            q.acceptedAnswers[1]
+              ? `${q.acceptedAnswers[0]} (± ${q.acceptedAnswers[1]})`
+              : q.acceptedAnswers[0],
+          ]
+        : null;
+
     return {
       index: i + 1,
       nodeId: n.id,
@@ -533,7 +604,10 @@ export async function getSessionReview(
       isCancelled: q.isCancelled,
       explanation: q.explanation ?? null,
       textAnswer: ans?.textAnswer ?? null,
-      acceptedAnswers: q.type === "SHORT_ANSWER" ? q.acceptedAnswers : [],
+      acceptedAnswers:
+        q.type === "SHORT_ANSWER"
+          ? q.acceptedAnswers
+          : calcModel ?? [],
       options: q.options.map((o) => ({
         id: o.id,
         label: o.label,

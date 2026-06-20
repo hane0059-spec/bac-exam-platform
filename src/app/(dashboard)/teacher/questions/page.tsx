@@ -19,6 +19,8 @@ const TYPE_LABEL: Record<string, string> = {
   ESSAY: "مقالي",
   ORDER: "ترتيب",
   FILL_BLANK: "ملء الفراغات",
+  MATCHING: "مطابقة",
+  CALCULATION: "حساب",
 };
 const DIFF_LABEL: Record<string, string> = {
   EASY: "سهل",

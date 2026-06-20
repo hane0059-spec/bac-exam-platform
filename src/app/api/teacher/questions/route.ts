@@ -101,7 +101,9 @@ export async function POST(req: Request) {
     }
   }
 
-  const isShort = data.type === "SHORT_ANSWER";
+  const usesAccepted =
+    data.type === "SHORT_ANSWER" || data.type === "CALCULATION";
+  const isMatching = data.type === "MATCHING";
   const created = await prisma.question.create({
     data: {
       creatorId: session.sub,
@@ -114,17 +116,27 @@ export async function POST(req: Request) {
       points: data.points,
       explanation: data.explanation || null,
       tags: data.tags,
-      acceptedAnswers: isShort ? data.acceptedAnswers : [],
-      options: isShort
-        ? undefined
-        : {
-            create: data.options.map((o, i) => ({
-              label: optionLabel(data.type, i, o.content),
-              content: o.content,
-              isCorrect: o.isCorrect,
+      acceptedAnswers: usesAccepted ? data.acceptedAnswers : [],
+      options:
+        usesAccepted || isMatching
+          ? undefined
+          : {
+              create: data.options.map((o, i) => ({
+                label: optionLabel(data.type, i, o.content),
+                content: o.content,
+                isCorrect: o.isCorrect,
+                orderNum: i,
+              })),
+            },
+      matchingPairs: isMatching
+        ? {
+            create: data.matchingPairs.map((p, i) => ({
+              leftItem: p.left,
+              rightItem: p.right,
               orderNum: i,
             })),
-          },
+          }
+        : undefined,
     },
     select: { id: true },
   });
