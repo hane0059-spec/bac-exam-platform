@@ -6,12 +6,14 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import UserForm from "@/components/admin/UserForm";
 import { getAdminContext } from "@/lib/admin";
+import { isSoloMode } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewUserPage() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
+  const solo = await isSoloMode();
 
   // مدير المدرسة يرى مواد مؤسّسته فقط (عبر مدرّسيها)؛ المدير العام يرى الكل.
   const subjects = await prisma.subject.findMany({
@@ -54,6 +56,7 @@ export default async function NewUserPage() {
         canManageAdmins={ctx.isSuper}
         schools={schools}
         customFields={customFields}
+        soloMode={solo}
       />
     </DashboardShell>
   );

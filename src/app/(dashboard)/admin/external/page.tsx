@@ -6,7 +6,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import ExternalImport from "@/components/admin/ExternalImport";
-import { SOLO_MODE } from "@/lib/platformMode";
+import { isSoloMode } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export default async function AdminExternalPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/");
-  if (SOLO_MODE) redirect("/admin"); // غير متاح في الوضع المبسّط
+  if (await isSoloMode()) redirect("/admin"); // غير متاح في الوضع المبسّط
 
   const [quizzesRaw, grades] = await Promise.all([
     prisma.quiz.findMany({

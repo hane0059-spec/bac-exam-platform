@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import type { FieldDef } from "@/lib/customFields";
 import CustomFieldsInput from "@/components/CustomFieldsInput";
 import CreatorNotesField from "@/components/CreatorNotesField";
-import { SOLO_MODE } from "@/lib/platformMode";
 
 interface Subject {
   id: string;
@@ -38,6 +37,7 @@ export default function UserForm({
   canManageAdmins,
   schools,
   customFields = [],
+  soloMode = false,
 }: {
   mode: "create" | "edit";
   userId?: string;
@@ -46,6 +46,7 @@ export default function UserForm({
   canManageAdmins: boolean;
   schools?: { id: string; name: string }[];
   customFields?: FieldDef[];
+  soloMode?: boolean; // الوضع المبسّط: «حساب جديد» = مدرّس مستقلّ إلزاماً
 }) {
   const router = useRouter();
   const [schoolId, setSchoolId] = useState(schools?.[0]?.id ?? "");
@@ -77,7 +78,7 @@ export default function UserForm({
   const [creatorNotes, setCreatorNotes] = useState(initial?.creatorNotes ?? "");
   // مدرّس مستقلّ (للمدير العام فقط) + حدّ طلابه. في الوضع المبسّط: دائماً مستقلّ.
   const [isIndependent, setIsIndependent] = useState(
-    initial?.isIndependent ?? SOLO_MODE
+    initial?.isIndependent ?? soloMode
   );
   const [studentLimit, setStudentLimit] = useState(
     initial?.studentLimit != null ? String(initial.studentLimit) : "20"
@@ -169,7 +170,7 @@ export default function UserForm({
 
   return (
     <div className="card max-w-2xl space-y-4 p-6">
-      {mode === "create" && !SOLO_MODE && (
+      {mode === "create" && !soloMode && (
         <div>
           <label className="mb-1 block text-sm font-medium">نوع الحساب</label>
           <div className="flex gap-2">
@@ -367,7 +368,7 @@ export default function UserForm({
           {/* مدرّس مستقلّ — للمدير العام عند الإنشاء فقط. في الوضع المبسّط: دائماً مستقلّ. */}
           {canManageAdmins && mode === "create" && (
             <div className="rounded-xl border border-primary/30 bg-primary-light/40 p-3">
-              {SOLO_MODE ? (
+              {soloMode ? (
                 <p className="text-sm font-medium text-primary-dark">
                   مدرّس مستقلّ يدير طلابه ضمن حدّ الاشتراك
                 </p>

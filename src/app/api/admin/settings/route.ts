@@ -3,13 +3,23 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminContext } from "@/lib/admin";
-import { setAppFont, FONT_OPTIONS } from "@/lib/settings";
+import {
+  setAppFont,
+  setPlatformMode,
+  FONT_OPTIONS,
+  PLATFORM_MODE_OPTIONS,
+} from "@/lib/settings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  font: z.enum(FONT_OPTIONS.map((f) => f.key) as [string, ...string[]]),
+  font: z
+    .enum(FONT_OPTIONS.map((f) => f.key) as [string, ...string[]])
+    .optional(),
+  platformMode: z
+    .enum(PLATFORM_MODE_OPTIONS.map((m) => m.key) as [string, ...string[]])
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -30,6 +40,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "قيمة غير صالحة" }, { status: 400 });
   }
 
-  await setAppFont(parsed.data.font as Parameters<typeof setAppFont>[0]);
+  if (parsed.data.font) {
+    await setAppFont(parsed.data.font as Parameters<typeof setAppFont>[0]);
+  }
+  if (parsed.data.platformMode) {
+    await setPlatformMode(
+      parsed.data.platformMode as Parameters<typeof setPlatformMode>[0]
+    );
+  }
   return NextResponse.json({ ok: true });
 }

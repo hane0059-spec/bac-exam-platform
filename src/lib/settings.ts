@@ -48,3 +48,40 @@ export async function setAppFont(value: FontKey): Promise<void> {
     create: { key: "font", value },
   });
 }
+
+// ─────────────────────────────────────────────
+// وضع المنصّة: "full" متعدّد المؤسّسات، أو "solo" مبسّط
+// (مدير منصّة + مدرّسون مستقلّون فقط). يتحكّم به المدير العام من الإعدادات.
+// ─────────────────────────────────────────────
+export type PlatformMode = "full" | "solo";
+
+export const PLATFORM_MODE_OPTIONS = [
+  { key: "full", label: "كامل (متعدّد المؤسّسات)" },
+  { key: "solo", label: "مبسّط (مدرّسون مستقلّون فقط)" },
+] as const;
+
+/** وضع المنصّة الحالي (افتراضي full). مُجمَّع خلال الطلب الواحد. */
+export const getPlatformMode = cache(async (): Promise<PlatformMode> => {
+  try {
+    const row = await prisma.appSetting.findUnique({
+      where: { key: "platform_mode" },
+    });
+    if (row?.value === "solo") return "solo";
+  } catch {
+    // عند غياب الجدول/الاتصال: الافتراضي.
+  }
+  return "full";
+});
+
+/** اختصار: هل المنصّة في الوضع المبسّط؟ */
+export async function isSoloMode(): Promise<boolean> {
+  return (await getPlatformMode()) === "solo";
+}
+
+export async function setPlatformMode(value: PlatformMode): Promise<void> {
+  await prisma.appSetting.upsert({
+    where: { key: "platform_mode" },
+    update: { value },
+    create: { key: "platform_mode", value },
+  });
+}

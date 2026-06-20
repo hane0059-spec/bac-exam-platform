@@ -3,14 +3,28 @@
 // المدير العام: اختيار خطّ المنصّة (يُطبَّق على كل الواجهات).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FONT_OPTIONS, FONT_CSS, type FontKey } from "@/lib/settings";
+import {
+  FONT_OPTIONS,
+  FONT_CSS,
+  PLATFORM_MODE_OPTIONS,
+  type FontKey,
+  type PlatformMode,
+} from "@/lib/settings";
 
-export default function SettingsForm({ current }: { current: FontKey }) {
+export default function SettingsForm({
+  currentFont,
+  currentMode,
+}: {
+  currentFont: FontKey;
+  currentMode: PlatformMode;
+}) {
   const router = useRouter();
-  const [font, setFont] = useState<FontKey>(current);
+  const [font, setFont] = useState<FontKey>(currentFont);
+  const [mode, setMode] = useState<PlatformMode>(currentMode);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const dirty = font !== currentFont || mode !== currentMode;
 
   async function save() {
     setError("");
@@ -19,7 +33,7 @@ export default function SettingsForm({ current }: { current: FontKey }) {
     const res = await fetch("/api/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ font }),
+      body: JSON.stringify({ font, platformMode: mode }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -28,12 +42,41 @@ export default function SettingsForm({ current }: { current: FontKey }) {
       return;
     }
     setDone(true);
-    router.refresh(); // يعيد قراءة الخطّ في التخطيط الجذري.
+    router.refresh(); // يعيد قراءة الخطّ والوضع في الواجهات.
   }
 
   return (
-    <div className="card max-w-xl space-y-4 p-5">
+    <div className="card max-w-xl space-y-5 p-5">
       <div>
+        <h3 className="mb-1 font-display font-semibold">وضع المنصّة</h3>
+        <p className="text-sm text-ink/60">
+          «الكامل» يدعم المدارس والمعاهد ومديريها وأولياء الأمور. «المبسّط»
+          يقصر المنصّة على مدير عامّ ومدرّسين مستقلّين يديرون طلابهم ضمن حدّ
+          الاشتراك (تُخفى المدارس وأولياء الأمور؛ بياناتها تبقى محفوظة).
+        </p>
+        <div className="mt-2 space-y-2">
+          {PLATFORM_MODE_OPTIONS.map((m) => (
+            <label
+              key={m.key}
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
+                mode === m.key
+                  ? "border-primary bg-primary-light"
+                  : "border-line hover:bg-ink/5"
+              }`}
+            >
+              <input
+                type="radio"
+                name="platformMode"
+                checked={mode === m.key}
+                onChange={() => setMode(m.key)}
+              />
+              <span className="font-medium">{m.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-line pt-4">
         <h3 className="mb-1 font-display font-semibold">خطّ المنصّة</h3>
         <p className="text-sm text-ink/60">
           يُطبَّق على كل واجهات الموقع لجميع المستخدمين.
@@ -74,7 +117,7 @@ export default function SettingsForm({ current }: { current: FontKey }) {
 
       <button
         onClick={save}
-        disabled={busy || font === current}
+        disabled={busy || !dirty}
         className="btn-primary"
       >
         حفظ

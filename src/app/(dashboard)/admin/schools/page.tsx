@@ -7,7 +7,7 @@ import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import SchoolsManager from "@/components/admin/SchoolsManager";
 import CreatorNotesEditor from "@/components/admin/CreatorNotesEditor";
-import { SOLO_MODE } from "@/lib/platformMode";
+import { isSoloMode } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function AdminSchoolsPage() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin");
-  if (SOLO_MODE) redirect("/admin"); // غير متاح في الوضع المبسّط
+  if (await isSoloMode()) redirect("/admin"); // غير متاح في الوضع المبسّط
 
   const schools = await prisma.school.findMany({
     orderBy: { createdAt: "desc" },

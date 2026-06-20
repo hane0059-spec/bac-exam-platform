@@ -4,12 +4,13 @@ import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
 import UserSearchBox from "@/components/admin/UserSearchBox";
-import { SOLO_MODE } from "@/lib/platformMode";
+import { isSoloMode } from "@/lib/settings";
 
 export default async function AdminDashboard() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   const session = ctx.session;
+  const solo = await isSoloMode();
 
   return (
     <DashboardShell session={session}>
@@ -29,7 +30,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {ctx.isSuper && !SOLO_MODE && (
+        {ctx.isSuper && !solo && (
           <Link
             href="/admin/schools"
             className="card p-5 transition hover:border-primary/40"
@@ -42,7 +43,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {!SOLO_MODE && (
+        {!solo && (
           <Link
             href="/admin/external"
             className="card p-5 transition hover:border-primary/40"
@@ -61,12 +62,12 @@ export default async function AdminDashboard() {
         >
           <h3 className="mb-2 font-display text-lg font-semibold">المستخدمون</h3>
           <p className="text-sm leading-relaxed text-ink/60">
-            {SOLO_MODE
+            {solo
               ? "إنشاء وإدارة المدرّسين المستقلّين وحدّ طلاب كلٍّ منهم."
               : "إنشاء وإدارة حسابات المدراء والمدرّسين وربط المواد."}
           </p>
         </Link>
-        {!SOLO_MODE && (
+        {!solo && (
           <Link
             href="/admin/parents"
             className="card p-5 transition hover:border-primary/40"
@@ -92,7 +93,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {ctx.isSuper && !SOLO_MODE && (
+        {ctx.isSuper && !solo && (
           <Link
             href="/admin/fields"
             className="card p-5 transition hover:border-primary/40"

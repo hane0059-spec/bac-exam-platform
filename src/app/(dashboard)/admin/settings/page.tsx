@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
-import { getAppFont } from "@/lib/settings";
+import { getAppFont, getPlatformMode } from "@/lib/settings";
 import DashboardShell from "@/components/DashboardShell";
 import SettingsForm from "@/components/admin/SettingsForm";
 
@@ -14,7 +14,10 @@ export default async function AdminSettingsPage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // إعدادات المنصّة للمدير العام حصراً
 
-  const font = await getAppFont();
+  const [font, platformMode] = await Promise.all([
+    getAppFont(),
+    getPlatformMode(),
+  ]);
 
   return (
     <DashboardShell session={ctx.session}>
@@ -24,7 +27,7 @@ export default async function AdminSettingsPage() {
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">الإعدادات</h2>
       </div>
-      <SettingsForm current={font} />
+      <SettingsForm currentFont={font} currentMode={platformMode} />
     </DashboardShell>
   );
 }
