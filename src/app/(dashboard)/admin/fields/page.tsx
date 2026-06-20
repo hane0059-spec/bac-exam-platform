@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import FieldsManager from "@/components/admin/FieldsManager";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function AdminFieldsPage() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin");
+  if (SOLO_MODE) redirect("/admin"); // غير متاح في الوضع المبسّط
 
   const fields = await prisma.customFieldDef.findMany({
     orderBy: { orderNum: "asc" },

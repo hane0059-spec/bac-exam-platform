@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { FieldDef } from "@/lib/customFields";
 import CustomFieldsInput from "@/components/CustomFieldsInput";
 import CreatorNotesField from "@/components/CreatorNotesField";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 interface Subject {
   id: string;
@@ -74,8 +75,10 @@ export default function UserForm({
     initial?.canManageStudents ?? false
   );
   const [creatorNotes, setCreatorNotes] = useState(initial?.creatorNotes ?? "");
-  // مدرّس مستقلّ (للمدير العام فقط) + حدّ طلابه.
-  const [isIndependent, setIsIndependent] = useState(initial?.isIndependent ?? false);
+  // مدرّس مستقلّ (للمدير العام فقط) + حدّ طلابه. في الوضع المبسّط: دائماً مستقلّ.
+  const [isIndependent, setIsIndependent] = useState(
+    initial?.isIndependent ?? SOLO_MODE
+  );
   const [studentLimit, setStudentLimit] = useState(
     initial?.studentLimit != null ? String(initial.studentLimit) : "20"
   );
@@ -166,7 +169,7 @@ export default function UserForm({
 
   return (
     <div className="card max-w-2xl space-y-4 p-6">
-      {mode === "create" && (
+      {mode === "create" && !SOLO_MODE && (
         <div>
           <label className="mb-1 block text-sm font-medium">نوع الحساب</label>
           <div className="flex gap-2">
@@ -361,23 +364,29 @@ export default function UserForm({
             </div>
           )}
 
-          {/* مدرّس مستقلّ — للمدير العام عند الإنشاء فقط. */}
+          {/* مدرّس مستقلّ — للمدير العام عند الإنشاء فقط. في الوضع المبسّط: دائماً مستقلّ. */}
           {canManageAdmins && mode === "create" && (
             <div className="rounded-xl border border-primary/30 bg-primary-light/40 p-3">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  checked={isIndependent}
-                  onChange={(e) => setIsIndependent(e.target.checked)}
-                  className="accent-primary"
-                />
-                مدرّس مستقلّ يدير مؤسّسته بنفسه (هو المدير والمدرّس)
-              </label>
+              {SOLO_MODE ? (
+                <p className="text-sm font-medium text-primary-dark">
+                  مدرّس مستقلّ يدير طلابه ضمن حدّ الاشتراك
+                </p>
+              ) : (
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={isIndependent}
+                    onChange={(e) => setIsIndependent(e.target.checked)}
+                    className="accent-primary"
+                  />
+                  مدرّس مستقلّ يدير مؤسّسته بنفسه (هو المدير والمدرّس)
+                </label>
+              )}
               {isIndependent && (
                 <div className="mt-3 space-y-2 text-sm text-ink/70">
                   <p>
-                    تُنشأ له مؤسّسة خاصّة تلقائياً، ويُمنح إدارة الطلاب، ويسجّل
-                    طلابه ويتحكّم بهم ضمن الحدّ أدناه.
+                    تُنشأ له مؤسّسة خاصّة تلقائياً, ويُمنح إدارة الطلاب، ويسجّل
+                    طلابه ويتحكّم بهم (إضافةً وحذفاً وإسناداً) ضمن الحدّ أدناه.
                   </p>
                   <label className="block">
                     <span className="mb-1 block font-medium text-ink">

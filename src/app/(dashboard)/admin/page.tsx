@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
 import UserSearchBox from "@/components/admin/UserSearchBox";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export default async function AdminDashboard() {
   const ctx = await getAdminContext();
@@ -28,7 +29,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {ctx.isSuper && (
+        {ctx.isSuper && !SOLO_MODE && (
           <Link
             href="/admin/schools"
             className="card p-5 transition hover:border-primary/40"
@@ -41,37 +42,43 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        <Link
-          href="/admin/external"
-          className="card p-5 transition hover:border-primary/40"
-        >
-          <h3 className="mb-2 font-display text-lg font-semibold">
-            استيراد طلاب خارجيين
-          </h3>
-          <p className="text-sm leading-relaxed text-ink/60">
-            استيراد قائمة طلاب من CSV/Excel وإسناد اختبار منشور لهم.
-          </p>
-        </Link>
+        {!SOLO_MODE && (
+          <Link
+            href="/admin/external"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              استيراد طلاب خارجيين
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              استيراد قائمة طلاب من CSV/Excel وإسناد اختبار منشور لهم.
+            </p>
+          </Link>
+        )}
         <Link
           href="/admin/users"
           className="card p-5 transition hover:border-primary/40"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">المستخدمون</h3>
           <p className="text-sm leading-relaxed text-ink/60">
-            إنشاء وإدارة حسابات المدراء والمدرّسين وربط المواد.
+            {SOLO_MODE
+              ? "إنشاء وإدارة المدرّسين المستقلّين وحدّ طلاب كلٍّ منهم."
+              : "إنشاء وإدارة حسابات المدراء والمدرّسين وربط المواد."}
           </p>
         </Link>
-        <Link
-          href="/admin/parents"
-          className="card p-5 transition hover:border-primary/40"
-        >
-          <h3 className="mb-2 font-display text-lg font-semibold">
-            أولياء الأمور
-          </h3>
-          <p className="text-sm leading-relaxed text-ink/60">
-            إنشاء أولياء الأمور وربطهم بأبنائهم لمتابعة نتائجهم.
-          </p>
-        </Link>
+        {!SOLO_MODE && (
+          <Link
+            href="/admin/parents"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              أولياء الأمور
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              إنشاء أولياء الأمور وربطهم بأبنائهم لمتابعة نتائجهم.
+            </p>
+          </Link>
+        )}
         {ctx.isSuper && (
           <Link
             href="/admin/academics"
@@ -85,7 +92,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {ctx.isSuper && (
+        {ctx.isSuper && !SOLO_MODE && (
           <Link
             href="/admin/fields"
             className="card p-5 transition hover:border-primary/40"

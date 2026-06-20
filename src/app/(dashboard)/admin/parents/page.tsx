@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminParentsPage() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
+  if (SOLO_MODE) redirect("/admin"); // غير متاح في الوضع المبسّط
 
   // مدير المدرسة محصور بمؤسّسته؛ المدير العام يرى الكل.
   const parents = await prisma.user.findMany({

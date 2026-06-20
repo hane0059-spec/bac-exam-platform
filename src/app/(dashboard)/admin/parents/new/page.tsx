@@ -6,12 +6,14 @@ import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import ParentForm from "@/components/admin/ParentForm";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewParentPage() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
+  if (SOLO_MODE) redirect("/admin"); // غير متاح في الوضع المبسّط
 
   // اختيار المؤسّسة متاح للمدير العام فقط.
   const schools = ctx.isSuper

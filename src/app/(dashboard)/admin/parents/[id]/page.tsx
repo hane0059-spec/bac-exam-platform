@@ -8,6 +8,7 @@ import { getParentChildren } from "@/lib/parent";
 import DashboardShell from "@/components/DashboardShell";
 import ParentLinks from "@/components/admin/ParentLinks";
 import CreatorNotesEditor from "@/components/admin/CreatorNotesEditor";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function ParentDetailPage({
 }) {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
+  if (SOLO_MODE) redirect("/admin"); // غير متاح في الوضع المبسّط
 
   const parent = await prisma.user.findUnique({
     where: { id: params.id },

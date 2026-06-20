@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import { parentCreateSchema, resolveStudentCodes } from "@/lib/parent";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,12 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const ctx = await getAdminContext();
   if (!ctx) return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  if (SOLO_MODE) {
+    return NextResponse.json(
+      { error: "غير متاح في الوضع المبسّط" },
+      { status: 403 }
+    );
+  }
 
   let raw: unknown;
   try {

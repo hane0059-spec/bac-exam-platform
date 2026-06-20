@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,12 @@ export async function POST(req: Request) {
   if (!ctx.isSuper) {
     return NextResponse.json(
       { error: "إنشاء المؤسّسات للمدير العام للمنصّة فقط" },
+      { status: 403 }
+    );
+  }
+  if (SOLO_MODE) {
+    return NextResponse.json(
+      { error: "غير متاح في الوضع المبسّط" },
       { status: 403 }
     );
   }

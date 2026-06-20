@@ -10,6 +10,7 @@ import {
   currentAcademicYear,
 } from "@/lib/adminUsers";
 import { getFieldDefs, validateAndClean } from "@/lib/customFields";
+import { SOLO_MODE } from "@/lib/platformMode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,8 +46,17 @@ export async function POST(req: Request) {
       { status: 403 }
     );
   }
+  // الوضع المبسّط: لا يُنشأ إلا مدرّسون مستقلّون (لا مديرو مدارس).
+  if (SOLO_MODE && d.role !== "TEACHER") {
+    return NextResponse.json(
+      { error: "في الوضع المبسّط تُنشأ حسابات المدرّسين المستقلّين فقط" },
+      { status: 403 }
+    );
+  }
   // مدرّس مستقلّ: للمدير العام فقط، ويُنشأ له مؤسّسة خاصّة لاحقاً (تتجاوز الاختيار).
-  const independent = d.role === "TEACHER" && actorIsSuper && d.isIndependent;
+  // في الوضع المبسّط: كل مدرّس مستقلّ إلزاماً.
+  const independent =
+    d.role === "TEACHER" && actorIsSuper && (SOLO_MODE || d.isIndependent);
   // مؤسّسة الحساب الجديد: مدير المدرسة يورّث مؤسّسته؛ المدير العام يختار.
   let newSchoolId = ctx.isSuper ? d.schoolId ?? null : ctx.schoolId;
   // المدرّس المستقلّ يُنشأ له School خاصّة باسمه لعزل طلابه.
