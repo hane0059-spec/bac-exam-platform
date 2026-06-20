@@ -42,6 +42,10 @@ export default async function FileExamManagePage({
   if (!quiz || quiz.creatorId !== session.sub || !quiz.isFileBased) notFound();
 
   const s = parseFileExamSettings(quiz.settings);
+  const purged =
+    quiz.settings && typeof quiz.settings === "object"
+      ? (quiz.settings as Record<string, unknown>).purged === true
+      : false;
 
   return (
     <DashboardShell session={session}>
@@ -56,6 +60,7 @@ export default async function FileExamManagePage({
       <FileExamManager
         quizId={quiz.id}
         status={quiz.status as "DRAFT" | "PUBLISHED" | "ARCHIVED"}
+        purged={purged}
         accessCode={quiz.accessCode}
         examFile={quiz.attachments[0] ?? null}
         initial={{

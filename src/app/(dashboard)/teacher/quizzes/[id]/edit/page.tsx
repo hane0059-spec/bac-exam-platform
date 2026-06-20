@@ -52,6 +52,11 @@ export default async function EditQuizPage({
 
   const settings = parseSettings(quiz.settings);
   const structural = await canEditStructure(quiz.id, quiz.status);
+  // اختبار حُذف محتواه (تبقى درجاته فقط).
+  const purged =
+    quiz.settings && typeof quiz.settings === "object"
+      ? (quiz.settings as Record<string, unknown>).purged === true
+      : false;
 
   const initialItems = quiz.nodes
     .filter((n) => n.questionId)
@@ -101,6 +106,7 @@ export default async function EditQuizPage({
       <QuizBuilder
         quizId={quiz.id}
         status={quiz.status as "DRAFT" | "PUBLISHED" | "ARCHIVED"}
+        purged={purged}
         canEditStructure={structural}
         bank={bank.map((q) => ({
           id: q.id,

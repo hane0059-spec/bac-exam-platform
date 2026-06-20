@@ -19,6 +19,7 @@ function toLocal(iso: string | null): string {
 interface Props {
   quizId: string;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  purged?: boolean;
   accessCode: string | null;
   examFile: { id: string; mimeType: string } | null;
   initial: {
@@ -34,6 +35,7 @@ interface Props {
 export default function FileExamManager({
   quizId,
   status,
+  purged = false,
   accessCode,
   examFile,
   initial,
@@ -161,6 +163,12 @@ export default function FileExamManager({
 
   return (
     <div className="space-y-5">
+      {purged && (
+        <div className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
+          حُذف محتوى هذا الاختبار (الملف والأوراق المرفوعة) نهائياً — تبقى درجات
+          الطلاب محفوظةً للسجلّ فقط. اطّلع عليها من «الإجابات والتصحيح».
+        </div>
+      )}
       {/* الحالة والنشر */}
       <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
         <span className="flex items-center gap-2">
@@ -204,23 +212,25 @@ export default function FileExamManager({
             الإجابات والتصحيح
           </Link>
           {status === "ARCHIVED" ? (
-            <>
-              <button
-                onClick={restore}
-                disabled={busy}
-                className="btn-primary px-4 py-2 text-sm"
-              >
-                إعادة إلى المسوّدة
-              </button>
-              <ConfirmButton
-                onConfirm={permanentDelete}
-                label="حذف نهائي"
-                confirmLabel="نعم، احذف نهائياً"
-                message="حذف الاختبار الورقي نهائياً؟ ستُحذف معه كل جلسات الطلاب ودرجاتهم وأوراقهم المرفوعة وإسناداته بلا رجعة."
-                disabled={busy}
-                className="text-sm text-red-500 hover:underline"
-              />
-            </>
+            purged ? null : (
+              <>
+                <button
+                  onClick={restore}
+                  disabled={busy}
+                  className="btn-primary px-4 py-2 text-sm"
+                >
+                  إعادة إلى المسوّدة
+                </button>
+                <ConfirmButton
+                  onConfirm={permanentDelete}
+                  label="حذف نهائي"
+                  confirmLabel="نعم، احذف المحتوى"
+                  message="حذف ملف الاختبار وأوراق الطلاب المرفوعة وتفاصيلها نهائياً؟ تبقى درجات الطلاب (من أدّى وكم أخذ) محفوظةً للسجلّ. إن لم يؤدِّه أحد فسيُحذف بالكامل."
+                  disabled={busy}
+                  className="text-sm text-red-500 hover:underline"
+                />
+              </>
+            )
           ) : (
             <>
               <button

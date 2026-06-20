@@ -64,6 +64,10 @@ export default async function TeacherQuizzesPage() {
         <div className="space-y-3">
           {quizzes.map((q) => {
             const st = STATUS[q.status as keyof typeof STATUS];
+            const purged =
+              q.settings && typeof q.settings === "object"
+                ? (q.settings as Record<string, unknown>).purged === true
+                : false;
             // عُقد الأسئلة = إجمالي العُقد - (بداية + نهاية) عند وجودها.
             const questionNodes = Math.max(0, q._count.nodes - 2);
             return (
@@ -79,6 +83,11 @@ export default async function TeacherQuizzesPage() {
                     >
                       {st.text}
                     </span>
+                    {purged && (
+                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                        محتوى محذوف
+                      </span>
+                    )}
                     {q.isFileBased && (
                       <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold">
                         ورقي

@@ -110,7 +110,9 @@ export async function DELETE(
   const permanent =
     new URL(req.url).searchParams.get("permanent") === "1";
 
-  // الحذف النهائي: للمؤرشف فقط، يحذف الجلسات/الإجابات/الإسنادات متسلسلاً.
+  // الحذف النهائي: للمؤرشف فقط. يحذف أسئلة الاختبار ومرفقاته وتفاصيل الإجابات،
+  // لكن **يُبقي سجلّ الدرجة** (من أدّى وكم أخذ) إن وُجدت جلسات — مفيدٌ عند خطأ
+  // فادح أو تسرّب: يُمحى المحتوى وتبقى الدرجة. إن لم توجد جلسات → حذف كامل.
   if (permanent) {
     if (quiz.status !== "ARCHIVED") {
       return NextResponse.json(
@@ -118,6 +120,24 @@ export async function DELETE(
         { status: 409 }
       );
     }
+    const sessionCount = await prisma.examSession.count({
+      where: { quizId: quiz.id },
+    });
+
+    if (sessionCount === 0) {
+      // لا درجات لحفظها → حذف كامل (cascade للعُقد/الحوافّ/الملف).
+      await prisma.$transaction(async (tx) => {
+        await tx.quizAssignment.deleteMany({ where: { quizId: quiz.id } });
+        await tx.quiz.delete({ where: { id: quiz.id } });
+      });
+      return NextResponse.json({ deleted: true });
+    }
+
+    // حفظ الدرجات: نُبقي قشرة الاختبار وجلساته، ونحذف المحتوى والتفاصيل.
+    const prevSettings =
+      quiz.settings && typeof quiz.settings === "object"
+        ? (quiz.settings as Record<string, unknown>)
+        : {};
     await prisma.$transaction(async (tx) => {
       const sids = (
         await tx.examSession.findMany({
@@ -125,19 +145,32 @@ export async function DELETE(
           select: { id: true },
         })
       ).map((s) => s.id);
-      if (sids.length > 0) {
-        // إجابات الطلاب أوّلاً (بلا cascade من الجلسة)، ثم الجلسات
-        // (تُسقِط مرفقاتها وتعليقاتها بالـ cascade).
-        await tx.studentAnswer.deleteMany({
-          where: { sessionId: { in: sids } },
-        });
-        await tx.examSession.deleteMany({ where: { id: { in: sids } } });
-      }
+      // تفاصيل الإجابات + مرفقات رفع الإجابات (تُسقِط تعليقاتها بالـ cascade).
+      await tx.studentAnswer.deleteMany({ where: { sessionId: { in: sids } } });
+      await tx.attachment.deleteMany({ where: { sessionId: { in: sids } } });
+      // ملف الاختبار (الورقي).
+      await tx.attachment.deleteMany({ where: { quizId: quiz.id } });
+      // فكّ ارتباط الجلسات بأي عقدة قبل حذف العُقد.
+      await tx.examSession.updateMany({
+        where: { quizId: quiz.id },
+        data: { currentNodeId: null },
+      });
       await tx.quizAssignment.deleteMany({ where: { quizId: quiz.id } });
-      // حذف الاختبار يُسقِط العُقد والحوافّ وملف الاختبار بالـ cascade.
-      await tx.quiz.delete({ where: { id: quiz.id } });
+      await tx.quizEdge.deleteMany({ where: { quizId: quiz.id } });
+      await tx.quizNode.deleteMany({ where: { quizId: quiz.id } });
+      // قشرة محذوفة المحتوى: تبقى العنوان/المادة والجلسات (الدرجات) فقط.
+      await tx.quiz.update({
+        where: { id: quiz.id },
+        data: {
+          status: "ARCHIVED",
+          startNodeId: null,
+          accessCode: null,
+          allowCodeJoin: false,
+          settings: { ...prevSettings, purged: true },
+        },
+      });
     });
-    return NextResponse.json({ deleted: true });
+    return NextResponse.json({ purged: true });
   }
 
   // الحذف العادي → أرشفة دائماً (قابلة للاستعادة أو الحذف النهائي لاحقاً).

@@ -3,6 +3,7 @@
 // باني الاختبار: بيانات + إعدادات + نافذة توقيت + اختيار/ترتيب أسئلة + تجاوز علامة + نشر.
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DateTimeField from "@/components/DateTimeField";
 import ConfirmButton from "@/components/ConfirmButton";
 
@@ -54,6 +55,7 @@ function localToIso(local: string): string | null {
 export default function QuizBuilder({
   quizId,
   status,
+  purged = false,
   canEditStructure,
   bank,
   initialItems,
@@ -61,6 +63,7 @@ export default function QuizBuilder({
 }: {
   quizId: string;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  purged?: boolean;
   canEditStructure: boolean;
   bank: BankQuestion[];
   initialItems: Item[];
@@ -223,8 +226,9 @@ export default function QuizBuilder({
     <div className="space-y-5">
       {status === "ARCHIVED" ? (
         <div className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
-          هذا الاختبار مؤرشف: مخفيٌّ عن الطلاب، ونتائجه السابقة محفوظة. أعِده
-          إلى المسوّدة لتعديله ونشره، أو احذفه نهائياً من الأرشيف.
+          {purged
+            ? "حُذف محتوى هذا الاختبار (الأسئلة والمرفقات) نهائياً — تبقى درجات الطلاب محفوظةً للسجلّ فقط."
+            : "هذا الاختبار مؤرشف: مخفيٌّ عن الطلاب، ونتائجه السابقة محفوظة. أعِده إلى المسوّدة لتعديله ونشره، أو احذفه نهائياً من الأرشيف."}
         </div>
       ) : (
         ro && (
@@ -488,25 +492,36 @@ export default function QuizBuilder({
 
       {/* أزرار */}
       {status === "ARCHIVED" ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={restore}
-            disabled={busy}
-            className="rounded-xl bg-primary px-5 py-3 font-medium text-white transition hover:opacity-90"
-          >
-            إعادة إلى المسوّدة
-          </button>
-          <span className="mr-auto">
-            <ConfirmButton
-              onConfirm={permanentDelete}
-              label="حذف نهائي من الأرشيف"
-              confirmLabel="نعم، احذف نهائياً"
-              message="حذف الاختبار نهائياً؟ ستُحذف معه كل جلسات الطلاب ودرجاتهم وإجاباتهم وإسناداته بلا رجعة."
+        purged ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/teacher/quizzes/${quizId}/results`}
+              className="rounded-xl border border-primary px-5 py-3 text-sm font-medium text-primary hover:bg-primary-light"
+            >
+              عرض الدرجات المحفوظة ←
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={restore}
               disabled={busy}
-              className="text-sm text-red-500 hover:underline"
-            />
-          </span>
-        </div>
+              className="rounded-xl bg-primary px-5 py-3 font-medium text-white transition hover:opacity-90"
+            >
+              إعادة إلى المسوّدة
+            </button>
+            <span className="mr-auto">
+              <ConfirmButton
+                onConfirm={permanentDelete}
+                label="حذف نهائي من الأرشيف"
+                confirmLabel="نعم، احذف المحتوى"
+                message="حذف أسئلة الاختبار ومرفقاته وتفاصيل الإجابات نهائياً؟ تبقى درجات الطلاب (من أدّى وكم أخذ) محفوظةً للسجلّ. إن لم يؤدِّه أحد فسيُحذف بالكامل."
+                disabled={busy}
+                className="text-sm text-red-500 hover:underline"
+              />
+            </span>
+          </div>
+        )
       ) : (
         <div className="flex flex-wrap gap-2">
           <button onClick={save} disabled={busy} className="btn-primary">
