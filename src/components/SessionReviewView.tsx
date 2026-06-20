@@ -1,6 +1,7 @@
 // src/components/SessionReviewView.tsx
 // عرض مراجعة جلسة (خادمي): الدرجة + استعراض الأسئلة والإجابات.
 import type { SessionReview } from "@/lib/exam";
+import MathText from "@/components/MathText";
 
 export default function SessionReviewView({
   review,
@@ -37,7 +38,7 @@ export default function SessionReviewView({
           >
             <div className="mb-2 flex items-start justify-between gap-2">
               <p className="font-medium leading-relaxed">
-                {it.index}. {it.content}
+                {it.index}. <MathText text={it.content} />
               </p>
               {it.isCancelled ? (
                 <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-xs font-medium text-ink/50">
@@ -74,7 +75,7 @@ export default function SessionReviewView({
                     }`}
                   >
                     {o.label !== o.content && `${o.label}. `}
-                    {o.content}
+                    <MathText text={o.content} />
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابة الطالب"}
                   </li>
@@ -89,18 +90,20 @@ export default function SessionReviewView({
                       it.isCorrect ? "text-primary-dark" : "text-red-600"
                     }
                   >
-                    {it.textAnswer || "—"}
+                    {it.textAnswer ? <MathText text={it.textAnswer} /> : "—"}
                   </span>
                 </p>
                 {!it.isCorrect && it.acceptedAnswers.length > 0 && (
-                  <p className="text-ink/70">النموذجية: {it.acceptedAnswers[0]}</p>
+                  <p className="text-ink/70">
+                    النموذجية: <MathText text={it.acceptedAnswers[0]} />
+                  </p>
                 )}
               </div>
             )}
 
             {it.explanation && (
               <p className="mt-2 text-sm leading-relaxed text-ink/60">
-                {it.explanation}
+                <MathText text={it.explanation} />
               </p>
             )}
           </div>

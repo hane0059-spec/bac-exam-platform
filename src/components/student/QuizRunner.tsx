@@ -8,6 +8,7 @@ import { splitFillTemplate, countBlanks } from "@/lib/grading";
 import AppealBox, { type AppealState } from "@/components/student/AppealBox";
 import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import PrintButton from "@/components/student/PrintButton";
+import MathText from "@/components/MathText";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -374,7 +375,7 @@ export default function QuizRunner({
         <div className="card p-6">
           {!isFill && (
             <p className="mb-5 text-lg font-medium leading-relaxed">
-              {question.content}
+              <MathText text={question.content} />
             </p>
           )}
 
@@ -454,7 +455,9 @@ export default function QuizRunner({
                   <span className="w-6 text-center text-sm font-bold text-primary">
                     {i + 1}
                   </span>
-                  <span className="flex-1">{o.content}</span>
+                  <span className="flex-1">
+                    <MathText text={o.content} />
+                  </span>
                   {!startedFeedback && (
                     <span className="flex">
                       <button
@@ -566,7 +569,9 @@ export default function QuizRunner({
                   {o.label !== o.content && (
                     <span className="font-medium text-ink/80">{o.label}.</span>
                   )}
-                  <span>{o.content}</span>
+                  <span>
+                    <MathText text={o.content} />
+                  </span>
                 </label>
               ))}
             </div>
@@ -756,19 +761,26 @@ function FeedbackCard({
         <p className="mt-2 text-sm">
           الإجابة الصحيحة:{" "}
           <span className="font-medium">
-            {reveal.correctOptions.map((o) => o.content).join("، ")}
+            {reveal.correctOptions.map((o, i) => (
+              <span key={i}>
+                {i > 0 && "، "}
+                <MathText text={o.content} />
+              </span>
+            ))}
           </span>
         </p>
       )}
       {!reveal.isCorrect && reveal.acceptedAnswers.length > 0 && (
         <p className="mt-2 text-sm">
           الإجابة النموذجية:{" "}
-          <span className="font-medium">{reveal.acceptedAnswers[0]}</span>
+          <span className="font-medium">
+            <MathText text={reveal.acceptedAnswers[0]} />
+          </span>
         </p>
       )}
       {reveal.explanation && (
         <p className="mt-2 text-sm leading-relaxed text-ink/70">
-          {reveal.explanation}
+          <MathText text={reveal.explanation} />
         </p>
       )}
 
@@ -852,7 +864,7 @@ function ResultView({ result }: { result: ResultData }) {
           >
             <div className="mb-2 flex items-start justify-between gap-2">
               <p className="font-medium leading-relaxed">
-                {it.index}. {it.content}
+                {it.index}. <MathText text={it.content} />
               </p>
               {it.isCancelled ? (
                 <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-xs font-medium text-ink/50">
@@ -889,7 +901,7 @@ function ResultView({ result }: { result: ResultData }) {
                     }`}
                   >
                     {o.label !== o.content && `${o.label}. `}
-                    {o.content}
+                    <MathText text={o.content} />
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابتك"}
                   </li>
@@ -900,12 +912,12 @@ function ResultView({ result }: { result: ResultData }) {
                 <p>
                   إجابتك:{" "}
                   <span className={it.isCorrect ? "text-primary-dark" : "text-red-600"}>
-                    {it.textAnswer || "—"}
+                    {it.textAnswer ? <MathText text={it.textAnswer} /> : "—"}
                   </span>
                 </p>
                 {!it.isCorrect && it.acceptedAnswers.length > 0 && (
                   <p className="text-ink/70">
-                    النموذجية: {it.acceptedAnswers[0]}
+                    النموذجية: <MathText text={it.acceptedAnswers[0]} />
                   </p>
                 )}
               </div>
@@ -913,7 +925,7 @@ function ResultView({ result }: { result: ResultData }) {
 
             {it.explanation && (
               <p className="mt-2 text-sm leading-relaxed text-ink/60">
-                {it.explanation}
+                <MathText text={it.explanation} />
               </p>
             )}
           </div>

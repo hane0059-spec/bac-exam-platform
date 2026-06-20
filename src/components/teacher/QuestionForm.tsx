@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countBlanks } from "@/lib/grading";
 import ImageUploadField from "@/components/ImageUploadField";
+import MathText from "@/components/MathText";
 
 type QType =
   | "MULTIPLE_CHOICE"
@@ -431,6 +432,17 @@ export default function QuestionForm({
           onChange={(e) => setContent(e.target.value)}
           placeholder="اكتب نصّ السؤال…"
         />
+        <p className="mt-1 text-xs text-ink/50">
+          للمعادلات العلمية استعمل LaTeX بين <code dir="ltr">$ … $</code> سطريّاً
+          أو <code dir="ltr">$$ … $$</code> مستقلّاً. مثال:{" "}
+          <code dir="ltr">$H_2O$</code> أو <code dir="ltr">$x^2+1$</code>.
+        </p>
+        {content.includes("$") && (
+          <div className="mt-2 rounded-xl border border-line bg-surface p-3 text-sm">
+            <span className="ml-2 text-xs text-ink/50">معاينة:</span>
+            <MathText text={content} />
+          </div>
+        )}
       </div>
 
       {/* الخيارات حسب النوع */}

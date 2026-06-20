@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Cairo, Tajawal, Reem_Kufi, Amiri, Tinos } from "next/font/google";
 import "./globals.css";
+import "katex/dist/katex.min.css"; // عرض المعادلات (KaTeX)
 import { getAppFont, FONT_CSS } from "@/lib/settings";
 
 // خطوط يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
