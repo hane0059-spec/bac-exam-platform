@@ -1,10 +1,11 @@
 // src/app/(dashboard)/teacher/quizzes/page.tsx
-// قائمة اختبارات المدرّس.
+// قائمة اختبارات المدرّس بتبويبين: النشطة، والأرشيف (المكتملة تلقائياً + المؤرشفة).
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { teacherCanFileExams } from "@/lib/teacher";
+import { computeDoneQuizIds } from "@/lib/teacherArchive";
 import DashboardShell from "@/components/DashboardShell";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,18 @@ const STATUS = {
   ARCHIVED: { text: "مؤرشف", cls: "bg-gold/15 text-gold" },
 } as const;
 
-export default async function TeacherQuizzesPage() {
+type Tab = "active" | "archive";
+
+export default async function TeacherQuizzesPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string };
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
+
+  const tab: Tab = searchParams.tab === "archive" ? "archive" : "active";
 
   const [quizzes, canFileExams] = await Promise.all([
     prisma.quiz.findMany({
@@ -31,11 +40,29 @@ export default async function TeacherQuizzesPage() {
     }),
     teacherCanFileExams(session.sub),
   ]);
-  // وجهة كل اختبار حسب نوعه (شجري ← المحرّر، ورقي ← الإدارة).
+
+  // «مكتمل» = صُحِّح لكل المُسنَد إليهم (مُشتقّ). يُحسَب للمنشور فقط.
+  const publishedIds = quizzes
+    .filter((q) => q.status === "PUBLISHED")
+    .map((q) => q.id);
+  const doneIds = await computeDoneQuizIds(publishedIds);
+
+  // الأرشيف يضمّ: المكتمل تلقائياً + المؤرشف (المحذوف). والنشط ما عداهما.
+  const inArchive = (q: (typeof quizzes)[number]) =>
+    q.status === "ARCHIVED" || doneIds.has(q.id);
+  const activeList = quizzes.filter((q) => !inArchive(q));
+  const archiveList = quizzes.filter((q) => inArchive(q));
+  const shown = tab === "archive" ? archiveList : activeList;
+
   const hrefOf = (q: { id: string; isFileBased: boolean }) =>
     q.isFileBased
       ? `/teacher/file-exams/${q.id}`
       : `/teacher/quizzes/${q.id}/edit`;
+
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-1.5 text-sm transition ${
+      active ? "bg-primary text-white" : "bg-ink/5 text-ink/70 hover:bg-primary-light"
+    }`;
 
   return (
     <DashboardShell session={session}>
@@ -56,18 +83,32 @@ export default async function TeacherQuizzesPage() {
         </div>
       </div>
 
-      {quizzes.length === 0 ? (
+      <div className="mb-5 flex gap-2">
+        <Link href="/teacher/quizzes?tab=active" className={pill(tab === "active")}>
+          النشطة ({activeList.length})
+        </Link>
+        <Link href="/teacher/quizzes?tab=archive" className={pill(tab === "archive")}>
+          الأرشيف ({archiveList.length})
+        </Link>
+      </div>
+
+      {shown.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
-          لا توجد اختبارات بعد. أنشئ اختبارك الأول من بنك أسئلتك.
+          {tab === "archive"
+            ? "لا اختبارات في الأرشيف بعد. تنتقل الاختبارات هنا تلقائياً بعد تصحيحها لكل الطلاب."
+            : quizzes.length === 0
+            ? "لا توجد اختبارات بعد. أنشئ اختبارك الأول من بنك أسئلتك."
+            : "لا اختبارات نشطة حاليّاً."}
         </div>
       ) : (
         <div className="space-y-3">
-          {quizzes.map((q) => {
+          {shown.map((q) => {
             const st = STATUS[q.status as keyof typeof STATUS];
             const purged =
               q.settings && typeof q.settings === "object"
                 ? (q.settings as Record<string, unknown>).purged === true
                 : false;
+            const done = doneIds.has(q.id);
             // عُقد الأسئلة = إجمالي العُقد - (بداية + نهاية) عند وجودها.
             const questionNodes = Math.max(0, q._count.nodes - 2);
             return (
@@ -83,6 +124,11 @@ export default async function TeacherQuizzesPage() {
                     >
                       {st.text}
                     </span>
+                    {done && q.status === "PUBLISHED" && (
+                      <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                        مكتمل التصحيح
+                      </span>
+                    )}
                     {purged && (
                       <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
                         محتوى محذوف
@@ -102,8 +148,7 @@ export default async function TeacherQuizzesPage() {
                     {!q.isFileBased && ` • ${questionNodes} سؤال`}
                     {q._count.assignments > 0 &&
                       ` • مُسنَد لـ ${q._count.assignments}`}
-                    {q._count.sessions > 0 &&
-                      ` • ${q._count.sessions} محاولة`}
+                    {q._count.sessions > 0 && ` • ${q._count.sessions} محاولة`}
                   </p>
                 </div>
                 <span className="text-sm text-primary">
