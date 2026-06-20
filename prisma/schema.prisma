@@ -137,6 +137,13 @@ enum QuestionReportStatus {
   DISMISSED
 }
 
+// حالة اعتراض الطالب على نتيجة تصحيح يدوي.
+enum AppealStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+}
+
 // ─────────────────────────────────────────────
 // USERS & AUTH
 // ─────────────────────────────────────────────
@@ -180,6 +187,7 @@ model User {
   notifications      Notification[]
   annotations        Annotation[]        @relation("AnnotationAuthor")
   questionReports    QuestionReport[]
+  gradeAppeals       GradeAppeal[]       @relation("StudentAppeals")
 
   @@map("users")
 }
@@ -200,6 +208,25 @@ model QuestionReport {
 
   @@index([questionId, status])
   @@map("question_reports")
+}
+
+// اعتراض الطالب على نتيجة اختبار ذي تصحيح يدوي (ورقي/مقالي/قصير/فراغات).
+// يراجعه المدرّس مالك الاختبار فيعيد التصحيح ويردّ (قبول/رفض + ملاحظة).
+model GradeAppeal {
+  id              String       @id @default(uuid())
+  sessionId       String       @map("session_id")
+  session         ExamSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId       String       @map("student_id")
+  student         User         @relation("StudentAppeals", fields: [studentId], references: [id])
+  reason          String
+  status          AppealStatus @default(OPEN)
+  teacherResponse String?      @map("teacher_response")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  resolvedAt      DateTime?    @map("resolved_at")
+
+  @@index([sessionId])
+  @@index([status])
+  @@map("grade_appeals")
 }
 
 // إشعار داخل التطبيق لمستخدم (مثل: تصحيح اختبار).
@@ -586,6 +613,7 @@ model ExamSession {
 
   answers     StudentAnswer[]
   attachments Attachment[]
+  appeals     GradeAppeal[]
 
   @@map("exam_sessions")
 }

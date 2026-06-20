@@ -11,9 +11,14 @@ export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const openReports = await prisma.questionReport.count({
-    where: { status: "OPEN", question: { creatorId: session.sub } },
-  });
+  const [openReports, openAppeals] = await Promise.all([
+    prisma.questionReport.count({
+      where: { status: "OPEN", question: { creatorId: session.sub } },
+    }),
+    prisma.gradeAppeal.count({
+      where: { status: "OPEN", session: { quiz: { creatorId: session.sub } } },
+    }),
+  ]);
 
   return (
     <DashboardShell session={session}>
@@ -76,6 +81,24 @@ export default async function TeacherDashboard() {
           </div>
           <p className="text-sm leading-relaxed text-ink/60">
             مراجعة ملاحظات الطلاب عن أخطاء محتملة في أسئلتك.
+          </p>
+        </Link>
+        <Link
+          href="/teacher/appeals"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">
+              اعتراضات التصحيح
+            </h3>
+            {openAppeals > 0 && (
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                {openAppeals}
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-ink/60">
+            اعتراضات الطلاب على نتائج التصحيح اليدوي — راجعها وأعد التصحيح.
           </p>
         </Link>
       </div>

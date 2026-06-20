@@ -103,6 +103,7 @@ export default async function TakeQuizPage({
       },
       orderBy: { completedAt: "desc" },
       select: {
+        id: true,
         needsGrading: true,
         totalScore: true,
         maxPossibleScore: true,
@@ -130,6 +131,15 @@ export default async function TakeQuizPage({
       },
     }),
   ]);
+
+  // آخر اعتراض على الجلسة المنتهية (للاختبار الورقي).
+  const lastAppeal = finished
+    ? await prisma.gradeAppeal.findFirst({
+        where: { sessionId: finished.id },
+        orderBy: { createdAt: "desc" },
+        select: { status: true, reason: true, teacherResponse: true },
+      })
+    : null;
 
   const open = isWithinWindow(quiz.availableFrom, quiz.availableUntil);
   const maxAttempts = settings.maxAttempts + assignment.extraAttempts;
@@ -172,6 +182,8 @@ export default async function TakeQuizPage({
                 percentage: Number(finished.percentage),
                 feedback: finished.teacherFeedback,
                 uploads: finished.attachments,
+                sessionId: finished.id,
+                appeal: lastAppeal,
               }
             : null
         }

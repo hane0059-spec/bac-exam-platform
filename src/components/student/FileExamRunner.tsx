@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
 import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
+import AppealBox, { type AppealState } from "@/components/student/AppealBox";
 
 function fmtClock(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -53,6 +54,8 @@ interface Finished {
   percentage: number;
   feedback: string | null;
   uploads: Upload[];
+  sessionId: string;
+  appeal: AppealState | null;
 }
 
 function FilePreview({ att }: { att: Upload }) {
@@ -366,6 +369,16 @@ export default function FileExamRunner({
                 annotations={u.annotations ?? []}
               />
             ))}
+          </div>
+          <div className="border-t border-line pt-4">
+            <h3 className="mb-2 font-display font-semibold">
+              اعتراض على التصحيح
+            </h3>
+            <AppealBox
+              sessionId={finished.sessionId}
+              appealable
+              appeal={finished.appeal}
+            />
           </div>
           {canStart && (
             <button onClick={start} disabled={busy} className="btn-primary">

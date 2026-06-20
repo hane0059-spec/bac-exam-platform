@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { splitFillTemplate, countBlanks } from "@/lib/grading";
+import AppealBox, { type AppealState } from "@/components/student/AppealBox";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -61,6 +62,9 @@ interface ResultData {
   maxPossibleScore: number;
   percentage: number;
   items: ResultItem[];
+  sessionId?: string;
+  appealable?: boolean;
+  appeal?: AppealState | null;
 }
 
 type Phase =
@@ -697,6 +701,19 @@ function ResultView({ result }: { result: ResultData }) {
           </>
         )}
       </div>
+
+      {result.sessionId && result.appealable && (
+        <div className="card p-5">
+          <h3 className="mb-2 font-display font-semibold">
+            اعتراض على التصحيح
+          </h3>
+          <AppealBox
+            sessionId={result.sessionId}
+            appealable={result.appealable}
+            appeal={result.appeal ?? null}
+          />
+        </div>
+      )}
 
       <h3 className="font-display text-lg font-bold">المراجعة</h3>
       <div className="space-y-3">

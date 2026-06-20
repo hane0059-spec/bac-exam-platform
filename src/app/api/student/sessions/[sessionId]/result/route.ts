@@ -32,5 +32,22 @@ export async function GET(
   if (!review) {
     return NextResponse.json({ error: "الجلسة غير موجودة" }, { status: 404 });
   }
-  return NextResponse.json(review);
+
+  // الاعتراض: متاح إن وُجد تصحيح يدويّ (مقالي/قصير/فراغات) واكتمل التصحيح.
+  const MANUAL_TYPES = ["ESSAY", "SHORT_ANSWER", "FILL_BLANK"];
+  const hasManual = review.items.some((it) => MANUAL_TYPES.includes(it.type));
+  const pending = review.items.some((it) => it.needsReview);
+  const appealable = hasManual && !pending;
+  const last = await prisma.gradeAppeal.findFirst({
+    where: { sessionId: params.sessionId },
+    orderBy: { createdAt: "desc" },
+    select: { status: true, reason: true, teacherResponse: true },
+  });
+
+  return NextResponse.json({
+    ...review,
+    sessionId: params.sessionId,
+    appealable,
+    appeal: last,
+  });
 }
