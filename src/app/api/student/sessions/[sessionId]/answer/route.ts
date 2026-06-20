@@ -111,6 +111,8 @@ export async function POST(
   let storedText: string | null = textAnswer ?? null;
   // الدرجة الجزئية (تُستعمل لملء الفراغات)؛ null = حساب ثنائي افتراضي.
   let partialEarned: number | null = null;
+  // ملء الفراغات: تُعتمد فوراً إن كانت كلّها صحيحة، وإلا تُحال لمراجعة المدرّس.
+  let fillNeedsReview = false;
   if (q.type === "MULTIPLE_CHOICE" || q.type === "TRUE_FALSE") {
     const correctIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
     const validSelected = optionIds.filter((id) =>
@@ -152,6 +154,9 @@ export async function POST(
     // درجة جزئية بنسبة الفراغات الصحيحة، مقرّبة لمنزلتين.
     partialEarned =
       total > 0 ? Math.round((points * correctCount) / total * 100) / 100 : 0;
+    // كلّها صحيحة → نتيجة فورية؛ وجود أي فراغ خاطئ (قد يكون مرادفاً غير مُدرَج)
+    // → مراجعة المدرّس.
+    fillNeedsReview = correctCount < total;
     // نخزّن إجابات الطالب مصفوفةً (للمراجعة)؛ بطول الفراغات.
     storedText = JSON.stringify(
       Array.from({ length: total }, (_, i) => studentArr[i] ?? "")
@@ -160,11 +165,12 @@ export async function POST(
     // المقالي لا يُصحَّح آلياً — يُترك للمدرّس.
     isCorrect = false;
   }
-  // القصيرة/ملء الفراغات (تصحيح أوّلي) والمقالي تخضع لمراجعة المدرّس.
+  // القصيرة (تصحيح أوّلي) والمقالي تخضع لمراجعة المدرّس دائماً؛ وملء الفراغات
+  // فقط عند عدم تطابق كل الفراغات (إجابة محتملة خارج الاحتمالات المُدرَجة).
   const needsReview =
     q.type === "SHORT_ANSWER" ||
     q.type === "ESSAY" ||
-    q.type === "FILL_BLANK";
+    (q.type === "FILL_BLANK" && fillNeedsReview);
   const scoreEarned =
     partialEarned != null ? partialEarned : isCorrect ? points : 0;
 
