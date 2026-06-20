@@ -4,21 +4,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function UserSearchBox({ initial }: { initial: string }) {
+export default function UserSearchBox({
+  initial,
+  basePath = "/admin/users",
+  placeholder = "ابحث بالاسم أو الرمز أو البريد أو الهاتف",
+}: {
+  initial: string;
+  basePath?: string;
+  placeholder?: string;
+}) {
   const router = useRouter();
   const [q, setQ] = useState(initial);
 
   function go(e: React.FormEvent) {
     e.preventDefault();
     const v = q.trim();
-    router.push(v ? `/admin/users?q=${encodeURIComponent(v)}` : "/admin/users");
+    router.push(v ? `${basePath}?q=${encodeURIComponent(v)}` : basePath);
   }
 
   return (
     <form onSubmit={go} className="mb-5 flex flex-wrap gap-2">
       <input
         className="field flex-1"
-        placeholder="ابحث بالاسم أو الرمز أو البريد أو الهاتف"
+        placeholder={placeholder}
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
@@ -30,7 +38,7 @@ export default function UserSearchBox({ initial }: { initial: string }) {
           type="button"
           onClick={() => {
             setQ("");
-            router.push("/admin/users");
+            router.push(basePath);
           }}
           className="rounded-xl border border-line px-4 py-3 text-sm font-medium hover:bg-ink/5"
         >
