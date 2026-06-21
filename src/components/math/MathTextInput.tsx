@@ -10,6 +10,7 @@ import {
   subjectLayout,
   type MathLayout,
 } from "./keyboards";
+import type { CustomKeyboard } from "./symbolBank";
 
 export default function MathTextInput({
   value,
@@ -20,6 +21,7 @@ export default function MathTextInput({
   subjectName,
   className = "field",
   disabled = false,
+  customKeyboard,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -29,6 +31,7 @@ export default function MathTextInput({
   subjectName?: string;
   className?: string;
   disabled?: boolean;
+  customKeyboard?: CustomKeyboard;
 }) {
   const ref = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -119,7 +122,12 @@ export default function MathTextInput({
               </button>
             ))}
           </div>
-          <MathField value={latex} onChange={setLatex} layout={layout} />
+          <MathField
+            value={latex}
+            onChange={setLatex}
+            layout={layout}
+            customSymbols={customKeyboard?.[layout]}
+          />
           <div className="flex gap-2">
             <button
               type="button"

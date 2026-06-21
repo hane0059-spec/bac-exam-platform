@@ -33,6 +33,8 @@ interface Question {
   blankCount?: number;
   imageId?: string | null;
   mathInput?: boolean; // إجابة قصيرة رياضية → لوحة معادلات
+  mathLayout?: "math" | "physics" | "chemistry";
+  customKeyboard?: { latex: string; label: string }[];
 }
 interface Reveal {
   needsReview: boolean;
@@ -536,6 +538,8 @@ export default function QuizRunner({
                 value={text}
                 onChange={setText}
                 disabled={startedFeedback}
+                layout={question.mathLayout ?? "math"}
+                customSymbols={question.customKeyboard}
               />
             ) : (
               <input

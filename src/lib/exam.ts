@@ -13,6 +13,9 @@ import { parseFileExamSettings } from "@/lib/fileExam";
 import { createNotification } from "@/lib/notifications";
 import { updateStudentConceptPerformance } from "@/lib/studentProgress";
 import { isMathAnswer } from "@/lib/mathAnswer";
+import { subjectLayout, type MathLayout } from "@/components/math/keyboards";
+import type { BankSymbol } from "@/components/math/symbolBank";
+import { normalizeKeyboard } from "@/lib/teacherKeyboard";
 
 // ─────────────────────────────────────────────
 // الحراسة والإعدادات
@@ -249,6 +252,9 @@ export interface SanitizedQuestion {
   imageId?: string | null;
   // إجابة قصيرة رياضية: لوحة معادلات للطالب + تصحيح بالتكافؤ.
   mathInput?: boolean;
+  // مادة السؤال (لتخطيط لوحة المعادلات) ورموز منشئه المخصّصة («لوحتي»).
+  mathLayout?: MathLayout;
+  customKeyboard?: BankSymbol[];
 }
 
 /** يحمّل عقدة سؤال ويعقّمها — يُستبعد isCorrect والإجابات المقبولة والشرح. */
@@ -270,12 +276,22 @@ export async function loadSanitizedQuestion(
             select: { id: true },
             take: 1,
           },
+          subject: { select: { name: true } },
+          creator: {
+            select: { teacherProfile: { select: { keyboardSymbols: true } } },
+          },
         },
       },
     },
   });
   if (!node || !node.question) return null;
   const q = node.question;
+  // لوحة المعادلات: مادة السؤال + رموز منشئه المخصّصة (تظهر للطالب كـ«لوحتي»).
+  const mathLayout = subjectLayout(q.subject.name);
+  const customKeyboard =
+    mathLayout != null
+      ? normalizeKeyboard(q.creator.teacherProfile?.keyboardSymbols)[mathLayout]
+      : [];
   // ملء الفراغات/المطابقة/توسيم الرسم: لا تُرسَل الخيارات (تحمل الإجابات) إطلاقاً.
   const noOptions =
     q.type === "FILL_BLANK" ||
@@ -322,6 +338,9 @@ export async function loadSanitizedQuestion(
       q.type === "DIAGRAM_LABEL" ? q.attachments[0]?.id ?? null : undefined,
     // إجابة قصيرة رياضية: يستعمل الطالب لوحة المعادلات.
     mathInput: q.type === "SHORT_ANSWER" && isMathAnswer(q.tags),
+    // مادة السؤال (للوحة المفاتيح) ورموز منشئه المخصّصة.
+    mathLayout: mathLayout ?? undefined,
+    customKeyboard,
     index,
     total,
   };

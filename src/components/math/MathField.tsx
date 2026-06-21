@@ -3,18 +3,21 @@
 // محرّر معادلات MathLive (يُنتج LaTeX) مع لوحة مفاتيح افتراضية حسب المادة.
 // يُحمَّل ديناميكياً على العميل فقط (يتجنّب أخطاء SSR لاعتماده على window).
 import { useEffect, useRef } from "react";
-import { layoutsFor, type MathLayout } from "./keyboards";
+import { layoutsFor, customTab, type MathLayout } from "./keyboards";
+import type { BankSymbol } from "./symbolBank";
 
 export default function MathField({
   value,
   onChange,
   layout,
   disabled = false,
+  customSymbols,
 }: {
   value: string;
   onChange: (latex: string) => void;
   layout: MathLayout;
   disabled?: boolean;
+  customSymbols?: BankSymbol[];
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,7 +78,12 @@ export default function MathField({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vk = (window as any).mathVirtualKeyboard;
     if (!vk) return;
-    vk.layouts = layoutsFor(layout);
+    const tabs = layoutsFor(layout);
+    // تبويب «لوحتي» (رموز المدرّس) أوّلاً إن وُجد.
+    if (customSymbols && customSymbols.length > 0) {
+      tabs.unshift(customTab(customSymbols));
+    }
+    vk.layouts = tabs;
     mfRef.current?.focus();
     vk.show();
   }

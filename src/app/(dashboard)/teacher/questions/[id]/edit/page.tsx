@@ -9,6 +9,7 @@ import QuestionForm, {
   type QuestionInitial,
 } from "@/components/teacher/QuestionForm";
 import { getTeacherSubjectTree } from "@/lib/teacher";
+import { getTeacherKeyboard } from "@/lib/teacherKeyboard";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function EditQuestionPage({
   if (!q || q.creatorId !== session.sub || !q.isActive) notFound();
 
   const subjects = await getTeacherSubjectTree(session.sub);
+  const customKeyboard = await getTeacherKeyboard(session.sub);
 
   const initial: QuestionInitial = {
     type: q.type as QuestionInitial["type"],
@@ -77,6 +79,7 @@ export default async function EditQuestionPage({
         questionId={q.id}
         subjects={subjects}
         initial={initial}
+        customKeyboard={customKeyboard}
       />
     </DashboardShell>
   );

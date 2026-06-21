@@ -345,6 +345,17 @@ export function layoutsFor(layout: MathLayout): Tab[] {
   return [mathAlgebra, mathCalculus, mathFunctions, "numeric", "greek"];
 }
 
+/** يبني تبويب «لوحتي» من رموز المدرّس المختارة (صفوف بعشرة مفاتيح). */
+export function customTab(symbols: { latex: string; label: string }[]): Tab {
+  const rows: Key[][] = [];
+  for (let i = 0; i < symbols.length; i += 10) {
+    rows.push(
+      symbols.slice(i, i + 10).map((x) => ({ latex: x.latex, label: x.label }))
+    );
+  }
+  return { label: "لوحتي", tooltip: "رموزك المختارة", rows };
+}
+
 /**
  * يُعيد تخطيط المادة إن كانت علميّةً (رياضيات/فيزياء/كيمياء)، وإلّا null.
  * تُفعَّل لوحة المعادلات لهذه المواد فقط (لا للعربية/الدينية/الأحياء…).

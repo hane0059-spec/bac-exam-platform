@@ -332,6 +332,9 @@ model TeacherProfile {
   isIndependent     Boolean @default(false) @map("is_independent")
   // حدّ عدد الطلاب المسموح (أساس الاشتراك؛ null = بلا حدّ). يفرضه الخادم على الإنشاء.
   studentLimit      Int?    @map("student_limit")
+  // لوحة معادلات مخصّصة لكل مادة من بنك الرموز:
+  // { chemistry: [{latex,label}], physics: [...], math: [...] }
+  keyboardSymbols   Json?   @map("keyboard_symbols")
 
   @@map("teacher_profiles")
 }

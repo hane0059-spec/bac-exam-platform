@@ -4,6 +4,7 @@
 // كي تُعرَض تلقائياً عبر MathText في المراجعة، ويجرّدها التصحيح على الخادم.
 import MathField from "@/components/math/MathField";
 import type { MathLayout } from "@/components/math/keyboards";
+import type { BankSymbol } from "@/components/math/symbolBank";
 
 // تجريد بسيط لغلاف $…$ (نسخة عميل خفيفة، بلا compute-engine).
 function strip(s: string): string {
@@ -17,11 +18,13 @@ export default function MathAnswerInput({
   onChange,
   layout = "math",
   disabled = false,
+  customSymbols,
 }: {
   value: string;
   onChange: (v: string) => void;
   layout?: MathLayout;
   disabled?: boolean;
+  customSymbols?: BankSymbol[];
 }) {
   return (
     <div className="space-y-1">
@@ -33,6 +36,7 @@ export default function MathAnswerInput({
         }}
         layout={layout}
         disabled={disabled}
+        customSymbols={customSymbols}
       />
       <p className="text-xs text-ink/50">
         اكتب إجابتك بلوحة المعادلات (مثل الكسور والجذور والأسس).

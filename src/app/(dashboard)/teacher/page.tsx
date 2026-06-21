@@ -40,6 +40,17 @@ export default async function TeacherDashboard() {
           </p>
         </Link>
         <Link
+          href="/teacher/keyboard"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            لوحة المعادلات
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            اختر رموز كل مادة من بنك الرموز لتظهر في «لوحتي» عند تأليف المعادلات.
+          </p>
+        </Link>
+        <Link
           href="/teacher/quizzes"
           className="card p-5 transition hover:border-primary/40"
         >

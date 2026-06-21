@@ -8,6 +8,7 @@ import ImageUploadField from "@/components/ImageUploadField";
 import MathText from "@/components/MathText";
 import MathTextInput from "@/components/math/MathTextInput";
 import { subjectLayout } from "@/components/math/keyboards";
+import type { CustomKeyboard } from "@/components/math/symbolBank";
 import { isMathAnswer, withMathAnswerTag } from "@/lib/mathAnswer";
 
 type QType =
@@ -80,11 +81,13 @@ export default function QuestionForm({
   questionId,
   subjects,
   initial,
+  customKeyboard,
 }: {
   mode: "create" | "edit";
   questionId?: string;
   subjects: SubjectOption[];
   initial?: QuestionInitial;
+  customKeyboard?: CustomKeyboard;
 }) {
   const router = useRouter();
   const locked = mode === "edit" && initial?.used === true;
@@ -436,7 +439,7 @@ export default function QuestionForm({
       {/* نصّ السؤال */}
       <div>
         <label className="mb-1 block text-sm font-medium">نصّ السؤال</label>
-        <MathTextInput
+        <MathTextInput customKeyboard={customKeyboard}
           multiline
           value={content}
           onChange={setContent}
@@ -472,7 +475,7 @@ export default function QuestionForm({
                   aria-label="الإجابة الصحيحة"
                 />
                 <div className="flex-1">
-                  <MathTextInput
+                  <MathTextInput customKeyboard={customKeyboard}
                     value={o.content}
                     onChange={(v) => setOptionText(i, v)}
                     disabled={locked}
@@ -972,7 +975,7 @@ export default function QuestionForm({
       {/* الشرح/الوسوم */}
       <div>
         <label className="mb-1 block text-sm font-medium">الشرح (اختياري)</label>
-        <MathTextInput
+        <MathTextInput customKeyboard={customKeyboard}
           multiline
           value={explanation}
           onChange={setExplanation}
