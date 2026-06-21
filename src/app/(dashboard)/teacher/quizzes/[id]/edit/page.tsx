@@ -8,6 +8,8 @@ import DashboardShell from "@/components/DashboardShell";
 import QuizBuilder from "@/components/teacher/QuizBuilder";
 import { parseSettings } from "@/lib/exam";
 import { canEditStructure } from "@/lib/teacherQuiz";
+import { getTeacherSubjectTree } from "@/lib/teacher";
+import { getTeacherKeyboard } from "@/lib/teacherKeyboard";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +36,18 @@ export default async function EditQuizPage({
   });
   if (!quiz || quiz.creatorId !== session.sub) notFound();
 
+  const nodeQuestionIds = quiz.nodes
+    .map((n) => n.questionId)
+    .filter((id): id is string => !!id);
+
+  // البنك للاختيار = أسئلة المادة في البنك (inBank=true)، مع تضمين أسئلة هذا
+  // الاختبار حتّى الفوريّة (خارج البنك) كي تُعرَض عناصره.
   const bank = await prisma.question.findMany({
     where: {
       creatorId: session.sub,
       subjectId: quiz.subjectId,
       isActive: true,
+      OR: [{ inBank: true }, { id: { in: nodeQuestionIds } }],
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -47,10 +56,17 @@ export default async function EditQuizPage({
       type: true,
       points: true,
       difficulty: true,
+      inBank: true,
       chapterId: true,
       chapter: { select: { title: true } },
     },
   });
+
+  // شجرة مادة الاختبار (للتأليف الفوريّ) + لوحة المدرّس المخصّصة.
+  const subjectTree = (await getTeacherSubjectTree(session.sub)).filter(
+    (s) => s.id === quiz.subjectId
+  );
+  const customKeyboard = await getTeacherKeyboard(session.sub);
 
   const settings = parseSettings(quiz.settings);
   const structural = await canEditStructure(quiz.id, quiz.status);
@@ -83,7 +99,7 @@ export default async function EditQuizPage({
               href={`/teacher/quizzes/${quiz.id}/print`}
               className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
             >
-              طباعة / تصدير
+              تصدير PDF (ورقي)
             </Link>
             {quiz.status === "PUBLISHED" && (
               <Link
@@ -116,9 +132,12 @@ export default async function EditQuizPage({
           type: q.type as QType,
           points: Number(q.points),
           difficulty: q.difficulty,
+          inBank: q.inBank,
           chapterId: q.chapterId,
           chapterTitle: q.chapter?.title ?? null,
         }))}
+        subjectTree={subjectTree}
+        customKeyboard={customKeyboard}
         initialItems={initialItems}
         initial={{
           title: quiz.title,

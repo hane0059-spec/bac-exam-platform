@@ -82,12 +82,22 @@ export default function QuestionForm({
   subjects,
   initial,
   customKeyboard,
+  inBank = true,
+  onCreated,
 }: {
   mode: "create" | "edit";
   questionId?: string;
   subjects: SubjectOption[];
   initial?: QuestionInitial;
   customKeyboard?: CustomKeyboard;
+  // التأليف الفوريّ داخل باني الاختبار: السؤال خارج البنك + ردّ نداء بدل التنقّل.
+  inBank?: boolean;
+  onCreated?: (q: {
+    id: string;
+    content: string;
+    type: string;
+    points: number;
+  }) => void;
 }) {
   const router = useRouter();
   const locked = mode === "edit" && initial?.used === true;
@@ -213,6 +223,7 @@ export default function QuestionForm({
           .filter(Boolean),
         type === "SHORT_ANSWER" && mathSubject && mathAnswer
       ),
+      inBank,
     };
     if (type === "ESSAY") {
       return { ...base, acceptedAnswers: [], options: [] };
@@ -321,6 +332,19 @@ export default function QuestionForm({
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "تعذّر الحفظ.");
       return;
+    }
+    // التأليف الفوريّ داخل الباني: أعِد السؤال للباني بلا تنقّل.
+    if (mode === "create" && onCreated) {
+      const data = await res.json().catch(() => ({}));
+      if (data.id) {
+        onCreated({
+          id: data.id,
+          content,
+          type,
+          points: Number(points),
+        });
+        return;
+      }
     }
     // توسيم الرسم عند الإنشاء: انتقل لصفحة التعديل لرفع صورة الرسم.
     if (mode === "create" && type === "DIAGRAM_LABEL") {

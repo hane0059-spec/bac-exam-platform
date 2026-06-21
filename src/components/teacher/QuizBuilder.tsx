@@ -7,6 +7,10 @@ import Link from "next/link";
 import MathText from "@/components/MathText";
 import DateTimeField from "@/components/DateTimeField";
 import ConfirmButton from "@/components/ConfirmButton";
+import QuestionForm, {
+  type SubjectOption,
+} from "@/components/teacher/QuestionForm";
+import type { CustomKeyboard } from "@/components/math/symbolBank";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
@@ -16,6 +20,7 @@ interface BankQuestion {
   type: QType;
   points: number;
   difficulty: string;
+  inBank: boolean;
   chapterId: string | null;
   chapterTitle: string | null;
 }
@@ -64,6 +69,8 @@ export default function QuizBuilder({
   purged = false,
   canEditStructure,
   bank,
+  subjectTree = [],
+  customKeyboard,
   initialItems,
   initial,
 }: {
@@ -72,6 +79,8 @@ export default function QuizBuilder({
   purged?: boolean;
   canEditStructure: boolean;
   bank: BankQuestion[];
+  subjectTree?: SubjectOption[];
+  customKeyboard?: CustomKeyboard;
   initialItems: Item[];
   initial: QuizBuilderInitial;
 }) {
@@ -91,14 +100,17 @@ export default function QuizBuilder({
   const [from, setFrom] = useState(isoToLocal(initial.availableFrom));
   const [until, setUntil] = useState(isoToLocal(initial.availableUntil));
   const [items, setItems] = useState<Item[]>(initialItems);
+  // قائمة الأسئلة المعروفة (البنك + المؤلَّفة فورياً)؛ تتغيّر عند الإنشاء/الترقية.
+  const [questions, setQuestions] = useState<BankQuestion[]>(bank);
+  const [showNew, setShowNew] = useState(false);
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const bankMap = useMemo(
-    () => new Map(bank.map((q) => [q.id, q])),
-    [bank]
+    () => new Map(questions.map((q) => [q.id, q])),
+    [questions]
   );
 
   // فلترة بنك الأسئلة (لأنّه قد يعرض كل أسئلة المادة): بالفصل وبالبحث النصّي.
@@ -106,13 +118,19 @@ export default function QuizBuilder({
   const [bankSearch, setBankSearch] = useState("");
   const chapters = useMemo(() => {
     const m = new Map<string, string>();
-    for (const q of bank)
-      if (q.chapterId && q.chapterTitle) m.set(q.chapterId, q.chapterTitle);
+    for (const q of questions)
+      if (q.inBank && q.chapterId && q.chapterTitle)
+        m.set(q.chapterId, q.chapterTitle);
     return [...m.entries()].map(([id, title]) => ({ id, title }));
-  }, [bank]);
-  const hasNoChapter = useMemo(() => bank.some((q) => !q.chapterId), [bank]);
+  }, [questions]);
+  const hasNoChapter = useMemo(
+    () => questions.some((q) => q.inBank && !q.chapterId),
+    [questions]
+  );
 
-  const available = bank.filter((q) => {
+  // قائمة الاختيار = أسئلة البنك فقط (لا الفوريّة) غير المضافة بعد.
+  const available = questions.filter((q) => {
+    if (!q.inBank) return false;
     if (items.some((it) => it.questionId === q.id)) return false;
     if (bankChapter === "__none__" && q.chapterId) return false;
     if (bankChapter && bankChapter !== "__none__" && q.chapterId !== bankChapter)
@@ -141,6 +159,50 @@ export default function QuizBuilder({
   }
   function add(id: string) {
     setItems((prev) => [...prev, { questionId: id, pointsOverride: null }]);
+  }
+  // التأليف الفوريّ: سؤال أُنشئ خارج البنك يُضاف للاختبار مباشرةً.
+  function onCreated(q: {
+    id: string;
+    content: string;
+    type: string;
+    points: number;
+  }) {
+    setQuestions((prev) => [
+      ...prev,
+      {
+        id: q.id,
+        content: q.content,
+        type: q.type as QType,
+        points: q.points,
+        difficulty: "MEDIUM",
+        inBank: false,
+        chapterId: null,
+        chapterTitle: null,
+      },
+    ]);
+    setItems((prev) => [...prev, { questionId: q.id, pointsOverride: null }]);
+    setShowNew(false);
+  }
+  // ترقية سؤال فوريّ إلى بنك الأسئلة (يصير قابلاً لإعادة الاستخدام).
+  async function promote(ids: string[]) {
+    const targets = ids.filter((id) => bankMap.get(id)?.inBank === false);
+    if (targets.length === 0) return;
+    setBusy(true);
+    setError("");
+    const res = await fetch("/api/teacher/questions/promote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: targets }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّرت الإضافة للبنك.");
+      return;
+    }
+    setQuestions((prev) =>
+      prev.map((q) => (targets.includes(q.id) ? { ...q, inBank: true } : q))
+    );
   }
   function setOverride(idx: number, value: string) {
     const num = value.trim() === "" ? null : Number(value);
@@ -394,13 +456,28 @@ export default function QuizBuilder({
 
       {/* الأسئلة المختارة */}
       <div className="card space-y-3 p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-display font-semibold">
             أسئلة الاختبار ({items.length})
           </h3>
-          <span className="text-sm text-ink/60">
-            المجموع: {totalPoints} نقطة
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {!ro &&
+              items.some(
+                (it) => bankMap.get(it.questionId)?.inBank === false
+              ) && (
+                <button
+                  type="button"
+                  onClick={() => promote(items.map((it) => it.questionId))}
+                  disabled={busy}
+                  className="rounded-lg border border-primary px-3 py-1 text-xs font-medium text-primary-dark hover:bg-primary-light disabled:opacity-50"
+                >
+                  ↑ أضف كل الأسئلة الجديدة للبنك
+                </button>
+              )}
+            <span className="text-sm text-ink/60">
+              المجموع: {totalPoints} نقطة
+            </span>
+          </div>
         </div>
         {items.length === 0 ? (
           <p className="text-sm text-ink/50">لم تَضِف أسئلة بعد.</p>
@@ -424,6 +501,17 @@ export default function QuizBuilder({
                       {q ? TYPE_LABEL[q.type] : ""} • افتراضي {q?.points ?? 0}
                     </span>
                   </div>
+                  {q && !q.inBank && (
+                    <button
+                      type="button"
+                      onClick={() => promote([it.questionId])}
+                      disabled={busy}
+                      title="هذا السؤال خارج البنك — أضِفه ليُعاد استخدامه"
+                      className="shrink-0 rounded-lg border border-gold/50 bg-gold/10 px-2 py-1 text-xs font-medium text-gold hover:bg-gold/20 disabled:opacity-50"
+                    >
+                      ↑ للبنك
+                    </button>
+                  )}
                   <input
                     type="number"
                     min={0.25}
@@ -470,13 +558,48 @@ export default function QuizBuilder({
         )}
       </div>
 
+      {/* تأليف سؤال جديد فورياً (خارج البنك حتّى ترقيته) */}
+      {!ro && subjectTree.length > 0 && (
+        <div className="card space-y-3 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-display font-semibold">أو ألّف سؤالاً جديداً</h3>
+            <button
+              type="button"
+              onClick={() => setShowNew((v) => !v)}
+              className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                showNew
+                  ? "border-primary bg-primary-light text-primary-dark"
+                  : "border-primary text-primary-dark hover:bg-primary-light"
+              }`}
+            >
+              {showNew ? "إغلاق" : "+ سؤال جديد"}
+            </button>
+          </div>
+          {showNew && (
+            <div className="rounded-xl border border-primary/30 bg-primary-light/20 p-4">
+              <p className="mb-3 text-sm text-ink/60">
+                يُضاف السؤال للاختبار مباشرةً ويبقى <b>خارج البنك</b> حتّى
+                ترقيته. الترقية من زرّ «↑ للبنك» على السؤال.
+              </p>
+              <QuestionForm
+                mode="create"
+                subjects={subjectTree}
+                customKeyboard={customKeyboard}
+                inBank={false}
+                onCreated={onCreated}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* إضافة من البنك */}
       {!ro && (
         <div className="card space-y-3 p-5">
           <h3 className="font-display font-semibold">أضف من بنك الأسئلة</h3>
 
           {/* فلترة البنك بالفصل والبحث */}
-          {bank.length > 0 && (
+          {questions.some((q) => q.inBank) && (
             <div className="flex flex-wrap gap-2">
               {chapters.length > 0 && (
                 <select
@@ -505,8 +628,8 @@ export default function QuizBuilder({
 
           {available.length === 0 ? (
             <p className="text-sm text-ink/50">
-              {bank.length === 0
-                ? "لا أسئلة متاحة لهذه المادة. أنشئ أسئلة في بنك الأسئلة أولاً."
+              {!questions.some((q) => q.inBank)
+                ? "لا أسئلة في البنك لهذه المادة. ألّف سؤالاً جديداً أعلاه أو أضِف للبنك."
                 : "لا أسئلة مطابقة للفلترة."}
             </p>
           ) : (

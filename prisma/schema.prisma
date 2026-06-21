@@ -472,6 +472,9 @@ model Question {
   acceptedAnswers String[]     @map("accepted_answers") // for SHORT_ANSWER
   isActive        Boolean      @default(true) @map("is_active")
   isPublic        Boolean      @default(false) @map("is_public")
+  // في بنك الأسئلة؟ السؤال المؤلَّف فورياً داخل الباني يبدأ خارج البنك (false)
+  // فلا يظهر في قائمة البنك إلّا إذا رقّاه المدرّس. الأسئلة العادية true.
+  inBank          Boolean      @default(true) @map("in_bank")
   // مُلغى: يُستبعد من حساب الدرجة (بسطاً ومقاماً) في كل الجلسات عند اكتشاف خطأ فيه.
   isCancelled     Boolean      @default(false) @map("is_cancelled")
   createdAt       DateTime     @default(now()) @map("created_at")

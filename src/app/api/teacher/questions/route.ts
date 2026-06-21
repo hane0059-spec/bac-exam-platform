@@ -25,6 +25,7 @@ export async function GET(req: Request) {
     where: {
       creatorId: session.sub,
       isActive: true,
+      inBank: true, // أسئلة الباني الفوريّة (خارج البنك) لا تظهر في القائمة.
       ...(subjectId ? { subjectId } : {}),
       ...(type ? { type: type as never } : {}),
     },
@@ -110,6 +111,7 @@ export async function POST(req: Request) {
       subjectId: data.subjectId,
       chapterId: data.chapterId ?? null,
       conceptId: data.conceptId ?? null,
+      inBank: data.inBank,
       type: data.type,
       content: data.content,
       difficulty: data.difficulty,

@@ -123,6 +123,8 @@ export const questionInputSchema = z
     options: z.array(optionSchema).default([]),
     acceptedAnswers: z.array(z.string().trim().min(1)).default([]),
     matchingPairs: z.array(matchingPairSchema).default([]),
+    // false عند التأليف الفوريّ داخل باني الاختبار (خارج البنك حتّى الترقية).
+    inBank: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {
     // المقالي يدويّ بالكامل: لا خيارات ولا إجابات مقبولة مطلوبة.
