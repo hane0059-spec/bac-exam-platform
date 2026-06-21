@@ -10,6 +10,7 @@ import StudentForm, {
 } from "@/components/teacher/StudentForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
 import AdminEnrollmentManager from "@/components/admin/AdminEnrollmentManager";
+import DeleteUserButton from "@/components/admin/DeleteUserButton";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,10 @@ export default async function AdminEditStudentPage({
         />
         <PasswordResetForm
           endpoint={`/api/admin/students/${student.id}/password`}
+        />
+        <DeleteUserButton
+          userId={student.id}
+          userName={`${student.firstName} ${student.lastName}`}
         />
       </div>
     </DashboardShell>

@@ -8,6 +8,7 @@ import { getParentChildren } from "@/lib/parent";
 import DashboardShell from "@/components/DashboardShell";
 import ParentLinks from "@/components/admin/ParentLinks";
 import CreatorNotesEditor from "@/components/admin/CreatorNotesEditor";
+import DeleteUserButton from "@/components/admin/DeleteUserButton";
 import { isSoloMode } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +77,14 @@ export default async function ParentDetailPage({
           />
         </div>
       )}
+
+      <div className="mt-5">
+        <DeleteUserButton
+          userId={parent.id}
+          userName={`${parent.firstName} ${parent.lastName}`}
+          redirectTo="/admin/parents"
+        />
+      </div>
     </DashboardShell>
   );
 }

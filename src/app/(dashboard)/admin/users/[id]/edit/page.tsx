@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import UserForm, { type UserInitial } from "@/components/admin/UserForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
+import DeleteUserButton from "@/components/admin/DeleteUserButton";
 import { getAdminContext } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +84,13 @@ export default async function EditUserPage({
           canManageAdmins={canManageAdmins}
         />
         <PasswordResetForm endpoint={`/api/admin/users/${user.id}/password`} />
+        {/* حذف الحساب: ليس النفس ولا المدير العام للمنصّة. */}
+        {user.id !== session.sub && !user.isSuperAdmin && (
+          <DeleteUserButton
+            userId={user.id}
+            userName={`${user.firstName} ${user.lastName}`}
+          />
+        )}
       </div>
     </DashboardShell>
   );
