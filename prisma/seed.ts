@@ -631,6 +631,109 @@ async function main() {
   });
   console.log("✓ إشعارات تمثيلية");
 
+  // ════════════════════════════════════════════
+  // سيناريو شامل: لكل مدرّس مادته، طالبان لكل مدرّس، اختبار مُسنَد ومُسلَّم لكلٍّ
+  // (الطالب الأول إجاباته صحيحة، والثاني بخطأ في الاختيار) — لتمرين كل الاحتمالات.
+  // ════════════════════════════════════════════
+  const studentPw = await pw("Student@123");
+  let scode = 2000;
+  for (const t of TEACHERS) {
+    const teacherId = teacherIdByEmail.get(t.email)!;
+    const subjId = subjectByCode.get(t.code)!;
+    const prefix = t.email.replace("@nour.edu", "");
+
+    // طالبان مسجّلان مع المدرّس في مادته.
+    const studs: { id: string; name: string }[] = [];
+    for (let i = 1; i <= 2; i++) {
+      scode++;
+      const u = await prisma.user.create({
+        data: {
+          email: `${prefix}.s${i}@nour.edu`,
+          passwordHash: studentPw,
+          role: Role.STUDENT,
+          gender: i === 1 ? Gender.MALE : Gender.FEMALE,
+          firstName: `طالب${i}`,
+          lastName: t.last,
+          schoolId: school.id,
+          createdById: teacherId,
+          studentProfile: {
+            create: { studentCode: `S-${scode}`, gradeLevelId: grade.id, enrollmentYear: ENROLL_YEAR },
+          },
+        },
+      });
+      studs.push({ id: u.id, name: `طالب${i} ${t.last}` });
+      await prisma.studentEnrollment.create({
+        data: { studentId: u.id, teacherId, subjectId: subjId, academicYear: YEAR },
+      });
+    }
+
+    // سؤالان: اختيار + صح/خطأ.
+    const mcqQ = await prisma.question.create({
+      data: {
+        creatorId: teacherId, subjectId: subjId, type: "MULTIPLE_CHOICE",
+        content: `سؤال اختيار في مادة ${t.last}`, points: 1,
+        options: { create: [
+          { label: "أ", content: "الإجابة الصحيحة", isCorrect: true, orderNum: 0 },
+          { label: "ب", content: "إجابة خاطئة", isCorrect: false, orderNum: 1 },
+          { label: "ج", content: "إجابة خاطئة أخرى", isCorrect: false, orderNum: 2 },
+        ] },
+      },
+      include: { options: true },
+    });
+    const tfQ = await prisma.question.create({
+      data: {
+        creatorId: teacherId, subjectId: subjId, type: "TRUE_FALSE",
+        content: `عبارة صحيحة في مادة ${t.last}`, points: 1,
+        options: { create: [
+          { label: "صح", content: "صح", isCorrect: true, orderNum: 0 },
+          { label: "خطأ", content: "خطأ", isCorrect: false, orderNum: 1 },
+        ] },
+      },
+      include: { options: true },
+    });
+
+    // اختبار منشور بعقدتين + عقدة بداية.
+    const quiz = await prisma.quiz.create({
+      data: { creatorId: teacherId, subjectId: subjId, title: `اختبار ${t.last}`, status: "PUBLISHED", settings: baseSettings },
+    });
+    const n1 = await prisma.quizNode.create({ data: { quizId: quiz.id, nodeType: "QUESTION", questionId: mcqQ.id, positionX: 0, positionY: 0 } });
+    const n2 = await prisma.quizNode.create({ data: { quizId: quiz.id, nodeType: "QUESTION", questionId: tfQ.id, positionX: 1, positionY: 0 } });
+    await prisma.quiz.update({ where: { id: quiz.id }, data: { startNodeId: n1.id } });
+
+    const mcqRight = mcqQ.options.find((o) => o.isCorrect)!;
+    const mcqWrong = mcqQ.options.find((o) => !o.isCorrect)!;
+    const tfRight = tfQ.options.find((o) => o.isCorrect)!;
+
+    // إسناد + جلسة مُسلَّمة لكل طالب (الأول 100%، الثاني 50% بخطأ في الاختيار).
+    for (let i = 0; i < 2; i++) {
+      const st = studs[i];
+      await prisma.quizAssignment.create({ data: { quizId: quiz.id, studentId: st.id, teacherId } });
+      const perfect = i === 0;
+      const total = perfect ? 2 : 1;
+      const sess = await prisma.examSession.create({
+        data: {
+          studentId: st.id, quizId: quiz.id, status: "COMPLETED", attemptNumber: 1,
+          completedAt: new Date(), totalScore: total, maxPossibleScore: 2, percentage: (total / 2) * 100,
+        },
+      });
+      await prisma.studentAnswer.create({
+        data: {
+          sessionId: sess.id, questionId: mcqQ.id, nodeId: n1.id,
+          isCorrect: perfect, scoreEarned: perfect ? 1 : 0,
+          selectedOptions: { connect: { id: perfect ? mcqRight.id : mcqWrong.id } },
+        },
+      });
+      await prisma.studentAnswer.create({
+        data: {
+          sessionId: sess.id, questionId: tfQ.id, nodeId: n2.id,
+          isCorrect: true, scoreEarned: 1,
+          selectedOptions: { connect: { id: tfRight.id } },
+        },
+      });
+    }
+  }
+  console.log(`✓ لكل مدرّس: طالبان + اختبار مُسنَد ومُسلَّم (أحدهما بأخطاء) — ${TEACHERS.length} مدرّساً`);
+
   // ── ملخّص ──
   console.log("\n════════ تمّت البذرة ════════");
   console.log("المدير العام:   admin@example.com / Admin@123");
