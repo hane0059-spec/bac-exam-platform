@@ -11,8 +11,8 @@ import {
   gradeFillBlank,
   parseBlankAnswers,
   gradeMatching,
-  gradeCalculation,
 } from "@/lib/grading";
+import { gradeCalculationLatex } from "@/lib/mathEval";
 import {
   getStudentSession,
   parseSettings,
@@ -144,7 +144,8 @@ export async function POST(
     isCorrect = gradeShortAnswer(q.acceptedAnswers, textAnswer ?? "");
   } else if (q.type === "CALCULATION") {
     // إجابة عددية بهامش خطأ اختياري (acceptedAnswers = [القيمة, الهامش؟]).
-    isCorrect = gradeCalculation(q.acceptedAnswers, textAnswer ?? "");
+    // تدعم إدخال LaTeX (كسور/جذور/أسس) بتقييمها عددياً على الخادم.
+    isCorrect = gradeCalculationLatex(q.acceptedAnswers, textAnswer ?? "");
   } else if (q.type === "MATCHING") {
     // لكل عنصر أيسر إجابته الصحيحة (الأيمن المقابل)، بدرجة جزئية.
     const pairs = [...q.matchingPairs].sort((a, b) => a.orderNum - b.orderNum);

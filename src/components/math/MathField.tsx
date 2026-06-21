@@ -9,10 +9,12 @@ export default function MathField({
   value,
   onChange,
   layout,
+  disabled = false,
 }: {
   value: string;
   onChange: (latex: string) => void;
   layout: MathLayout;
+  disabled?: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,6 +65,12 @@ export default function MathField({
     if (mf && mf.value !== value) mf.value = value;
   }, [value]);
 
+  // مزامنة حالة التعطيل (قراءة فقط أثناء عرض التصحيح).
+  useEffect(() => {
+    const mf = mfRef.current;
+    if (mf) mf.readOnly = disabled;
+  }, [disabled]);
+
   function openKeyboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vk = (window as any).mathVirtualKeyboard;
@@ -79,13 +87,15 @@ export default function MathField({
         className="rounded-xl border border-line bg-white p-2"
         dir="ltr"
       />
-      <button
-        type="button"
-        onClick={openKeyboard}
-        className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium hover:bg-ink/5"
-      >
-        ⌨ لوحة المادة
-      </button>
+      {!disabled && (
+        <button
+          type="button"
+          onClick={openKeyboard}
+          className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium hover:bg-ink/5"
+        >
+          ⌨ لوحة المادة
+        </button>
+      )}
     </div>
   );
 }

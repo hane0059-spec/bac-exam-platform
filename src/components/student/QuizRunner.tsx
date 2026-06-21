@@ -9,6 +9,7 @@ import AppealBox, { type AppealState } from "@/components/student/AppealBox";
 import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import PrintButton from "@/components/student/PrintButton";
 import MathText from "@/components/MathText";
+import MathAnswerInput from "@/components/math/MathAnswerInput";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -528,21 +529,20 @@ export default function QuizRunner({
                 placeholder="اكتب إجابتك المقالية هنا…"
                 className="field min-h-[140px]"
               />
+            ) : question.type === "CALCULATION" ? (
+              // إدخال رياضيّ بلوحة المعادلات (يُخزَّن LaTeX مغلّفاً بـ $…$).
+              <MathAnswerInput
+                value={text}
+                onChange={setText}
+                disabled={startedFeedback}
+              />
             ) : (
               <input
                 type="text"
-                dir={question.type === "CALCULATION" ? "ltr" : undefined}
-                inputMode={
-                  question.type === "CALCULATION" ? "decimal" : undefined
-                }
                 value={text}
                 disabled={startedFeedback}
                 onChange={(e) => setText(e.target.value)}
-                placeholder={
-                  question.type === "CALCULATION"
-                    ? "أدخل القيمة العددية…"
-                    : "اكتب إجابتك هنا…"
-                }
+                placeholder="اكتب إجابتك هنا…"
                 className="field"
               />
             )

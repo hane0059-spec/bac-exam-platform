@@ -18,6 +18,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@cortex-js/compute-engine": "^0.62.0",
     "@prisma/client": "^5.18.0",
     "@types/katex": "^0.16.8",
     "bcryptjs": "^2.4.3",
