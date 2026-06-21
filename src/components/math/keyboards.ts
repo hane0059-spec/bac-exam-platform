@@ -86,10 +86,14 @@ export function layoutsFor(layout: MathLayout): any[] {
   return ["numeric", "symbols", "greek"];
 }
 
-/** يخمّن التخطيط المناسب من اسم المادة. */
-export function guessLayout(subjectName?: string): MathLayout {
+/**
+ * يُعيد تخطيط المادة إن كانت علميّةً (رياضيات/فيزياء/كيمياء)، وإلّا null.
+ * تُفعَّل لوحة المعادلات لهذه المواد فقط (لا للعربية/الدينية/الأحياء…).
+ */
+export function subjectLayout(subjectName?: string): MathLayout | null {
   const n = subjectName ?? "";
   if (/كيمياء|chem/i.test(n)) return "chemistry";
   if (/فيزياء|phys/i.test(n)) return "physics";
-  return "math";
+  if (/رياضيّ?ات|math/i.test(n)) return "math";
+  return null;
 }

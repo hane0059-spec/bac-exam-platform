@@ -7,7 +7,7 @@ import MathField from "./MathField";
 import MathText from "@/components/MathText";
 import {
   LAYOUT_OPTIONS,
-  guessLayout,
+  subjectLayout,
   type MathLayout,
 } from "./keyboards";
 
@@ -33,7 +33,11 @@ export default function MathTextInput({
   const ref = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [latex, setLatex] = useState("");
-  const [layout, setLayout] = useState<MathLayout>(guessLayout(subjectName));
+  // لوحة المعادلات تُفعَّل للمواد العلمية فقط (رياضيات/فيزياء/كيمياء).
+  const subjLayout = subjectLayout(subjectName);
+  const mathEnabled = subjLayout !== null;
+  const [layoutOverride, setLayoutOverride] = useState<MathLayout | null>(null);
+  const layout: MathLayout = layoutOverride ?? subjLayout ?? "math";
 
   function insert() {
     const snippet = `$${latex.trim()}$`;
@@ -73,7 +77,7 @@ export default function MathTextInput({
             onChange={(e) => onChange(e.target.value)}
           />
         )}
-        {!disabled && (
+        {!disabled && mathEnabled && (
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -89,14 +93,14 @@ export default function MathTextInput({
         )}
       </div>
 
-      {/* معاينة المعادلات داخل النصّ. */}
-      {value.includes("$") && (
+      {/* معاينة المعادلات داخل النصّ (للمواد العلمية فقط). */}
+      {mathEnabled && value.includes("$") && (
         <p className="mt-1 text-sm text-ink/70">
           المعاينة: <MathText text={value} />
         </p>
       )}
 
-      {open && (
+      {open && mathEnabled && (
         <div className="mt-2 space-y-2 rounded-xl border border-primary/30 bg-primary-light/30 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-ink/70">لوحة:</span>
@@ -104,7 +108,7 @@ export default function MathTextInput({
               <button
                 key={o.key}
                 type="button"
-                onClick={() => setLayout(o.key)}
+                onClick={() => setLayoutOverride(o.key)}
                 className={`rounded-lg border px-2.5 py-1 text-xs ${
                   layout === o.key
                     ? "border-primary bg-primary text-white"

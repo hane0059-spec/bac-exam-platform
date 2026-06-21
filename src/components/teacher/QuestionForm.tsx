@@ -7,6 +7,7 @@ import { countBlanks } from "@/lib/grading";
 import ImageUploadField from "@/components/ImageUploadField";
 import MathText from "@/components/MathText";
 import MathTextInput from "@/components/math/MathTextInput";
+import { subjectLayout } from "@/components/math/keyboards";
 
 type QType =
   | "MULTIPLE_CHOICE"
@@ -151,6 +152,8 @@ export default function QuestionForm({
   );
   const chapters = subject?.chapters ?? [];
   const concepts = chapters.find((c) => c.id === chapterId)?.concepts ?? [];
+  // لوحة المعادلات تُفعَّل للمواد العلمية فقط (رياضيات/فيزياء/كيمياء).
+  const mathSubject = subjectLayout(subject?.name) !== null;
 
   const maxOptions = type === "ORDER" ? 8 : 6;
   // عدد الفراغات مُشتقّ من علامات [[ ]] في نصّ السؤال.
@@ -435,11 +438,13 @@ export default function QuestionForm({
           placeholder="اكتب نصّ السؤال…"
           className="field min-h-[90px]"
         />
-        <p className="mt-1 text-xs text-ink/50">
-          زرّ <span className="font-bold">√x</span> يفتح لوحة معادلات حسب المادة،
-          أو اكتب LaTeX يدويّاً بين <code dir="ltr">$ … $</code>. مثال:{" "}
-          <code dir="ltr">$H_2O$</code> أو <code dir="ltr">$x^2+1$</code>.
-        </p>
+        {mathSubject && (
+          <p className="mt-1 text-xs text-ink/50">
+            زرّ <span className="font-bold">√x</span> يفتح لوحة معادلات حسب
+            المادة، أو اكتب LaTeX يدويّاً بين <code dir="ltr">$ … $</code>. مثال:{" "}
+            <code dir="ltr">$H_2O$</code> أو <code dir="ltr">$x^2+1$</code>.
+          </p>
+        )}
       </div>
 
       {/* الخيارات حسب النوع */}
