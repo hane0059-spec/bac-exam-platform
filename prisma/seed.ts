@@ -374,6 +374,21 @@ async function main() {
   });
   console.log("✓ بنك أسئلة بكل الأنواع (6)");
 
+  // اربط كل سؤال بأوّل درس في مادته لتفعيل تحليلات تقدّم الطالب (حسب الدرس).
+  for (const subjectId of subjectByCode.values()) {
+    const c = await prisma.concept.findFirst({
+      where: { chapter: { subjectId } },
+      select: { id: true },
+    });
+    if (c) {
+      await prisma.question.updateMany({
+        where: { subjectId, conceptId: null },
+        data: { conceptId: c.id },
+      });
+    }
+  }
+  console.log("✓ ربط الأسئلة بالدروس (للتحليلات)");
+
   // مساعد: عقدة سؤال لكل اختبار.
   async function makeQuiz(opts: {
     title: string; status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
