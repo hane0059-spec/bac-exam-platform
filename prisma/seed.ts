@@ -8,6 +8,7 @@
 
 import { PrismaClient, Role, Gender } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { MATH_ANSWER_TAG } from "../src/lib/mathAnswer";
 
 const prisma = new PrismaClient();
 
@@ -454,6 +455,17 @@ async function main() {
       points: 1,
       acceptedAnswers: ["1", "0"],
       explanation: "$\\dfrac{3}{4} + \\dfrac{1}{4} = \\dfrac{4}{4} = 1$.",
+    },
+  });
+  // إجابة معادلة (تصحيح بالتكافؤ الرمزي): الطالب يكتب أيّ صيغة مكافئة لـ 2x.
+  await prisma.question.create({
+    data: {
+      creatorId: tMath, subjectId: math, type: "SHORT_ANSWER",
+      content: "ما مشتقّة الدالة $f(x) = x^2$؟",
+      points: 1,
+      acceptedAnswers: ["2x"],
+      tags: [MATH_ANSWER_TAG],
+      explanation: "$f'(x) = 2x$.",
     },
   });
   console.log("✓ أسئلة علمية بمعادلات (فيزياء/كيمياء/رياضيات)");

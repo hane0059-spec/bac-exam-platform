@@ -12,6 +12,7 @@ import {
 import { parseFileExamSettings } from "@/lib/fileExam";
 import { createNotification } from "@/lib/notifications";
 import { updateStudentConceptPerformance } from "@/lib/studentProgress";
+import { isMathAnswer } from "@/lib/mathAnswer";
 
 // ─────────────────────────────────────────────
 // الحراسة والإعدادات
@@ -246,6 +247,8 @@ export interface SanitizedQuestion {
   // توسيم الرسم: عدد الفراغات المرقّمة ومعرّف صورة السؤال (تُبَثّ عبر /api/attachments).
   blankCount?: number;
   imageId?: string | null;
+  // إجابة قصيرة رياضية: لوحة معادلات للطالب + تصحيح بالتكافؤ.
+  mathInput?: boolean;
 }
 
 /** يحمّل عقدة سؤال ويعقّمها — يُستبعد isCorrect والإجابات المقبولة والشرح. */
@@ -317,6 +320,8 @@ export async function loadSanitizedQuestion(
     blankCount: q.type === "DIAGRAM_LABEL" ? q.options.length : undefined,
     imageId:
       q.type === "DIAGRAM_LABEL" ? q.attachments[0]?.id ?? null : undefined,
+    // إجابة قصيرة رياضية: يستعمل الطالب لوحة المعادلات.
+    mathInput: q.type === "SHORT_ANSWER" && isMathAnswer(q.tags),
     index,
     total,
   };

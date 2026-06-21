@@ -62,6 +62,18 @@ export function gradeCalculationLatex(
 }
 
 /**
+ * تصحيح الإجابة القصيرة الرياضية: صحيحةٌ إن كافأت إجابةُ الطالب أيّ إجابةٍ
+ * مقبولة (تكافؤ رمزيّ/عدديّ). تُستعمل إضافةً للمطابقة النصّية لا بدلاً منها.
+ */
+export function gradeMathShortAnswer(
+  accepted: readonly string[],
+  studentAnswer: string | null | undefined
+): boolean {
+  if (!studentAnswer || !studentAnswer.trim()) return false;
+  return accepted.some((a) => latexEquivalent(a, studentAnswer));
+}
+
+/**
  * تكافؤ رياضيّ بين تعبيرَي LaTeX (عدديّ أو رمزيّ): مثل $2x$ و$x\cdot2$،
  * أو $\frac12$ و$0.5$. يُستعمل لتصحيح الإجابة المقالية الرياضية.
  */

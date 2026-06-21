@@ -32,6 +32,7 @@ interface Question {
   matchRights?: string[];
   blankCount?: number;
   imageId?: string | null;
+  mathInput?: boolean; // إجابة قصيرة رياضية → لوحة معادلات
 }
 interface Reveal {
   needsReview: boolean;
@@ -529,7 +530,7 @@ export default function QuizRunner({
                 placeholder="اكتب إجابتك المقالية هنا…"
                 className="field min-h-[140px]"
               />
-            ) : question.type === "CALCULATION" ? (
+            ) : question.type === "CALCULATION" || question.mathInput ? (
               // إدخال رياضيّ بلوحة المعادلات (يُخزَّن LaTeX مغلّفاً بـ $…$).
               <MathAnswerInput
                 value={text}

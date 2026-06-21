@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   evaluateLatexNumber,
   gradeCalculationLatex,
+  gradeMathShortAnswer,
   latexEquivalent,
   stripMathDelimiters,
 } from "@/lib/mathEval";
@@ -64,6 +65,20 @@ describe("latexEquivalent — تكافؤ رياضيّ", () => {
   it("فارغ → خطأ", () => {
     expect(latexEquivalent("", "x")).toBe(false);
     expect(latexEquivalent(null, "x")).toBe(false);
+  });
+});
+
+describe("gradeMathShortAnswer — إجابة قصيرة رياضية بالتكافؤ", () => {
+  it("يقبل صيغةً مكافئة لأيّ إجابة مقبولة", () => {
+    expect(gradeMathShortAnswer(["2x"], "$x \\cdot 2$")).toBe(true);
+    expect(gradeMathShortAnswer(["\\frac{1}{2}", "0.5"], "0.5")).toBe(true);
+  });
+  it("يرفض غير المكافئ", () => {
+    expect(gradeMathShortAnswer(["2x"], "3x")).toBe(false);
+  });
+  it("إجابة فارغة → خطأ", () => {
+    expect(gradeMathShortAnswer(["2x"], "")).toBe(false);
+    expect(gradeMathShortAnswer(["2x"], null)).toBe(false);
   });
 });
 

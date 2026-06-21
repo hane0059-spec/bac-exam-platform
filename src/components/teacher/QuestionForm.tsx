@@ -8,6 +8,7 @@ import ImageUploadField from "@/components/ImageUploadField";
 import MathText from "@/components/MathText";
 import MathTextInput from "@/components/math/MathTextInput";
 import { subjectLayout } from "@/components/math/keyboards";
+import { isMathAnswer, withMathAnswerTag } from "@/lib/mathAnswer";
 
 type QType =
   | "MULTIPLE_CHOICE"
@@ -99,6 +100,8 @@ export default function QuestionForm({
   const [points, setPoints] = useState(initial?.points ?? 1);
   const [explanation, setExplanation] = useState(initial?.explanation ?? "");
   const [tags, setTags] = useState(initial?.tags.join("، ") ?? "");
+  // إجابة قصيرة رياضية (لوحة معادلات + تكافؤ رمزي) — للمواد العلمية.
+  const [mathAnswer, setMathAnswer] = useState(isMathAnswer(initial?.tags));
 
   const [options, setOptions] = useState<{ content: string; isCorrect: boolean }[]>(
     initial && initial.type !== "SHORT_ANSWER" && initial.options.length
@@ -200,10 +203,13 @@ export default function QuestionForm({
       difficulty,
       points: Number(points),
       explanation,
-      tags: tags
-        .split(/[،,]/)
-        .map((t) => t.trim())
-        .filter(Boolean),
+      tags: withMathAnswerTag(
+        tags
+          .split(/[،,]/)
+          .map((t) => t.trim())
+          .filter(Boolean),
+        type === "SHORT_ANSWER" && mathSubject && mathAnswer
+      ),
     };
     if (type === "ESSAY") {
       return { ...base, acceptedAnswers: [], options: [] };
@@ -593,6 +599,23 @@ export default function QuestionForm({
             ))}
           </div>
         </div>
+      )}
+
+      {type === "SHORT_ANSWER" && mathSubject && (
+        <label className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary-light/30 p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={mathAnswer}
+            onChange={(e) => setMathAnswer(e.target.checked)}
+            className="mt-0.5 accent-primary"
+          />
+          <span>
+            <span className="font-medium">الإجابة معادلة رياضية</span> — يُدخلها
+            الطالب بلوحة المعادلات، وتُصحَّح بالتكافؤ الرمزي/العددي (مثلاً{" "}
+            <code dir="ltr">2x</code> = <code dir="ltr">x·2</code>). اكتب
+            الإجابات المقبولة بصيغة LaTeX.
+          </span>
+        </label>
       )}
 
       {type === "SHORT_ANSWER" && (

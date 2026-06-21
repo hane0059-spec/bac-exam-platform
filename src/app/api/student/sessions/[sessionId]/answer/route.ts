@@ -12,7 +12,8 @@ import {
   parseBlankAnswers,
   gradeMatching,
 } from "@/lib/grading";
-import { gradeCalculationLatex } from "@/lib/mathEval";
+import { gradeCalculationLatex, gradeMathShortAnswer } from "@/lib/mathEval";
+import { isMathAnswer } from "@/lib/mathAnswer";
 import {
   getStudentSession,
   parseSettings,
@@ -142,6 +143,10 @@ export async function POST(
     storedText = (isPermutation ? valid : optionIds).join(",");
   } else if (q.type === "SHORT_ANSWER") {
     isCorrect = gradeShortAnswer(q.acceptedAnswers, textAnswer ?? "");
+    // إجابة معادلة: اقبل التكافؤ الرمزي/العددي إضافةً للمطابقة النصّية.
+    if (!isCorrect && isMathAnswer(q.tags)) {
+      isCorrect = gradeMathShortAnswer(q.acceptedAnswers, textAnswer ?? "");
+    }
   } else if (q.type === "CALCULATION") {
     // إجابة عددية بهامش خطأ اختياري (acceptedAnswers = [القيمة, الهامش؟]).
     // تدعم إدخال LaTeX (كسور/جذور/أسس) بتقييمها عددياً على الخادم.
