@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import DeleteQuestionButton from "@/components/teacher/DeleteQuestionButton";
 import QuestionFilters from "@/components/teacher/QuestionFilters";
+import MathText from "@/components/MathText";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -171,7 +172,9 @@ export default async function TeacherQuestionsPage({
                   </span>
                 )}
               </div>
-              <p className="leading-relaxed">{q.content}</p>
+              <p className="leading-relaxed">
+                <MathText text={q.content} />
+              </p>
               {q.tags.length > 0 && (
                 <p className="mt-1 text-xs text-ink/40">
                   {q.tags.map((t) => `#${t}`).join("  ")}

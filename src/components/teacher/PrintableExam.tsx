@@ -2,6 +2,7 @@
 // src/components/teacher/PrintableExam.tsx
 // عرض قابل للطباعة: ورقة الأسئلة أو سلّم التصحيح، مع طباعة المتصفّح.
 import { useState } from "react";
+import MathText from "@/components/MathText";
 
 const TYPE_LABEL: Record<string, string> = {
   MULTIPLE_CHOICE: "اختيار من متعدد",
@@ -100,7 +101,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
           <li key={q.index} className="print-card rounded-xl border border-line p-4">
             <div className="mb-1 flex items-start justify-between gap-3">
               <p className="font-medium leading-relaxed">
-                {q.index}. {q.content}
+                {q.index}. <MathText text={q.content} />
               </p>
               <span className="shrink-0 text-sm text-ink/50">
                 ({q.points} نقطة)
@@ -130,7 +131,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
                       }`}
                     >
                       {o.label !== o.content && `${o.label}. `}
-                      {o.content}
+                      <MathText text={o.content} />
                       {correct && " ✓"}
                     </li>
                   );

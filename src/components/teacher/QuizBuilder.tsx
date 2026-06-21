@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import MathText from "@/components/MathText";
 import DateTimeField from "@/components/DateTimeField";
 import ConfirmButton from "@/components/ConfirmButton";
 
@@ -516,7 +517,9 @@ export default function QuizBuilder({
                   className="flex items-center gap-2 rounded-xl border border-line p-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{q.content}</p>
+                    <p className="truncate text-sm">
+                      <MathText text={q.content} />
+                    </p>
                     <span className="text-xs text-ink/40">
                       {TYPE_LABEL[q.type]} • {q.points} نقطة
                       {q.chapterTitle && ` • ${q.chapterTitle}`}

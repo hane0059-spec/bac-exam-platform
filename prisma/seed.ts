@@ -374,6 +374,90 @@ async function main() {
   });
   console.log("✓ بنك أسئلة بكل الأنواع (6)");
 
+  // ── أسئلة المواد العلمية بمعادلات (فيزياء/كيمياء/رياضيات) ──
+  const phys = subjectByCode.get("PHYS")!;
+  const chem = subjectByCode.get("CHEM")!;
+  const math = subjectByCode.get("MATH")!;
+  const tPhys = teacherIdByEmail.get("t.phys@nour.edu")!;
+  const tChem = teacherIdByEmail.get("t.chem@nour.edu")!;
+  const tMath = teacherIdByEmail.get("t.math@nour.edu")!;
+
+  // الفيزياء
+  await prisma.question.create({
+    data: {
+      creatorId: tPhys, subjectId: phys, type: "MULTIPLE_CHOICE",
+      content: "أيّ علاقة تعبّر عن قانون نيوتن الثاني؟", points: 1,
+      explanation: "القوّة المحصّلة تساوي جداء الكتلة في التسارع: $\\vec{F}=m\\vec{a}$.",
+      options: {
+        create: [
+          { label: "أ", content: "$F = m\\,a$", isCorrect: true, orderNum: 0 },
+          { label: "ب", content: "$F = m\\,v$", isCorrect: false, orderNum: 1 },
+          { label: "ج", content: "$F = \\dfrac{m}{a}$", isCorrect: false, orderNum: 2 },
+        ],
+      },
+    },
+  });
+  await prisma.question.create({
+    data: {
+      creatorId: tPhys, subjectId: phys, type: "CALCULATION",
+      content: "جسمٌ كتلته $m = 2\\,\\mathrm{kg}$ يتسارع بـ $a = 3\\,\\mathrm{m/s^2}$. احسب شدّة القوّة $F=ma$ بالنيوتن.",
+      points: 2,
+      acceptedAnswers: ["6", "0"],
+      explanation: "$F = m\\,a = 2 \\times 3 = 6\\,\\mathrm{N}$.",
+    },
+  });
+
+  // الكيمياء
+  await prisma.question.create({
+    data: {
+      creatorId: tChem, subjectId: chem, type: "MULTIPLE_CHOICE",
+      content: "ما المعادلة الموزونة لاحتراق غاز الهيدروجين؟", points: 1,
+      explanation: "الموزونة: $\\ce{2H2 + O2 -> 2H2O}$.",
+      options: {
+        create: [
+          { label: "أ", content: "$\\ce{2H2 + O2 -> 2H2O}$", isCorrect: true, orderNum: 0 },
+          { label: "ب", content: "$\\ce{H2 + O2 -> H2O}$", isCorrect: false, orderNum: 1 },
+          { label: "ج", content: "$\\ce{H2 + O -> H2O}$", isCorrect: false, orderNum: 2 },
+        ],
+      },
+    },
+  });
+  await prisma.question.create({
+    data: {
+      creatorId: tChem, subjectId: chem, type: "SHORT_ANSWER",
+      content: "اكتب الصيغة الكيميائية لحمض الكبريتيك (بلا تنسيق).",
+      points: 1,
+      acceptedAnswers: ["H2SO4"],
+      explanation: "حمض الكبريتيك: $\\ce{H2SO4}$.",
+    },
+  });
+
+  // الرياضيات
+  await prisma.question.create({
+    data: {
+      creatorId: tMath, subjectId: math, type: "MULTIPLE_CHOICE",
+      content: "ما حلّا المعادلة $x^{2} - 5x + 6 = 0$؟", points: 1,
+      explanation: "بالتحليل $ (x-2)(x-3)=0 $ فالحلّان $x=2$ و $x=3$.",
+      options: {
+        create: [
+          { label: "أ", content: "$x = 2 \\;\\text{و}\\; x = 3$", isCorrect: true, orderNum: 0 },
+          { label: "ب", content: "$x = -2 \\;\\text{و}\\; x = -3$", isCorrect: false, orderNum: 1 },
+          { label: "ج", content: "$x = 1 \\;\\text{و}\\; x = 6$", isCorrect: false, orderNum: 2 },
+        ],
+      },
+    },
+  });
+  await prisma.question.create({
+    data: {
+      creatorId: tMath, subjectId: math, type: "CALCULATION",
+      content: "احسب قيمة المقدار $\\dfrac{3}{4} + \\dfrac{1}{4}$.",
+      points: 1,
+      acceptedAnswers: ["1", "0"],
+      explanation: "$\\dfrac{3}{4} + \\dfrac{1}{4} = \\dfrac{4}{4} = 1$.",
+    },
+  });
+  console.log("✓ أسئلة علمية بمعادلات (فيزياء/كيمياء/رياضيات)");
+
   // اربط كل سؤال بأوّل درس في مادته لتفعيل تحليلات تقدّم الطالب (حسب الدرس).
   for (const subjectId of subjectByCode.values()) {
     const c = await prisma.concept.findFirst({

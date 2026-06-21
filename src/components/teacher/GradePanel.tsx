@@ -3,6 +3,7 @@
 // تصحيح المدرّس للإجابات القصيرة/المقالية (تعديل الدرجة + صحيح/خطأ).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import MathText from "@/components/MathText";
 
 export interface GradeItem {
   nodeId: string;
@@ -102,7 +103,7 @@ export default function GradePanel({
             <div key={it.nodeId} className="rounded-xl border border-line p-3">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-medium">
-                  {it.index}. {it.content}
+                  {it.index}. <MathText text={it.content} />
                 </p>
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
