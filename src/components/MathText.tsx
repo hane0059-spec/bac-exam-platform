@@ -4,6 +4,7 @@
 // الخادم والعميل معاً. عند فشل صيغة المعادلة يبقى النصّ كما كُتب (لا ينكسر).
 import { Fragment, type ReactNode } from "react";
 import katex from "katex";
+import "katex/dist/contrib/mhchem.js"; // دعم \ce{...} للكيمياء (mhchem)
 
 function renderTex(tex: string, displayMode: boolean): string | null {
   try {

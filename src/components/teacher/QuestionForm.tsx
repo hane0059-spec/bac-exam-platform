@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { countBlanks } from "@/lib/grading";
 import ImageUploadField from "@/components/ImageUploadField";
 import MathText from "@/components/MathText";
+import MathTextInput from "@/components/math/MathTextInput";
 
 type QType =
   | "MULTIPLE_CHOICE"
@@ -426,23 +427,19 @@ export default function QuestionForm({
       {/* نصّ السؤال */}
       <div>
         <label className="mb-1 block text-sm font-medium">نصّ السؤال</label>
-        <textarea
-          className="field min-h-[90px]"
+        <MathTextInput
+          multiline
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
+          subjectName={subject?.name}
           placeholder="اكتب نصّ السؤال…"
+          className="field min-h-[90px]"
         />
         <p className="mt-1 text-xs text-ink/50">
-          للمعادلات العلمية استعمل LaTeX بين <code dir="ltr">$ … $</code> سطريّاً
-          أو <code dir="ltr">$$ … $$</code> مستقلّاً. مثال:{" "}
+          زرّ <span className="font-bold">√x</span> يفتح لوحة معادلات حسب المادة،
+          أو اكتب LaTeX يدويّاً بين <code dir="ltr">$ … $</code>. مثال:{" "}
           <code dir="ltr">$H_2O$</code> أو <code dir="ltr">$x^2+1$</code>.
         </p>
-        {content.includes("$") && (
-          <div className="mt-2 rounded-xl border border-line bg-surface p-3 text-sm">
-            <span className="ml-2 text-xs text-ink/50">معاينة:</span>
-            <MathText text={content} />
-          </div>
-        )}
       </div>
 
       {/* الخيارات حسب النوع */}
@@ -463,14 +460,15 @@ export default function QuestionForm({
                   className="accent-primary"
                   aria-label="الإجابة الصحيحة"
                 />
-                <input
-                  type="text"
-                  className="field flex-1"
-                  value={o.content}
-                  disabled={locked}
-                  onChange={(e) => setOptionText(i, e.target.value)}
-                  placeholder={`الخيار ${i + 1}`}
-                />
+                <div className="flex-1">
+                  <MathTextInput
+                    value={o.content}
+                    onChange={(v) => setOptionText(i, v)}
+                    disabled={locked}
+                    subjectName={subject?.name}
+                    placeholder={`الخيار ${i + 1}`}
+                  />
+                </div>
                 {options.length > 2 && !locked && (
                   <button
                     type="button"
@@ -946,11 +944,13 @@ export default function QuestionForm({
       {/* الشرح/الوسوم */}
       <div>
         <label className="mb-1 block text-sm font-medium">الشرح (اختياري)</label>
-        <textarea
-          className="field min-h-[70px]"
+        <MathTextInput
+          multiline
           value={explanation}
-          onChange={(e) => setExplanation(e.target.value)}
+          onChange={setExplanation}
+          subjectName={subject?.name}
           placeholder="شرح يظهر للطالب بعد الإجابة…"
+          className="field min-h-[70px]"
         />
       </div>
       <div>
