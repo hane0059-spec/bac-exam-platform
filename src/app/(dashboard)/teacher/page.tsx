@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
+import DashboardShell from "@/components/DashboardShell";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 
 export const dynamic = "force-dynamic";
@@ -71,10 +71,6 @@ export default async function TeacherDashboard() {
             بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر.
           </p>
         </Link>
-        <PlaceholderCard
-          title="الإسناد"
-          description="إسناد الاختبارات المنشورة لطلابك."
-        />
         <Link
           href="/teacher/students"
           className="card p-5 transition hover:border-primary/40"
