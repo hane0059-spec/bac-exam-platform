@@ -32,6 +32,24 @@ function formatMinutes(sec: number | null): string | null {
   return `${m} دقيقة`;
 }
 
+const ENDING_SOON_HOURS = 48;
+
+// «ينتهي قريباً»: اختبار يمكن بدؤه وتنتهي إتاحته خلال 48 ساعة.
+function endingSoon(q: StudentQuizListItem): boolean {
+  if (!q.canStart || !q.availableUntil) return false;
+  const diff = q.availableUntil.getTime() - Date.now();
+  return diff > 0 && diff <= ENDING_SOON_HOURS * 3600 * 1000;
+}
+
+// أولوية العرض: العاجل ثمّ القابل للاستئناف ثمّ المتاح ثمّ المكتمل ثمّ المُقفل.
+function priority(q: StudentQuizListItem): number {
+  if (endingSoon(q)) return 0;
+  if (q.canStart && q.state === "in_progress") return 1;
+  if (q.canStart) return 2;
+  if (q.state === "completed") return 3;
+  return 4;
+}
+
 export default async function StudentQuizzesPage({
   searchParams,
 }: {
@@ -45,7 +63,10 @@ export default async function StudentQuizzesPage({
   const all = await listStudentQuizzes(session.sub);
   const activeList = all.filter((q) => !q.archived);
   const archiveList = all.filter((q) => q.archived);
-  const quizzes = tab === "archive" ? archiveList : activeList;
+  // العاجل والقابل للأداء أوّلاً ليراه الطالب فوراً.
+  const quizzes = [...(tab === "archive" ? archiveList : activeList)].sort(
+    (a, b) => priority(a) - priority(b)
+  );
 
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 text-sm transition ${
@@ -82,8 +103,15 @@ export default async function StudentQuizzesPage({
         <div className="grid gap-4 sm:grid-cols-2">
           {quizzes.map((q) => {
             const time = formatMinutes(q.timeLimitSec);
+            const soon = endingSoon(q);
+            const availableNow = q.canStart && q.state === "not_started";
             return (
-              <div key={q.quizId} className="card flex flex-col p-5">
+              <div
+                key={q.quizId}
+                className={`card flex flex-col p-5 ${
+                  soon ? "border-red-300 ring-1 ring-red-200" : ""
+                }`}
+              >
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <h3 className="font-display text-lg font-semibold leading-snug">
                     {q.title}
@@ -95,6 +123,20 @@ export default async function StudentQuizzesPage({
                   </h3>
                   <StateBadge state={q.state} />
                 </div>
+                {(soon || availableNow) && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {availableNow && (
+                      <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-white">
+                        متاح الآن
+                      </span>
+                    )}
+                    {soon && (
+                      <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
+                        ⏰ ينتهي قريباً
+                      </span>
+                    )}
+                  </div>
+                )}
                 {q.description && (
                   <p className="mb-3 text-sm leading-relaxed text-ink/60">
                     {q.description}
@@ -146,8 +188,11 @@ export default async function StudentQuizzesPage({
                   )}
                   {!q.canStart && !q.hasFinished && (
                     <span className="block text-center text-sm text-ink/50">
-                      {q.availableFrom || q.availableUntil
-                        ? "غير متاح الآن"
+                      {q.availableFrom && q.availableFrom.getTime() > Date.now()
+                        ? "يبدأ لاحقاً"
+                        : q.availableUntil &&
+                          q.availableUntil.getTime() < Date.now()
+                        ? "انتهت إتاحته"
                         : "غير متاح الآن"}
                     </span>
                   )}
