@@ -83,6 +83,14 @@ export default async function EditQuizPage({
       pointsOverride: n.pointsOverride ? Number(n.pointsOverride) : null,
     }));
 
+  // شارة الحالة (متّسقة مع قائمة الاختبارات).
+  const STATUS_CHIP = {
+    DRAFT: { text: "مسوّدة", cls: "bg-ink/10 text-ink/60" },
+    PUBLISHED: { text: "منشور", cls: "bg-primary text-white" },
+    ARCHIVED: { text: "مؤرشف", cls: "bg-gold/15 text-gold" },
+  } as const;
+  const chip = STATUS_CHIP[quiz.status as keyof typeof STATUS_CHIP];
+
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
@@ -93,7 +101,19 @@ export default async function EditQuizPage({
           ← اختباراتي
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-display text-xl font-bold">تكوين الاختبار</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-xl font-bold">تكوين الاختبار</h2>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${chip.cls}`}
+            >
+              {chip.text}
+            </span>
+            {purged && (
+              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                محتوى محذوف
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/teacher/quizzes/${quiz.id}/print`}
