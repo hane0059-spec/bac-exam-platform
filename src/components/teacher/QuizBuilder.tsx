@@ -103,6 +103,9 @@ export default function QuizBuilder({
   // قائمة الأسئلة المعروفة (البنك + المؤلَّفة فورياً)؛ تتغيّر عند الإنشاء/الترقية.
   const [questions, setQuestions] = useState<BankQuestion[]>(bank);
   const [showNew, setShowNew] = useState(false);
+  // إعادة تركيب نموذج التأليف الفوريّ بعد كل إنشاء + رسالة التأكيد.
+  const [newKey, setNewKey] = useState(0);
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
   // الفصول المفتوحة في تبويب البنك (أكورديون).
   const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
   function toggleChapter(key: string) {
@@ -203,7 +206,9 @@ export default function QuizBuilder({
       },
     ]);
     setItems((prev) => [...prev, { questionId: q.id, pointsOverride: null }]);
-    setShowNew(false);
+    // أبقِ اللوحة مفتوحةً وأعِد تركيب النموذج (key) لتأليف سؤال آخر بسرعة.
+    setLastAdded(q.content);
+    setNewKey((k) => k + 1);
   }
   // ترقية سؤال فوريّ إلى بنك الأسئلة (يصير قابلاً لإعادة الاستخدام).
   async function promote(ids: string[]) {
@@ -587,7 +592,10 @@ export default function QuizBuilder({
             <h3 className="font-display font-semibold">أو ألّف سؤالاً جديداً</h3>
             <button
               type="button"
-              onClick={() => setShowNew((v) => !v)}
+              onClick={() => {
+                setShowNew((v) => !v);
+                setLastAdded(null);
+              }}
               className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
                 showNew
                   ? "border-primary bg-primary-light text-primary-dark"
@@ -599,11 +607,18 @@ export default function QuizBuilder({
           </div>
           {showNew && (
             <div className="rounded-xl border border-primary/30 bg-primary-light/20 p-4">
+              {lastAdded && (
+                <p className="mb-3 rounded-lg bg-primary-light p-2 text-sm text-primary-dark">
+                  ✓ أُضيف «{lastAdded.slice(0, 40)}» للاختبار. ألّف سؤالاً آخر أو
+                  أغلِق اللوحة.
+                </p>
+              )}
               <p className="mb-3 text-sm text-ink/60">
                 يُضاف السؤال للاختبار مباشرةً ويبقى <b>خارج البنك</b> حتّى
                 ترقيته. الترقية من زرّ «↑ للبنك» على السؤال.
               </p>
               <QuestionForm
+                key={newKey}
                 mode="create"
                 subjects={subjectTree}
                 customKeyboard={customKeyboard}
