@@ -94,11 +94,24 @@ export default async function TeacherQuizzesPage({
 
       {shown.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
-          {tab === "archive"
-            ? "لا اختبارات في الأرشيف بعد. تنتقل الاختبارات هنا تلقائياً بعد تصحيحها لكل الطلاب."
-            : quizzes.length === 0
-            ? "لا توجد اختبارات بعد. أنشئ اختبارك الأول من بنك أسئلتك."
-            : "لا اختبارات نشطة حاليّاً."}
+          {tab === "archive" ? (
+            "لا اختبارات في الأرشيف بعد. تنتقل الاختبارات هنا تلقائياً بعد تصحيحها لكل الطلاب."
+          ) : quizzes.length === 0 ? (
+            "لا توجد اختبارات بعد. أنشئ اختبارك الأول من بنك أسئلتك."
+          ) : archiveList.length > 0 ? (
+            <span>
+              لا اختبارات نشطة الآن — أكملها طلابك فانتقلت تلقائياً إلى{" "}
+              <Link
+                href="/teacher/quizzes?tab=archive"
+                className="font-medium text-primary hover:underline"
+              >
+                الأرشيف ({archiveList.length})
+              </Link>
+              . تعود للنشط تلقائياً عند إسناد طالب جديد أو فتح اعتراض.
+            </span>
+          ) : (
+            "لا اختبارات نشطة حاليّاً."
+          )}
         </div>
       ) : (
         <div className="space-y-3">

@@ -103,6 +103,15 @@ export default function QuizBuilder({
   // قائمة الأسئلة المعروفة (البنك + المؤلَّفة فورياً)؛ تتغيّر عند الإنشاء/الترقية.
   const [questions, setQuestions] = useState<BankQuestion[]>(bank);
   const [showNew, setShowNew] = useState(false);
+  // الفصول المفتوحة في تبويب البنك (أكورديون).
+  const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
+  function toggleChapter(key: string) {
+    setOpenChapters((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
 
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -139,6 +148,19 @@ export default function QuizBuilder({
     if (s && !q.content.includes(s)) return false;
     return true;
   });
+
+  // عند البحث: نتائج مسطّحة. وإلّا: تبويب حسب الفصل (أكورديون) لتفادي عرض الكلّ دفعةً.
+  const searching = bankSearch.trim() !== "";
+  const availableGroups = (() => {
+    const m = new Map<string, { title: string; items: BankQuestion[] }>();
+    for (const q of available) {
+      const key = q.chapterId ?? "__none__";
+      if (!m.has(key))
+        m.set(key, { title: q.chapterTitle ?? "بلا فصل", items: [] });
+      m.get(key)!.items.push(q);
+    }
+    return [...m.entries()].map(([key, v]) => ({ key, ...v }));
+  })();
 
   const totalPoints = items.reduce((sum, it) => {
     const q = bankMap.get(it.questionId);
@@ -632,32 +654,46 @@ export default function QuizBuilder({
                 ? "لا أسئلة في البنك لهذه المادة. ألّف سؤالاً جديداً أعلاه أو أضِف للبنك."
                 : "لا أسئلة مطابقة للفلترة."}
             </p>
-          ) : (
+          ) : searching ? (
+            // نتائج بحث مسطّحة.
             <ul className="space-y-2">
               {available.map((q) => (
-                <li
-                  key={q.id}
-                  className="flex items-center gap-2 rounded-xl border border-line p-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">
-                      <MathText text={q.content} />
-                    </p>
-                    <span className="text-xs text-ink/40">
-                      {TYPE_LABEL[q.type]} • {q.points} نقطة
-                      {q.chapterTitle && ` • ${q.chapterTitle}`}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => add(q.id)}
-                    className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white"
-                  >
-                    أضف
-                  </button>
-                </li>
+                <QRow key={q.id} q={q} onAdd={() => add(q.id)} />
               ))}
             </ul>
+          ) : (
+            // تبويب حسب الفصل (أكورديون): الفصل مطويّ حتّى تفتحه.
+            <div className="space-y-2">
+              {availableGroups.map((g) => {
+                const open = openChapters.has(g.key);
+                return (
+                  <div
+                    key={g.key}
+                    className="overflow-hidden rounded-xl border border-line"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleChapter(g.key)}
+                      className="flex w-full items-center justify-between gap-2 bg-ink/5 px-3 py-2 text-sm font-medium hover:bg-ink/10"
+                    >
+                      <span>
+                        {open ? "▾" : "▸"} {g.title}
+                      </span>
+                      <span className="text-xs text-ink/50">
+                        {g.items.length} سؤالاً
+                      </span>
+                    </button>
+                    {open && (
+                      <ul className="space-y-2 p-2">
+                        {g.items.map((q) => (
+                          <QRow key={q.id} q={q} onAdd={() => add(q.id)} />
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -732,5 +768,29 @@ export default function QuizBuilder({
         </div>
       )}
     </div>
+  );
+}
+
+// صفّ سؤال في قائمة البنك (يُعاد استخدامه في البحث والأكورديون).
+function QRow({ q, onAdd }: { q: BankQuestion; onAdd: () => void }) {
+  return (
+    <li className="flex items-center gap-2 rounded-xl border border-line p-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm">
+          <MathText text={q.content} />
+        </p>
+        <span className="text-xs text-ink/40">
+          {TYPE_LABEL[q.type]} • {q.points} نقطة
+          {q.chapterTitle && ` • ${q.chapterTitle}`}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onAdd}
+        className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white"
+      >
+        أضف
+      </button>
+    </li>
   );
 }

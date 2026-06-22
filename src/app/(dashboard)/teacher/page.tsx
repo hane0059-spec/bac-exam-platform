@@ -12,12 +12,22 @@ export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [openReports, openAppeals] = await Promise.all([
+  const [openReports, openAppeals, needsGrading] = await Promise.all([
     prisma.questionReport.count({
       where: { status: "OPEN", question: { creatorId: session.sub } },
     }),
     prisma.gradeAppeal.count({
       where: { status: "OPEN", session: { quiz: { creatorId: session.sub } } },
+    }),
+    // بانتظار تصحيح يدويّ: ورقيّ (needsGrading) أو عاديّ فيه إجابة بانتظار المراجعة.
+    prisma.examSession.count({
+      where: {
+        quiz: { creatorId: session.sub },
+        OR: [
+          { needsGrading: true },
+          { answers: { some: { needsReview: true } } },
+        ],
+      },
     }),
   ]);
 
@@ -78,9 +88,16 @@ export default async function TeacherDashboard() {
           href="/teacher/results"
           className="card p-5 transition hover:border-primary/40"
         >
-          <h3 className="mb-2 font-display text-lg font-semibold">
-            المتابعة والنتائج
-          </h3>
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">
+              المتابعة والنتائج
+            </h3>
+            {needsGrading > 0 && (
+              <span className="flex h-6 items-center justify-center gap-1 rounded-full bg-gold px-2 text-xs font-bold text-white">
+                {needsGrading} بانتظار التصحيح
+              </span>
+            )}
+          </div>
           <p className="text-sm leading-relaxed text-ink/60">
             مراجعة نتائج الطلاب ودرجاتهم وإجاباتهم.
           </p>
