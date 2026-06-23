@@ -97,8 +97,6 @@ export default function GradePanel({
       <div className="space-y-4">
         {items.map((it) => {
           const g = grades.get(it.nodeId)!;
-          const model =
-            it.acceptedAnswers[0] ?? it.explanation ?? null;
           return (
             <div key={it.nodeId} className="rounded-xl border border-line p-3">
               <div className="flex items-start justify-between gap-2">
@@ -117,10 +115,20 @@ export default function GradePanel({
               </div>
               <p className="mt-2 text-sm">
                 إجابة الطالب:{" "}
-                <span className="text-ink/80">{it.textAnswer || "—"}</span>
+                <span className="text-ink/80">
+                  {it.textAnswer ? <MathText text={it.textAnswer} /> : "—"}
+                </span>
               </p>
-              {model && (
-                <p className="mt-1 text-sm text-ink/50">النموذجية: {model}</p>
+              {it.acceptedAnswers.length > 0 && (
+                <p className="mt-1 text-sm text-ink/50">
+                  النموذجية:{" "}
+                  <MathText text={it.acceptedAnswers.join(" / ")} />
+                </p>
+              )}
+              {it.explanation && (
+                <p className="mt-1 text-sm text-ink/40">
+                  ملاحظة: <MathText text={it.explanation} />
+                </p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 text-sm">

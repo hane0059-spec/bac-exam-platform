@@ -159,7 +159,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
 
             {view === "key" && q.explanation && (
               <p className="mt-2 text-xs leading-relaxed text-ink/60">
-                {q.explanation}
+                <MathText text={q.explanation} />
               </p>
             )}
           </li>

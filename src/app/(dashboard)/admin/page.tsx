@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
-import DashboardShell, { PlaceholderCard } from "@/components/DashboardShell";
+import DashboardShell from "@/components/DashboardShell";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 import { isSoloMode } from "@/lib/settings";
 
@@ -106,7 +106,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {ctx.isSuper ? (
+        {ctx.isSuper && (
           <Link
             href="/admin/questions"
             className="card p-5 transition hover:border-primary/40"
@@ -118,11 +118,6 @@ export default async function AdminDashboard() {
               تصفّح أسئلة كل المؤسّسات (قراءة فقط) بفلترة ومادة ونوع.
             </p>
           </Link>
-        ) : (
-          <PlaceholderCard
-            title="البنك العام للأسئلة"
-            description="الإشراف على بنك الأسئلة المشترك بين المدرّسين."
-          />
         )}
         {ctx.isSuper && (
           <Link
@@ -150,7 +145,7 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
-        {ctx.isSuper ? (
+        {ctx.isSuper && (
           <Link
             href="/admin/settings"
             className="card p-5 transition hover:border-primary/40"
@@ -160,11 +155,6 @@ export default async function AdminDashboard() {
               اختيار خطّ المنصّة المطبَّق على كل الواجهات.
             </p>
           </Link>
-        ) : (
-          <PlaceholderCard
-            title="الإعدادات"
-            description="ضبط الخط والثيم وإعدادات المنصة العامة."
-          />
         )}
       </div>
     </DashboardShell>
