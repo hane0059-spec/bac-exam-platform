@@ -375,6 +375,14 @@ export default function QuizRunner({
             </span>
           )}
         </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-300"
+            style={{
+              width: `${Math.round((question.index / question.total) * 100)}%`,
+            }}
+          />
+        </div>
 
         <div className="card p-6">
           {!isFill && (
