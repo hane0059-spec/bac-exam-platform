@@ -8,6 +8,7 @@ import QuizCountdown from "@/components/student/QuizCountdown";
 import JoinByCode from "@/components/student/JoinByCode";
 import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import { listStudentQuizzes, type StudentQuizListItem } from "@/lib/exam";
+import { CERTIFICATE_THRESHOLD } from "@/lib/certificate";
 
 export const dynamic = "force-dynamic";
 
@@ -196,6 +197,18 @@ export default async function StudentQuizzesPage({
                         : "غير متاح الآن"}
                     </span>
                   )}
+                  {q.hasFinished &&
+                    q.bestPercentage != null &&
+                    q.bestPercentage >= CERTIFICATE_THRESHOLD && (
+                      <a
+                        href={`/student/certificate/${q.quizId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-xl border border-gold px-4 py-2 text-center text-sm font-medium text-gold hover:bg-gold/10"
+                      >
+                        🏅 شهادة تقدير
+                      </a>
+                    )}
                   {q.hasFinished && (
                     <StudentArchiveToggle
                       quizId={q.quizId}

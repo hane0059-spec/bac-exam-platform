@@ -8,6 +8,7 @@ import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
 import AppealBox, { type AppealState } from "@/components/student/AppealBox";
 import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import PrintButton from "@/components/student/PrintButton";
+import { CERTIFICATE_THRESHOLD } from "@/lib/certificate";
 
 function fmtClock(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -343,6 +344,16 @@ export default function FileExamRunner({
         <div className="card space-y-4 p-6">
           <div className="flex flex-wrap justify-end gap-2 print:hidden">
             <PrintButton />
+            {finished.percentage >= CERTIFICATE_THRESHOLD && (
+              <a
+                href={`/student/certificate/${quizId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-gold px-4 py-2 text-sm font-medium text-gold hover:bg-gold/10"
+              >
+                🏅 شهادة تقدير
+              </a>
+            )}
             <StudentArchiveToggle quizId={quizId} archived={archived} />
           </div>
           <div className="text-center">

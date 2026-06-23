@@ -8,6 +8,7 @@ import { splitFillTemplate, countBlanks } from "@/lib/grading";
 import AppealBox, { type AppealState } from "@/components/student/AppealBox";
 import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import PrintButton from "@/components/student/PrintButton";
+import { CERTIFICATE_THRESHOLD } from "@/lib/certificate";
 import MathText from "@/components/MathText";
 import MathAnswerInput from "@/components/math/MathAnswerInput";
 
@@ -840,6 +841,16 @@ function ResultView({ result }: { result: ResultData }) {
       {!pending && result.quizId && (
         <div className="flex flex-wrap gap-2 print:hidden">
           <PrintButton />
+          {pct >= CERTIFICATE_THRESHOLD && (
+            <a
+              href={`/student/certificate/${result.quizId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-gold px-4 py-2 text-sm font-medium text-gold hover:bg-gold/10"
+            >
+              🏅 شهادة تقدير
+            </a>
+          )}
           <StudentArchiveToggle
             quizId={result.quizId}
             archived={result.archived ?? false}
