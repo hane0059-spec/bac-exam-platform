@@ -32,10 +32,9 @@ export default async function TeacherResultsPage() {
     const avg =
       finished.length > 0
         ? Math.round(
-            (finished.reduce((sum, s) => sum + Number(s.percentage), 0) /
-              finished.length) *
-              100
-          ) / 100
+            finished.reduce((sum, s) => sum + Number(s.percentage), 0) /
+              finished.length
+          )
         : null;
     return {
       id: q.id,

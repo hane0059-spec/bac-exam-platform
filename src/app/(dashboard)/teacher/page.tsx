@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { teacherCanFileExams } from "@/lib/teacher";
 import DashboardShell from "@/components/DashboardShell";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 
@@ -12,7 +13,7 @@ export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [openReports, openAppeals, needsGrading] = await Promise.all([
+  const [openReports, openAppeals, needsGrading, canFileExams] = await Promise.all([
     prisma.questionReport.count({
       where: { status: "OPEN", question: { creatorId: session.sub } },
     }),
@@ -29,6 +30,7 @@ export default async function TeacherDashboard() {
         ],
       },
     }),
+    teacherCanFileExams(session.sub),
   ]);
 
   return (
@@ -71,6 +73,19 @@ export default async function TeacherDashboard() {
             بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر.
           </p>
         </Link>
+        {canFileExams && (
+          <Link
+            href="/teacher/file-exams"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              الاختبارات الورقية
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              رفع ورقة اختبار ورقي وتصحيح إجابات الطلاب المرفوعة.
+            </p>
+          </Link>
+        )}
         <Link
           href="/teacher/students"
           className="card p-5 transition hover:border-primary/40"
