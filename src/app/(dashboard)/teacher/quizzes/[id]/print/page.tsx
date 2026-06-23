@@ -71,9 +71,14 @@ export default async function PrintQuizPage({
       const isMatch = q.type === "MATCHING";
       const isCalc = q.type === "CALCULATION";
       const isDiagram = q.type === "DIAGRAM_LABEL";
+      const isOrder = q.type === "ORDER";
       const numberedBlanks = q.options.map(
         (o, k) => `(${k + 1}) ${parseBlankAnswers(o.content).join(" / ")}`
       );
+      // الترتيب الصحيح للأسئلة المتسلسلة (options مرتّبة بـ orderNum).
+      const correctOrder = isOrder
+        ? q.options.map((o, k) => `${k + 1}. ${o.content}`).join("   ")
+        : "";
       return {
         index: i + 1,
         type: q.type,
@@ -81,13 +86,15 @@ export default async function PrintQuizPage({
         content: isFill ? fillTemplateForDisplay(q.content) : q.content,
         points,
         // الفراغات/المطابقة/توسيم الرسم تحمل الإجابات النموذجية — لا تُعرَض كخيارات.
+        // الترتيب: يُعرَض للطالب كقائمة للترقيم ويُعرَض الترتيب الصحيح في السلّم.
         options:
           isFill || isMatch || isDiagram
             ? []
             : q.options.map((o) => ({
                 label: o.label,
+                // أسئلة الترتيب: لا تعليم صح/خطأ في ورقة الأسئلة؛ السلّم يظهر acceptedAnswers.
                 content: o.content,
-                isCorrect: o.isCorrect,
+                isCorrect: isOrder ? false : o.isCorrect,
               })),
         acceptedAnswers:
           q.type === "SHORT_ANSWER"
@@ -102,6 +109,8 @@ export default async function PrintQuizPage({
                   ? `${q.acceptedAnswers[0]} (± ${q.acceptedAnswers[1]})`
                   : q.acceptedAnswers[0] ?? "",
               ]
+            : isOrder
+            ? [correctOrder]
             : [],
         imageId: isDiagram ? q.attachments[0]?.id ?? null : null,
         explanation: q.explanation ?? null,

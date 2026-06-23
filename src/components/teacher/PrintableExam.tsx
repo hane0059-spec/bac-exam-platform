@@ -118,25 +118,33 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
               />
             )}
 
-            {/* خيارات الاختيار/الصح-خطأ */}
+            {/* خيارات الاختيار/الصح-خطأ / عناصر الترتيب */}
             {q.options.length > 0 ? (
-              <ul className="space-y-1 text-sm">
-                {q.options.map((o, i) => {
-                  const correct = view === "key" && o.isCorrect;
-                  return (
-                    <li
-                      key={i}
-                      className={`rounded-lg px-2 py-1 ${
-                        correct ? "bg-primary-light font-medium text-primary-dark" : "text-ink/80"
-                      }`}
-                    >
-                      {o.label !== o.content && `${o.label}. `}
-                      <MathText text={o.content} />
-                      {correct && " ✓"}
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className="space-y-1 text-sm">
+                  {q.options.map((o, i) => {
+                    const correct = view === "key" && o.isCorrect;
+                    return (
+                      <li
+                        key={i}
+                        className={`rounded-lg px-2 py-1 ${
+                          correct ? "bg-primary-light font-medium text-primary-dark" : "text-ink/80"
+                        }`}
+                      >
+                        {o.label !== o.content && `${o.label}. `}
+                        <MathText text={o.content} />
+                        {correct && " ✓"}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {/* أسئلة الترتيب: الترتيب الصحيح يظهر في سلّم التصحيح فقط */}
+                {view === "key" && q.type === "ORDER" && q.acceptedAnswers[0] && (
+                  <p className="mt-2 rounded-lg bg-primary-light px-2 py-1 text-sm font-medium text-primary-dark">
+                    الترتيب الصحيح: {q.acceptedAnswers[0]}
+                  </p>
+                )}
+              </>
             ) : view === "key" ? (
               // الإجابة النموذجية للقصيرة، أو ملاحظة للمقالي.
               q.acceptedAnswers.length > 0 ? (
