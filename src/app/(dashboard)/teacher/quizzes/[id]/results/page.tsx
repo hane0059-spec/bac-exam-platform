@@ -50,6 +50,18 @@ export default async function QuizResultsPage({
   });
   const pendingBySession = new Map(pending.map((p) => [p.sessionId, p._count._all]));
 
+  // إحصاءات موجزة للجلسات المكتملة.
+  const done = sessions.filter(
+    (s) => s.status === "COMPLETED" || s.status === "TIMED_OUT"
+  );
+  const avgPct =
+    done.length > 0
+      ? Math.round(
+          done.reduce((acc, s) => acc + Number(s.percentage), 0) / done.length
+        )
+      : null;
+  const passCount = done.filter((s) => Number(s.percentage) >= 50).length;
+
   return (
     <DashboardShell session={session}>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -73,6 +85,42 @@ export default async function QuizResultsPage({
           </a>
         )}
       </div>
+
+      {done.length > 0 && avgPct !== null && (
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="card p-4 text-center">
+            <p className="text-xs text-ink/50">المتأهّلون</p>
+            <p className="mt-1 font-display text-2xl font-bold text-primary">
+              {done.length}
+            </p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-xs text-ink/50">المعدّل</p>
+            <p
+              className={`mt-1 font-display text-2xl font-bold ${
+                avgPct >= 50 ? "text-primary-dark" : "text-red-600"
+              }`}
+            >
+              {avgPct}%
+            </p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-xs text-ink/50">نسبة النجاح ≥50%</p>
+            <p className="mt-1 font-display text-2xl font-bold text-gold">
+              {done.length > 0
+                ? Math.round((passCount / done.length) * 100)
+                : 0}
+              %
+            </p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-xs text-ink/50">بانتظار المراجعة</p>
+            <p className="mt-1 font-display text-2xl font-bold text-gold">
+              {pending.length}
+            </p>
+          </div>
+        </div>
+      )}
 
       {sessions.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
@@ -110,9 +158,9 @@ export default async function QuizResultsPage({
                     ) : null}
                   </td>
                   <td className="p-2 font-medium">
-                    {s.status === "IN_PROGRESS"
+                    {s.status === "IN_PROGRESS" || s.status === "ABANDONED"
                       ? "—"
-                      : `${Number(s.percentage)}%`}
+                      : `${Number(s.percentage)}% (${s.totalScore}/${s.maxPossibleScore})`}
                   </td>
                   <td className="p-2">{s.attemptNumber}</td>
                   <td className="p-2 text-ink/60">
