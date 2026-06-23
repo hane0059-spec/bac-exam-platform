@@ -89,7 +89,7 @@ export default function GradePanel({
   return (
     <div className="card border-r-4 border-r-gold p-5">
       <h3 className="mb-1 font-display font-semibold text-gold">
-        تصحيح القصيرة والمقالية ({items.length})
+        مراجعة التصحيح ({items.length})
       </h3>
       <p className="mb-3 text-xs text-ink/50">
         يمكنك تعديل أي درجة لاحقاً — التصحيح غير نهائي.
