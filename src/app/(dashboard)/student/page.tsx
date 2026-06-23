@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DashboardShell from "@/components/DashboardShell";
+import StatBar from "@/components/StatBar";
 import { listStudentQuizzes } from "@/lib/exam";
 
 export const dynamic = "force-dynamic";
@@ -14,15 +15,36 @@ export default async function StudentDashboard() {
 
   // اختبارات بانتظار الطالب: متاحة للبدء/الاستئناف ولم تكتمل.
   const quizzes = await listStudentQuizzes(session.sub);
-  const pending = quizzes.filter(
+  const active = quizzes.filter((q) => !q.archived);
+  const pending = active.filter(
     (q) =>
-      !q.archived &&
       q.canStart &&
       (q.state === "not_started" || q.state === "in_progress")
   ).length;
+  const finished = active.filter((q) => q.hasFinished);
+  const scored = finished.filter((q) => q.bestPercentage != null);
+  const avg =
+    scored.length > 0
+      ? Math.round(
+          scored.reduce((acc, q) => acc + (q.bestPercentage ?? 0), 0) /
+            scored.length
+        )
+      : null;
 
   return (
     <DashboardShell session={session}>
+      <StatBar
+        stats={[
+          { label: "اختبارات مُسنَدة", value: active.length },
+          { label: "أنهيتها", value: finished.length, tone: "primary" },
+          { label: "بانتظارك", value: pending, tone: pending > 0 ? "gold" : "muted" },
+          {
+            label: "معدّلك",
+            value: avg != null ? `${avg}%` : "—",
+            tone: avg != null ? "primary" : "muted",
+          },
+        ]}
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/student/quizzes"

@@ -2,7 +2,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
+import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
+import StatBar from "@/components/StatBar";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 import { isSoloMode } from "@/lib/settings";
 
@@ -12,8 +14,35 @@ export default async function AdminDashboard() {
   const session = ctx.session;
   const solo = await isSoloMode();
 
+  // عزل المؤسّسة: المدير العام يرى المنصّة كاملةً، ومدير المدرسة مؤسّسته فقط.
+  const scope = ctx.isSuper ? {} : { schoolId: ctx.schoolId };
+  const [students, teachers, parents, quizzes] = await Promise.all([
+    prisma.user.count({ where: { role: "STUDENT", ...scope } }),
+    prisma.user.count({ where: { role: "TEACHER", ...scope } }),
+    prisma.user.count({ where: { role: "PARENT", ...scope } }),
+    prisma.quiz.count({
+      where: ctx.isSuper ? {} : { creator: { schoolId: ctx.schoolId } },
+    }),
+  ]);
+
   return (
     <DashboardShell session={session}>
+      <StatBar
+        stats={
+          solo
+            ? [
+                { label: "الطلاب", value: students, tone: "primary" },
+                { label: "مدرّسون مستقلّون", value: teachers },
+                { label: "اختبارات", value: quizzes, tone: "muted" },
+              ]
+            : [
+                { label: "الطلاب", value: students, tone: "primary" },
+                { label: "المدرّسون", value: teachers },
+                { label: "أولياء الأمور", value: parents },
+                { label: "اختبارات", value: quizzes, tone: "muted" },
+              ]
+        }
+      />
       <UserSearchBox initial="" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getParentSession, getParentChildren } from "@/lib/parent";
+import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
+import StatBar from "@/components/StatBar";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +15,26 @@ export default async function ParentDashboard() {
 
   const children = await getParentChildren(session.sub);
 
+  // اختبارات أبنائه المكتملة (أبناؤه مرتبطون به فحسب — لا كشف لغيرهم).
+  const childIds = children.map((c) => c.id);
+  const completed =
+    childIds.length > 0
+      ? await prisma.examSession.count({
+          where: {
+            studentId: { in: childIds },
+            status: { in: ["COMPLETED", "TIMED_OUT"] },
+          },
+        })
+      : 0;
+
   return (
     <DashboardShell session={session}>
+      <StatBar
+        stats={[
+          { label: "أبنائي", value: children.length, tone: "primary" },
+          { label: "اختبارات مكتملة", value: completed },
+        ]}
+      />
       <h2 className="mb-4 font-display text-xl font-bold">أبنائي</h2>
 
       {children.length === 0 ? (

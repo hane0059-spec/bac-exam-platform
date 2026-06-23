@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { teacherCanFileExams } from "@/lib/teacher";
 import DashboardShell from "@/components/DashboardShell";
+import StatBar from "@/components/StatBar";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 
 export const dynamic = "force-dynamic";
@@ -13,28 +14,58 @@ export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [openReports, openAppeals, needsGrading, canFileExams] = await Promise.all([
-    prisma.questionReport.count({
-      where: { status: "OPEN", question: { creatorId: session.sub } },
-    }),
-    prisma.gradeAppeal.count({
-      where: { status: "OPEN", session: { quiz: { creatorId: session.sub } } },
-    }),
-    // بانتظار تصحيح يدويّ: ورقيّ (needsGrading) أو عاديّ فيه إجابة بانتظار المراجعة.
-    prisma.examSession.count({
-      where: {
-        quiz: { creatorId: session.sub },
-        OR: [
-          { needsGrading: true },
-          { answers: { some: { needsReview: true } } },
-        ],
-      },
-    }),
-    teacherCanFileExams(session.sub),
-  ]);
+  const [openReports, openAppeals, needsGrading, canFileExams, studentCount, quizCount] =
+    await Promise.all([
+      prisma.questionReport.count({
+        where: { status: "OPEN", question: { creatorId: session.sub } },
+      }),
+      prisma.gradeAppeal.count({
+        where: { status: "OPEN", session: { quiz: { creatorId: session.sub } } },
+      }),
+      // بانتظار تصحيح يدويّ: ورقيّ (needsGrading) أو عاديّ فيه إجابة بانتظار المراجعة.
+      prisma.examSession.count({
+        where: {
+          quiz: { creatorId: session.sub },
+          OR: [
+            { needsGrading: true },
+            { answers: { some: { needsReview: true } } },
+          ],
+        },
+      }),
+      teacherCanFileExams(session.sub),
+      // طلابه: من أنشأهم أو سجّلهم في موادّه.
+      prisma.user.count({
+        where: {
+          role: "STUDENT",
+          OR: [
+            { createdById: session.sub },
+            { studentEnrollments: { some: { teacherId: session.sub } } },
+          ],
+        },
+      }),
+      prisma.quiz.count({
+        where: { creatorId: session.sub, status: "PUBLISHED" },
+      }),
+    ]);
 
   return (
     <DashboardShell session={session}>
+      <StatBar
+        stats={[
+          { label: "طلابي", value: studentCount },
+          { label: "اختبارات منشورة", value: quizCount, tone: "primary" },
+          {
+            label: "بانتظار التصحيح",
+            value: needsGrading,
+            tone: needsGrading > 0 ? "gold" : "muted",
+          },
+          {
+            label: "اعتراضات مفتوحة",
+            value: openAppeals,
+            tone: openAppeals > 0 ? "gold" : "muted",
+          },
+        ]}
+      />
       <UserSearchBox
         initial=""
         basePath="/teacher/students"
