@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
+import BadgeGrid from "@/components/student/BadgeGrid";
 import { getStudentProgress } from "@/lib/studentProgress";
+import { computeBadges } from "@/lib/badges";
 import { formatDateTime } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +40,27 @@ export default async function StudentProgressPage() {
 
   const subjects = await getStudentProgress(session.sub);
 
+  // المحاولات المعتمدة (لا تصحيح معلّق) لاشتقاق شارات عدد الاختبارات والنسب.
+  const sessions = await prisma.examSession.findMany({
+    where: {
+      studentId: session.sub,
+      status: { in: ["COMPLETED", "TIMED_OUT"] },
+      needsGrading: false,
+    },
+    select: {
+      percentage: true,
+      answers: { where: { needsReview: true }, select: { id: true }, take: 1 },
+    },
+  });
+  const finalized = sessions.filter((s) => s.answers.length === 0);
+  const pcts = finalized.map((s) => Number(s.percentage));
+  const badges = computeBadges({
+    finishedCount: finalized.length,
+    bestPercentage: pcts.length ? Math.max(...pcts) : null,
+    perfectCount: pcts.filter((p) => p >= 100).length,
+    subjects,
+  });
+
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
@@ -49,6 +73,8 @@ export default async function StudentProgressPage() {
           والدروس الأضعف تظهر أوّلاً لتعرف ما يحتاج مراجعةً.
         </p>
       </div>
+
+      <BadgeGrid badges={badges} />
 
       {subjects.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
