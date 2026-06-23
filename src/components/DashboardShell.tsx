@@ -85,7 +85,15 @@ export default async function DashboardShell({
             {welcome(session.gender)}، {session.firstName}
           </h1>
           <p className="mt-1 text-ink/60">
-            هذه لوحة الـ{label}. الميزات تُضاف تِباعاً في الخطوات القادمة.
+            {
+              ({
+                STUDENT: "لوحة متابعة اختباراتك ونتائجك",
+                TEACHER: "لوحة إدارة اختباراتك وطلابك",
+                ADMIN: "لوحة إدارة مستخدمي المؤسّسة",
+                PARENT: "لوحة متابعة نتائج أبنائك",
+              } as Record<string, string>)[session.role] ??
+                "لوحة التحكّم"
+            }
           </p>
         </div>
         {children}
