@@ -9,7 +9,8 @@ export type QType =
   | "ESSAY"
   | "ORDER"
   | "FILL_BLANK"
-  | "MATCHING";
+  | "MATCHING"
+  | "DIAGRAM_LABEL";
 
 export type Difficulty = "EASY" | "MEDIUM" | "HARD" | "EXPERT";
 
@@ -275,7 +276,40 @@ function buildConceptMap(q: Raw, base: BaseFields): NormalizedQuestion {
   };
 }
 
-// كل ما تبقّى (مقالي/شرح/تعليل/مقارنة/مسائل/توسيم/شجرة نسب/…) → مقالي يدويّ
+// LABEL / DIAGRAM_LABEL → توسيم رسم: فراغات مرقّمة وإجاباتها من correct_labels،
+// والصورة المرقّمة يرفعها المدرّس لاحقاً (هي وحدها الخطوة اليدوية).
+function buildDiagramLabel(q: Raw, base: BaseFields): NormalizedQuestion {
+  const stem =
+    asStr(q.stem) ??
+    asStr(q.text) ??
+    "لاحظ الشكل المرقّم واكتب المسمّى المناسب لكلّ رقم.";
+  const labels = q.correct_labels;
+  if (!isObj(labels)) throw new Error("سؤال التوسيم يحتاج correct_labels");
+
+  const entries = Object.entries(labels)
+    .map(([k, v]) => ({ n: Number(k), v: asStr(v) }))
+    .filter((e) => Number.isFinite(e.n) && e.v)
+    .sort((a, b) => a.n - b.n);
+  if (entries.length < 1 || entries.length > 12)
+    throw new Error("توسيم الرسم يتطلّب من 1 إلى 12 تسمية مرقّمة");
+
+  const fig = figureDesc(q);
+  const content = fig ? `${stem}\n\n(وصف الشكل المؤقّت: ${fig})` : stem;
+
+  return {
+    ...base,
+    type: "DIAGRAM_LABEL",
+    content,
+    explanation: asStr(q.explanation) ?? "",
+    options: entries.map((e) => ({ content: e.v as string, isCorrect: true })),
+    warnings: [
+      ...base.warnings,
+      "توسيم رسم — يرفع المدرّس الصورة المرقّمة لاحقاً من صفحة تعديل السؤال",
+    ],
+  };
+}
+
+// كل ما تبقّى (مقالي/شرح/تعليل/مقارنة/مسائل/شجرة نسب/…) → مقالي يدويّ
 // مع نموذج الإجابة في الشرح، فلا يضيع أيّ سؤال.
 function buildEssay(q: Raw, base: BaseFields): NormalizedQuestion {
   const content = essayContent(q);
@@ -468,6 +502,14 @@ function normalizeOne(q: Raw): NormalizedQuestion {
   if (TF_TYPES.has(sourceType)) return buildTf(q, base);
   if (sourceType === "ORDER") return buildOrder(q, base);
   if (sourceType === "MATCH") return buildMatch(q, base);
+  if (sourceType === "LABEL" || sourceType === "DIAGRAM_LABEL") {
+    try {
+      return buildDiagramLabel(q, base);
+    } catch {
+      // بلا correct_labels صالحة → مقالي بلا فقدان.
+      return buildEssay(q, base);
+    }
+  }
   if (sourceType === "CONCEPT_MAP") {
     try {
       return buildConceptMap(q, base);
@@ -486,6 +528,7 @@ const EMPTY_BY_TYPE: Record<QType, number> = {
   ORDER: 0,
   FILL_BLANK: 0,
   MATCHING: 0,
+  DIAGRAM_LABEL: 0,
 };
 
 /** يطبّع ملفّ بنك أسئلة كاملاً. لا يرمي؛ يجمع الأخطاء لكل سؤال على حدة. */
@@ -530,4 +573,5 @@ export const Q_TYPE_LABEL: Record<QType, string> = {
   ORDER: "ترتيب",
   FILL_BLANK: "ملء فراغات",
   MATCHING: "مطابقة",
+  DIAGRAM_LABEL: "توسيم رسم (الصورة لاحقاً)",
 };

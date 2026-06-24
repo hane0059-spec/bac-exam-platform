@@ -157,7 +157,7 @@ describe("normalizeBankJson — تطبيع ملفّات بنك الأسئلة", 
     expect(q.options.map((o) => o.content)).toEqual(["سين", "عين"]);
   });
 
-  it("الأنواع المقالية (EXPLAIN/COMPARE/GENETICS/CRITICAL/LABEL) → ESSAY بنموذج إجابة", () => {
+  it("الأنواع المقالية (EXPLAIN/COMPARE/GENETICS/CRITICAL) → ESSAY بنموذج إجابة", () => {
     const r = normalizeBankJson({
       questions: [
         {
@@ -174,13 +174,6 @@ describe("normalizeBankJson — تطبيع ملفّات بنك الأسئلة", 
           comparison_aspects: ["السرعة"],
           answer_table: { السرعة: ["بطيء", "سريع"] },
         },
-        {
-          id: "L1",
-          type: "LABEL",
-          stem: "سمِّ",
-          numbered_parts: ["1", "2"],
-          correct_labels: { "1": "اسم١", "2": "اسم٢" },
-        },
       ],
     });
     const e = find(r, "E1")!;
@@ -191,8 +184,6 @@ describe("normalizeBankJson — تطبيع ملفّات بنك الأسئلة", 
     const c = find(r, "C1")!;
     expect(c.content).toContain("قارن بين");
     expect(c.explanation).toContain("بطيء");
-    const l = find(r, "L1")!;
-    expect(l.explanation).toContain("اسم١");
   });
 
   it("العلامة تُشتقّ من الملفّ: total_marks ثمّ مجموع سلّم التصحيح، وإلّا 1", () => {
@@ -226,6 +217,37 @@ describe("normalizeBankJson — تطبيع ملفّات بنك الأسئلة", 
     expect(find(r, "P1")!.points).toBe(12);
     expect(find(r, "P2")!.points).toBe(5); // مجموع سلّم التصحيح
     expect(find(r, "P3")!.points).toBe(1); // لا علامات في الملفّ → الافتراضي
+  });
+
+  it("LABEL → DIAGRAM_LABEL بفراغات مرقّمة (الصورة لاحقاً)", () => {
+    const r = normalizeBankJson({
+      questions: [
+        {
+          id: "D1",
+          type: "LABEL",
+          stem: "سمِّ أجزاء العين",
+          image_description: "مقطع كرة العين",
+          numbered_parts: ["1", "2", "3"],
+          correct_labels: { "1": "القرنية", "2": "القزحية", "3": "الشبكية|الشبكِيّة" },
+        },
+      ],
+    });
+    const q = find(r, "D1")!;
+    expect(q.type).toBe("DIAGRAM_LABEL");
+    expect(q.options.map((o) => o.content)).toEqual([
+      "القرنية",
+      "القزحية",
+      "الشبكية|الشبكِيّة",
+    ]);
+    expect(q.content).toContain("وصف الشكل المؤقّت");
+    expect(q.warnings.some((w) => w.includes("الصورة"))).toBe(true);
+  });
+
+  it("LABEL بلا correct_labels → يسقط إلى مقالي بلا فقدان", () => {
+    const r = normalizeBankJson({
+      questions: [{ id: "D2", type: "LABEL", stem: "سمِّ الأجزاء" }],
+    });
+    expect(find(r, "D2")!.type).toBe("ESSAY");
   });
 
   it("ملفّ بلا مصفوفة questions يرمي خطأً واضحاً", () => {
