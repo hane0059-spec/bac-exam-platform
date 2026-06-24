@@ -7,6 +7,7 @@ import DashboardShell from "@/components/DashboardShell";
 import UserForm, { type UserInitial } from "@/components/admin/UserForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
+import TeacherLifecyclePanel from "@/components/admin/TeacherLifecyclePanel";
 import { getAdminContext } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,14 @@ export default async function EditUserPage({
     orderBy: { name: "asc" },
   });
 
+  // طلاب المدرّس الذين أنشأهم (لتسلسل التعطيل/التفعيل دفعةً).
+  const studentCount =
+    user.role === "TEACHER"
+      ? await prisma.user.count({
+          where: { createdById: user.id, role: "STUDENT" },
+        })
+      : 0;
+
   const initial: UserInitial = {
     role: user.role as "TEACHER" | "ADMIN",
     firstName: user.firstName,
@@ -84,6 +93,16 @@ export default async function EditUserPage({
           canManageAdmins={canManageAdmins}
         />
         <PasswordResetForm endpoint={`/api/admin/users/${user.id}/password`} />
+        {/* دورة حياة الحساب (تعطيل/تفعيل + تسلسل للطلاب): للمدرّس، ليس النفس ولا المدير العام. */}
+        {user.role === "TEACHER" &&
+          user.id !== session.sub &&
+          !user.isSuperAdmin && (
+            <TeacherLifecyclePanel
+              userId={user.id}
+              isActive={user.isActive}
+              studentCount={studentCount}
+            />
+          )}
         {/* حذف الحساب: ليس النفس ولا المدير العام للمنصّة. */}
         {user.id !== session.sub && !user.isSuperAdmin && (
           <DeleteUserButton
