@@ -174,6 +174,17 @@ export default async function AdminDashboard() {
             </p>
           </Link>
         )}
+        <Link
+          href="/admin/retention"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            تفريغ مرفقات المغادرين
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            تحرير التخزين بحذف مرفقات المستخدمين المعطّلين مع إبقاء درجاتهم.
+          </p>
+        </Link>
         {ctx.isSuper && (
           <Link
             href="/admin/settings"
