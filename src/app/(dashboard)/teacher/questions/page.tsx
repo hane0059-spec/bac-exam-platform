@@ -129,6 +129,12 @@ export default async function TeacherQuestionsPage({
             بنية المنهج
           </Link>
           <Link
+            href="/teacher/questions/public"
+            className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
+          >
+            البنك العام
+          </Link>
+          <Link
             href="/teacher/questions/import"
             className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
           >

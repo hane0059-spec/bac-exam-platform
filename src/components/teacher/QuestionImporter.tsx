@@ -54,7 +54,17 @@ interface Summary {
   sample: SampleRow[];
 }
 
-export default function QuestionImporter({ subjects }: { subjects: Subject[] }) {
+export default function QuestionImporter({
+  subjects,
+  endpoint = "/api/teacher/questions/import",
+  bankPath = "/teacher/questions",
+  bankLabel = "بنك الأسئلة",
+}: {
+  subjects: Subject[];
+  endpoint?: string;
+  bankPath?: string;
+  bankLabel?: string;
+}) {
   const router = useRouter();
   const [subjectId, setSubjectId] = useState("");
   const [chapterId, setChapterId] = useState("");
@@ -108,7 +118,7 @@ export default function QuestionImporter({ subjects }: { subjects: Subject[] }) 
     setError("");
     setLoading(dryRun ? "preview" : "commit");
     try {
-      const res = await fetch("/api/teacher/questions/import", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -261,9 +271,9 @@ export default function QuestionImporter({ subjects }: { subjects: Subject[] }) 
 
       {doneCount != null && (
         <div className="rounded-xl border border-primary bg-primary-light p-4 text-sm text-primary-dark">
-          تمّ استيراد <b>{doneCount}</b> سؤالاً إلى بنكك بنجاح. تجدها في{" "}
-          <a href="/teacher/questions" className="underline">
-            بنك الأسئلة
+          تمّ استيراد <b>{doneCount}</b> سؤالاً بنجاح. تجدها في{" "}
+          <a href={bankPath} className="underline">
+            {bankLabel}
           </a>
           .
         </div>

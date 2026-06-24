@@ -1,10 +1,10 @@
-// src/app/api/teacher/questions/import/route.ts
-// استيراد أسئلة من ملفّ بنك (JSON) إلى بنك المدرّس.
-// dryRun=true: معاينة بلا كتابة. dryRun=false: إدراج الصالح في معاملة واحدة.
+// src/app/api/admin/questions/import/route.ts
+// المدير العام يستورد أسئلة من ملفّ إلى البنك العام (isPublic=true) لأيّ مادة.
+// dryRun=true: معاينة. dryRun=false: إدراج في معاملة واحدة. التطبيع على الخادم.
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession, teacherTeachesSubject } from "@/lib/teacher";
+import { getAdminContext } from "@/lib/admin";
 import { prepareImport } from "@/lib/questionImportServer";
 import { buildQuestionCreateData } from "@/lib/questionCreate";
 
@@ -20,9 +20,15 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await getTeacherSession();
-  if (!session) {
+  const ctx = await getAdminContext();
+  if (!ctx) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!ctx.isSuper) {
+    return NextResponse.json(
+      { error: "البنك العام للمدير العام حصراً" },
+      { status: 403 }
+    );
   }
 
   let raw: unknown;
@@ -42,12 +48,13 @@ export async function POST(req: Request) {
   const chapterId = parsed.data.chapterId ?? null;
   const conceptId = parsed.data.conceptId ?? null;
 
-  // الملكية: المادة ضمن موادّ المدرّس.
-  if (!(await teacherTeachesSubject(session.sub, subjectId))) {
-    return NextResponse.json(
-      { error: "لا تملك صلاحية على هذه المادة" },
-      { status: 403 }
-    );
+  // صحّة المادة (عامّة، لا عزل مؤسّسة) والفصل/المفهوم ضمنها.
+  const subject = await prisma.subject.findUnique({
+    where: { id: subjectId },
+    select: { id: true },
+  });
+  if (!subject) {
+    return NextResponse.json({ error: "مادة غير صالحة" }, { status: 400 });
   }
   if (chapterId) {
     const ch = await prisma.chapter.findUnique({
@@ -88,11 +95,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // أسئلة البنك العام: مملوكة للمدير العام ومعلَّمة isPublic.
   const created = await prisma.$transaction(
     prepared.valid.map(({ data }) => {
       if (!data.success) throw new Error("بيانات غير صالحة");
       return prisma.question.create({
-        data: buildQuestionCreateData(data.data, { creatorId: session.sub }),
+        data: buildQuestionCreateData(data.data, {
+          creatorId: ctx.session.sub,
+          isPublic: true,
+        }),
         select: { id: true },
       });
     })

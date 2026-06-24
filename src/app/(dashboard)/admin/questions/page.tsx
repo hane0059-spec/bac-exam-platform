@@ -110,9 +110,14 @@ export default async function AdminQuestionsPage({
         <Link href="/admin" className="text-sm text-primary hover:underline">
           ← لوحة المدير
         </Link>
-        <h2 className="mt-2 font-display text-xl font-bold">البنك العام للأسئلة</h2>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold">البنك العام للأسئلة</h2>
+          <Link href="/admin/questions/import" className="btn-primary">
+            + استيراد إلى البنك العام
+          </Link>
+        </div>
         <p className="mt-1 text-sm text-ink/60">
-          تصفّح أسئلة كل المؤسّسات (قراءة فقط).
+          تصفّح أسئلة كل المؤسّسات (قراءة فقط)، واستورد أسئلةً عامّةً من ملفّ.
         </p>
       </div>
 
