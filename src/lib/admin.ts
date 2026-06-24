@@ -4,9 +4,15 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import type { SessionData } from "@/lib/auth";
 
+/** جلسة مدير صالحة أو null. يتحقّق من isActive لمنع وصول المعطَّلين. */
 export async function getAdminSession(): Promise<SessionData | null> {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") return null;
+  const u = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { isActive: true },
+  });
+  if (!u?.isActive) return null;
   return session;
 }
 
@@ -26,15 +32,15 @@ export interface AdminContext {
   isSchoolManager: boolean; // مدير مدرسة (schoolId مضبوط)
 }
 
-/** سياق المدير: مؤسّسته ومستواه — لعزل الاستعلامات. */
+/** سياق المدير: مؤسّسته ومستواه — لعزل الاستعلامات. استعلام DB واحد يجمع الفحوص. */
 export async function getAdminContext(): Promise<AdminContext | null> {
-  const session = await getAdminSession();
-  if (!session) return null;
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") return null;
   const u = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { isSuperAdmin: true, schoolId: true },
+    select: { isSuperAdmin: true, schoolId: true, isActive: true },
   });
-  if (!u) return null;
+  if (!u || !u.isActive) return null;
   return {
     session,
     schoolId: u.schoolId,

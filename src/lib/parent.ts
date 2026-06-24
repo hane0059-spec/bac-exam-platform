@@ -33,10 +33,15 @@ export const parentNotesSchema = z.object({
   notes: z.string().trim().max(5000).optional(),
 });
 
-/** جلسة ولي أمر صالحة أو null. */
+/** جلسة ولي أمر صالحة أو null. يتحقّق من isActive لحظيّاً لمنع وصول المعطَّلين. */
 export async function getParentSession(): Promise<SessionData | null> {
   const session = await getSession();
   if (!session || session.role !== "PARENT") return null;
+  const u = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { isActive: true },
+  });
+  if (!u?.isActive) return null;
   return session;
 }
 

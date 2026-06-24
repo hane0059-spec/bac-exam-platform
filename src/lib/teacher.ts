@@ -6,10 +6,15 @@ import { getSession } from "@/lib/session";
 import { countBlanks, parseNumber } from "@/lib/grading";
 import type { SessionData } from "@/lib/auth";
 
-/** جلسة مدرّس صالحة أو null. */
+/** جلسة مدرّس صالحة أو null. يتحقّق من isActive لحظيّاً لمنع وصول المعطَّلين. */
 export async function getTeacherSession(): Promise<SessionData | null> {
   const session = await getSession();
   if (!session || session.role !== "TEACHER") return null;
+  const u = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { isActive: true },
+  });
+  if (!u?.isActive) return null;
   return session;
 }
 

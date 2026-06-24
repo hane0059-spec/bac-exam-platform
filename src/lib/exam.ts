@@ -21,10 +21,15 @@ import { normalizeKeyboard } from "@/lib/teacherKeyboard";
 // الحراسة والإعدادات
 // ─────────────────────────────────────────────
 
-/** جلسة طالب صالحة أو null (لغير الطالب أيضاً). */
+/** جلسة طالب صالحة أو null. يتحقّق من isActive لحظيّاً لمنع وصول المعطَّلين. */
 export async function getStudentSession(): Promise<SessionData | null> {
   const session = await getSession();
   if (!session || session.role !== "STUDENT") return null;
+  const u = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { isActive: true },
+  });
+  if (!u?.isActive) return null;
   return session;
 }
 
