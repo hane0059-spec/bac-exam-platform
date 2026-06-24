@@ -1,6 +1,7 @@
 "use client";
 // src/components/admin/UsersTree.tsx
-// شجرة المستخدمين القابلة للطيّ (مؤسّسة ← صفّ ← طلاب / مؤسّسة ← مدرّسون).
+// شجرة المستخدمين القابلة للطيّ مع تحميل كسول: تُرسَل البنية والأعداد فقط،
+// وتُجلَب عناصر كل فرع (الطلاب/الأعضاء) عند فتحه أوّل مرّة.
 import { useState } from "react";
 import Link from "next/link";
 
@@ -14,13 +15,22 @@ export interface LeafItem {
   managedNote?: string; // مثل «يُدار من مدرّسه»
 }
 
+// وصف جلب كسول لعناصر الفرع (يُحلّ في /api/admin/users/tree-leaves).
+export interface TreeLazy {
+  kind: "students" | "staff";
+  school: string; // رمز المؤسّسة: معرّف أو "__none__"
+  grade?: string; // رمز الصفّ (للطلاب): معرّف أو "__none__"
+  role?: "TEACHER" | "ADMIN"; // لتجميع الأعضاء حسب الدور (مدير المدرسة)
+}
+
 export interface TreeNode {
   id: string;
   label: string;
   count: number;
   defaultOpen?: boolean;
-  children?: TreeNode[]; // مجموعات فرعية
-  leaves?: LeafItem[]; // عناصر طرفية
+  children?: TreeNode[]; // مجموعات فرعية (بنية معروفة مسبقاً)
+  leaves?: LeafItem[]; // عناصر محمّلة مسبقاً (اختياري)
+  lazy?: TreeLazy; // إن وُجد: تُجلَب العناصر عند الفتح
 }
 
 function LeafRow({ leaf }: { leaf: LeafItem }) {
@@ -62,13 +72,42 @@ function LeafRow({ leaf }: { leaf: LeafItem }) {
 
 function Branch({ node }: { node: TreeNode }) {
   const [open, setOpen] = useState(!!node.defaultOpen);
+  const [leaves, setLeaves] = useState<LeafItem[] | null>(node.leaves ?? null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const hasChildren = (node.children?.length ?? 0) > 0;
-  const hasLeaves = (node.leaves?.length ?? 0) > 0;
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    // جلب كسول أوّل فتح لفرعٍ موصوفٍ بـ lazy وغير محمّل بعد.
+    if (next && node.lazy && leaves === null && !loading) {
+      setLoading(true);
+      setError("");
+      try {
+        const p = new URLSearchParams({
+          kind: node.lazy.kind,
+          school: node.lazy.school,
+        });
+        if (node.lazy.grade) p.set("grade", node.lazy.grade);
+        if (node.lazy.role) p.set("role", node.lazy.role);
+        const res = await fetch(`/api/admin/users/tree-leaves?${p}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) setError(data.error ?? "تعذّر التحميل.");
+        else setLeaves(data.leaves ?? []);
+      } catch {
+        setError("خطأ في الاتصال.");
+      } finally {
+        setLoading(false);
+      }
+    }
+  }
 
   return (
     <div>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className="flex w-full items-center justify-between gap-2 rounded-lg bg-ink/5 px-3 py-2 text-right transition hover:bg-primary-light"
       >
         <span className="flex items-center gap-2 font-medium">
@@ -83,14 +122,23 @@ function Branch({ node }: { node: TreeNode }) {
       {open && (
         <div className="mt-1.5 space-y-1.5" style={{ paddingInlineStart: 14 }}>
           {node.children?.map((c) => <Branch key={c.id} node={c} />)}
-          {hasLeaves && (
+
+          {loading && (
+            <p className="px-3 py-1 text-xs text-ink/40">…جارٍ التحميل</p>
+          )}
+          {error && <p className="px-3 py-1 text-xs text-red-600">{error}</p>}
+
+          {leaves && leaves.length > 0 && (
             <div className="space-y-1">
-              {node.leaves!.map((l) => (
+              {leaves.map((l) => (
                 <LeafRow key={l.id} leaf={l} />
               ))}
             </div>
           )}
-          {!hasChildren && !hasLeaves && (
+          {leaves && leaves.length === 0 && !loading && (
+            <p className="px-3 py-1 text-xs text-ink/40">لا عناصر.</p>
+          )}
+          {!hasChildren && !node.lazy && !leaves && !loading && (
             <p className="px-3 py-1 text-xs text-ink/40">لا عناصر.</p>
           )}
         </div>

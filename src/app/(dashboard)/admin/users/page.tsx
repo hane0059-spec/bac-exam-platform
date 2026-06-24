@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { roleLabel } from "@/lib/gender";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
-import UsersTree, { type TreeNode, type LeafItem } from "@/components/admin/UsersTree";
+import UsersTree, { type TreeNode } from "@/components/admin/UsersTree";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 import type { Prisma } from "@prisma/client";
 import type { Role } from "@/lib/auth";
@@ -212,161 +212,125 @@ async function searchUsers(
 }
 
 // ─────────────────────────────────────────────
-// بناء شجرة الطلاب: مؤسّسة ← صفّ ← طلاب (للمدير العام)، أو صفّ ← طلاب (لمدير المدرسة).
+// بناء بنية شجرة الطلاب + الأعداد فقط (بلا تحميل الطلاب). العناصر تُجلَب كسولاً
+// لكل صفّ عند فتحه عبر /api/admin/users/tree-leaves.
 async function buildStudentRoots(
   isSuper: boolean,
   schoolScope: { schoolId?: string | null },
 ): Promise<TreeNode[]> {
-  const students = await prisma.user.findMany({
-    where: { role: "STUDENT", ...schoolScope },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      isActive: true,
-      schoolId: true,
-      school: { select: { name: true } },
-      studentProfile: {
-        select: {
-          studentCode: true,
-          gradeLevel: { select: { id: true, name: true, orderNum: true } },
-        },
-      },
-    },
-  });
+  // إسقاط خفيف (عمودان فقط) لحساب الأعداد لكل (مؤسّسة، صفّ).
+  const [rows, schools, grades] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: "STUDENT", ...schoolScope },
+      select: { schoolId: true, studentProfile: { select: { gradeLevelId: true } } },
+    }),
+    prisma.school.findMany({ select: { id: true, name: true } }),
+    prisma.gradeLevel.findMany({ select: { id: true, name: true, orderNum: true } }),
+  ]);
+  const schoolName = new Map(schools.map((s) => [s.id, s.name]));
+  const gradeInfo = new Map(grades.map((g) => [g.id, g]));
 
-  const toLeaf = (s: (typeof students)[number]): LeafItem => ({
-    id: s.id,
-    name: `${s.firstName} ${s.lastName}`,
-    meta: s.studentProfile?.studentCode ?? undefined,
-    inactive: !s.isActive,
-    editHref: `/admin/students/${s.id}/edit`, // المدير يدير كل طلاب مؤسّسته
-  });
+  // counts: مؤسّسة → صفّ → عدد.
+  const counts = new Map<string, Map<string, number>>();
+  for (const r of rows) {
+    const sk = r.schoolId ?? "__none__";
+    const gk = r.studentProfile?.gradeLevelId ?? "__none__";
+    if (!counts.has(sk)) counts.set(sk, new Map());
+    const gm = counts.get(sk)!;
+    gm.set(gk, (gm.get(gk) ?? 0) + 1);
+  }
 
-  // تجميع حسب الصفّ ضمن مجموعة معطاة.
-  const gradeNodes = (rows: typeof students): TreeNode[] => {
-    const byGrade = new Map<
-      string,
-      { name: string; orderNum: number; leaves: LeafItem[] }
-    >();
-    for (const s of rows) {
-      const g = s.studentProfile?.gradeLevel;
-      const key = g?.id ?? "__none__";
-      if (!byGrade.has(key))
-        byGrade.set(key, {
-          name: g?.name ?? NO_GRADE,
-          orderNum: g?.orderNum ?? 9999,
-          leaves: [],
-        });
-      byGrade.get(key)!.leaves.push(toLeaf(s));
-    }
-    return [...byGrade.entries()]
-      .sort((a, b) => a[1].orderNum - b[1].orderNum)
-      .map(([id, v]) => ({
-        id,
-        label: v.name,
-        count: v.leaves.length,
-        leaves: v.leaves,
+  const gradeNodesFor = (sk: string): TreeNode[] => {
+    const gm = counts.get(sk) ?? new Map<string, number>();
+    return [...gm.entries()]
+      .map(([gk, n]) => ({
+        gk,
+        n,
+        name: gk === "__none__" ? NO_GRADE : gradeInfo.get(gk)?.name ?? NO_GRADE,
+        orderNum: gk === "__none__" ? 9999 : gradeInfo.get(gk)?.orderNum ?? 9999,
+      }))
+      .sort((a, b) => a.orderNum - b.orderNum)
+      .map((g) => ({
+        id: `${sk}:${g.gk}`,
+        label: g.name,
+        count: g.n,
+        lazy: { kind: "students" as const, school: sk, grade: g.gk },
       }));
   };
 
   if (!isSuper) {
-    // مدير المدرسة: الصفوف مباشرةً.
-    return gradeNodes(students);
+    // مدير المدرسة: الصفوف مباشرةً (كلّها ضمن مؤسّسته).
+    return [...counts.keys()].flatMap((sk) => gradeNodesFor(sk));
   }
 
-  // المدير العام: مؤسّسة ← صفّ ← طلاب.
-  const bySchool = new Map<
-    string,
-    { name: string; rows: typeof students }
-  >();
-  for (const s of students) {
-    const key = s.schoolId ?? "__none__";
-    if (!bySchool.has(key))
-      bySchool.set(key, { name: s.school?.name ?? NO_SCHOOL, rows: [] });
-    bySchool.get(key)!.rows.push(s);
-  }
-  return [...bySchool.entries()]
-    .sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"))
-    .map(([id, v]) => ({
-      id,
-      label: v.name,
-      count: v.rows.length,
-      children: gradeNodes(v.rows),
+  // المدير العام: مؤسّسة ← صفّ.
+  return [...counts.entries()]
+    .map(([sk, gm]) => ({
+      sk,
+      name: sk === "__none__" ? NO_SCHOOL : schoolName.get(sk) ?? NO_SCHOOL,
+      total: [...gm.values()].reduce((a, b) => a + b, 0),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "ar"))
+    .map((s) => ({
+      id: s.sk,
+      label: s.name,
+      count: s.total,
+      children: gradeNodesFor(s.sk),
     }));
 }
 
 // ─────────────────────────────────────────────
-// بناء شجرة المدرّسين/المدراء: مؤسّسة ← أعضاء (للمدير العام)، أو حسب الدور (لمدير المدرسة).
+// بناء بنية شجرة المدرّسين/المدراء + الأعداد فقط؛ الأعضاء يُجلَبون كسولاً.
 async function buildStaffRoots(
   isSuper: boolean,
   schoolScope: { schoolId?: string | null },
 ): Promise<TreeNode[]> {
-  const staff = await prisma.user.findMany({
-    where: { role: { in: ["TEACHER", "ADMIN"] }, ...schoolScope },
-    orderBy: [{ role: "asc" }, { lastName: "asc" }, { firstName: "asc" }],
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      gender: true,
-      isActive: true,
-      isSuperAdmin: true,
-      email: true,
-      schoolId: true,
-      school: { select: { name: true } },
-      teacherProfile: { select: { employeeCode: true } },
-    },
-  });
-
-  const toLeaf = (u: (typeof staff)[number]): LeafItem => {
-    const adminScope =
-      u.role === "ADMIN" ? (u.isSuperAdmin ? " عام" : " مؤسّسة") : "";
-    const meta = [u.teacherProfile?.employeeCode, u.email]
-      .filter(Boolean)
-      .join(" • ");
-    return {
-      id: u.id,
-      name: `${u.firstName} ${u.lastName}`,
-      badge: roleLabel(u.role as Role, u.gender as "MALE" | "FEMALE") + adminScope,
-      meta: meta || undefined,
-      inactive: !u.isActive,
-      editHref: `/admin/users/${u.id}/edit`,
-    };
-  };
-
-  if (!isSuper) {
-    // مدير المدرسة: تجميع حسب الدور.
-    const groups: { id: string; label: string; roles: Role[] }[] = [
-      { id: "teachers", label: "المدرّسون", roles: ["TEACHER"] },
-      { id: "admins", label: "المدراء", roles: ["ADMIN"] },
-    ];
-    return groups
-      .map((g) => {
-        const leaves = staff
-          .filter((u) => g.roles.includes(u.role as Role))
-          .map(toLeaf);
-        return { id: g.id, label: g.label, count: leaves.length, leaves };
-      })
-      .filter((n) => n.count > 0);
+  if (isSuper) {
+    // المدير العام: مؤسّسة ← أعضاء (عدّ بالتجميع على schoolId).
+    const [grp, schools] = await Promise.all([
+      prisma.user.groupBy({
+        by: ["schoolId"],
+        where: { role: { in: ["TEACHER", "ADMIN"] } },
+        _count: { _all: true },
+      }),
+      prisma.school.findMany({ select: { id: true, name: true } }),
+    ]);
+    const schoolName = new Map(schools.map((s) => [s.id, s.name]));
+    return grp
+      .map((g) => ({
+        sk: g.schoolId ?? "__none__",
+        name: g.schoolId ? schoolName.get(g.schoolId) ?? NO_SCHOOL : NO_SCHOOL,
+        count: g._count._all,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "ar"))
+      .map((s) => ({
+        id: s.sk,
+        label: s.name,
+        count: s.count,
+        lazy: { kind: "staff" as const, school: s.sk },
+      }));
   }
 
-  // المدير العام: مؤسّسة ← أعضاء.
-  const bySchool = new Map<string, { name: string; leaves: LeafItem[] }>();
-  for (const u of staff) {
-    const key = u.schoolId ?? "__none__";
-    if (!bySchool.has(key))
-      bySchool.set(key, { name: u.school?.name ?? NO_SCHOOL, leaves: [] });
-    bySchool.get(key)!.leaves.push(toLeaf(u));
-  }
-  return [...bySchool.entries()]
-    .sort((a, b) => a[1].name.localeCompare(b[1].name, "ar"))
-    .map(([id, v]) => ({
-      id,
-      label: v.name,
-      count: v.leaves.length,
-      leaves: v.leaves,
-    }));
+  // مدير المدرسة: تجميع حسب الدور (ضمن مؤسّسته).
+  const [teachers, admins] = await Promise.all([
+    prisma.user.count({ where: { role: "TEACHER", ...schoolScope } }),
+    prisma.user.count({ where: { role: "ADMIN", ...schoolScope } }),
+  ]);
+  const schoolTok = schoolScope.schoolId ?? "__none__";
+  const nodes: TreeNode[] = [];
+  if (teachers > 0)
+    nodes.push({
+      id: "teachers",
+      label: "المدرّسون",
+      count: teachers,
+      lazy: { kind: "staff", school: schoolTok, role: "TEACHER" },
+    });
+  if (admins > 0)
+    nodes.push({
+      id: "admins",
+      label: "المدراء",
+      count: admins,
+      lazy: { kind: "staff", school: schoolTok, role: "ADMIN" },
+    });
+  return nodes;
 }
