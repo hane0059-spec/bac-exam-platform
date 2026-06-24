@@ -40,6 +40,7 @@ function toQuestionInput(
     conceptId: targets.conceptId,
     content: n.content,
     difficulty: n.difficulty,
+    points: n.points,
     explanation: n.explanation || undefined,
     tags: n.tags,
     options: n.options,
@@ -138,11 +139,14 @@ export async function POST(req: Request) {
       warnings: n.warnings,
     }));
 
+  const totalPoints = valid.reduce((s, { n }) => s + n.points, 0);
+
   const summary = {
     subjectName: result.subjectName,
     total: result.total,
     importable: valid.length,
     rejectedCount: rejected.length,
+    totalPoints,
     byType: Object.entries(result.byType)
       .filter(([, c]) => c > 0)
       .map(([t, c]) => ({
@@ -156,6 +160,7 @@ export async function POST(req: Request) {
       sourceId: n.sourceId,
       type: n.type,
       typeLabel: Q_TYPE_LABEL[n.type],
+      points: n.points,
       content: n.content.slice(0, 160),
     })),
   };

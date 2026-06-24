@@ -195,6 +195,39 @@ describe("normalizeBankJson — تطبيع ملفّات بنك الأسئلة", 
     expect(l.explanation).toContain("اسم١");
   });
 
+  it("العلامة تُشتقّ من الملفّ: total_marks ثمّ مجموع سلّم التصحيح، وإلّا 1", () => {
+    const r = normalizeBankJson({
+      questions: [
+        {
+          id: "P1",
+          type: "ESSAY",
+          stem: "اشرح",
+          total_marks: 12,
+          key_points: ["نقطة"],
+        },
+        {
+          id: "P2",
+          type: "EXPLAIN",
+          phenomenon: "ظاهرة",
+          scoring_rubric: [
+            { point: "أ", marks: 2 },
+            { point: "ب", marks: 3 },
+          ],
+        },
+        {
+          id: "P3",
+          type: "multiple_choice",
+          text: "س؟",
+          options: [{ key: "A", text: "أ" }, { key: "B", text: "ب" }],
+          answer: "A",
+        },
+      ],
+    });
+    expect(find(r, "P1")!.points).toBe(12);
+    expect(find(r, "P2")!.points).toBe(5); // مجموع سلّم التصحيح
+    expect(find(r, "P3")!.points).toBe(1); // لا علامات في الملفّ → الافتراضي
+  });
+
   it("ملفّ بلا مصفوفة questions يرمي خطأً واضحاً", () => {
     expect(() => normalizeBankJson({ metadata: {} })).toThrow();
   });

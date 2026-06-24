@@ -39,6 +39,7 @@ interface SampleRow {
   sourceId: string;
   type: string;
   typeLabel: string;
+  points: number;
   content: string;
 }
 interface Summary {
@@ -46,6 +47,7 @@ interface Summary {
   total: number;
   importable: number;
   rejectedCount: number;
+  totalPoints: number;
   byType: ByType[];
   warnings: WarnRow[];
   rejected: RejectRow[];
@@ -287,7 +289,11 @@ export default function QuestionImporter({ subjects }: { subjects: Subject[] }) 
               value={summary.rejectedCount}
               tone={summary.rejectedCount > 0 ? "gold" : "muted"}
             />
-            <Stat label="تنبيهات" value={summary.warnings.length} tone="muted" />
+            <Stat
+              label="مجموع العلامات"
+              value={summary.totalPoints}
+              tone="gold"
+            />
           </div>
 
           {/* الأعداد لكل نوع */}
@@ -316,7 +322,7 @@ export default function QuestionImporter({ subjects }: { subjects: Subject[] }) 
                     className="rounded-lg border border-line p-2 text-xs"
                   >
                     <span className="ml-2 rounded bg-ink/5 px-1.5 py-0.5 text-ink/60">
-                      {s.typeLabel}
+                      {s.typeLabel} · {s.points} ن
                     </span>
                     <span className="text-ink/80">{s.content}…</span>
                   </li>

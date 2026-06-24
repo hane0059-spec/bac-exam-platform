@@ -27,6 +27,8 @@ export interface NormalizedQuestion {
   type: QType;
   content: string;
   difficulty: Difficulty;
+  /** علامة السؤال — مُشتقّة من علامات الملفّ إن وُجدت، وإلّا 1. */
+  points: number;
   explanation: string;
   tags: string[];
   options: NormalizedOption[];
@@ -55,6 +57,24 @@ const asStr = (v: unknown): string | undefined =>
   typeof v === "string" ? v : undefined;
 const asArr = (v: unknown): unknown[] | undefined =>
   Array.isArray(v) ? v : undefined;
+const asNum = (v: unknown): number | undefined =>
+  typeof v === "number" && Number.isFinite(v) ? v : undefined;
+
+/** علامة السؤال من الملفّ: total_marks ثمّ marks ثمّ مجموع سلّم التصحيح، وإلّا 1. */
+function pointsOf(q: Raw): number {
+  const clamp = (n: number) => Math.min(Math.max(n, 1), 999.99);
+  const direct = asNum(q.total_marks) ?? asNum(q.marks);
+  if (direct && direct > 0) return clamp(direct);
+  const rubric = asArr(q.scoring_rubric);
+  if (rubric?.length) {
+    const sum = rubric.reduce<number>(
+      (s, r) => s + (isObj(r) ? asNum(r.marks) ?? 0 : 0),
+      0
+    );
+    if (sum > 0) return clamp(sum);
+  }
+  return 1;
+}
 
 const MCQ_TYPES = new Set([
   "multiple_choice",
@@ -417,6 +437,7 @@ interface BaseFields {
   sourceId: string;
   sourceType: string;
   difficulty: Difficulty;
+  points: number;
   tags: string[];
   warnings: string[];
   explanation: string;
@@ -433,6 +454,7 @@ function normalizeOne(q: Raw): NormalizedQuestion {
     sourceId: asStr(q.id) ?? "—",
     sourceType,
     difficulty: difficultyOf(q.level),
+    points: pointsOf(q),
     tags: ["مُستورَد", ...(conceptId ? [`مرجع:${conceptId}`] : [])],
     warnings: [],
     explanation: "",
