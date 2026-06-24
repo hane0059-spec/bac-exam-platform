@@ -82,7 +82,7 @@
 
 **لوحة المدير:** المستخدمون في عرض **شجري** (تبويب الطلاب: مؤسّسة←صفّ←طلاب؛ تبويب المدرّسين/المدراء: مؤسّسة←أعضاء للمدير العام، أو حسب الدور لمدير المدرسة — `UsersTree`)، **بحث المستخدمين** (بالاسم/الرمز/البريد/الهاتف، نتائج مسطّحة برابط تحرير لكل دور — للمدير العام عبر الجميع، ولمدير المدرسة ضمن مؤسّسته)، إنشاء مدرّس/مدير/طالب، المدارس، **المواد والصفوف متداخلة** (الصفّ←مواده مع تحرير/حذف لكل عنصر — `AcademicsTree`، للمدير العام)، **الحقول المخصّصة** (`CustomFieldDef` + `User.customData`: المدير العام يعرّف حقولاً إجبارية/اختيارية لكل جمهور)، استيراد طلاب خارجيين من **Excel فقط** (exceljs) + تصدير بيانات الدخول xlsx.
 
-**لوحة المدير العام (الإشراف عبر المؤسّسات):** صفحة نظرة عامة (`/admin/overview`: إحصاءات المنصّة + جدول لكل مؤسّسة)، تصفّح **البنك العام** (`/admin/quizzes` و`/admin/questions`: قراءة فقط، فلترة بالمؤسّسة/المادة/النوع أو الحالة + ترقيم)، و**التخزين والمرفقات** (`/admin/storage`: حجم المرفقات الكلّي + حسب النوع + حسب المؤسّسة). النسبة للمؤسّسة عبر `creator.schoolId`/`student.schoolId`.
+**لوحة المدير العام (الإشراف عبر المؤسّسات):** صفحة نظرة عامة (`/admin/overview`: إحصاءات المنصّة + جدول لكل مؤسّسة)، تصفّح **اختبارات وأسئلة المؤسّسات** (`/admin/quizzes` و`/admin/questions`: قراءة فقط، فلترة بالمؤسّسة/المادة/النوع أو الحالة + ترقيم)، **التخزين والمرفقات** (`/admin/storage`: حجم المرفقات الكلّي + حسب النوع + حسب المؤسّسة)، و**إدارة الاحتفاظ** (`/admin/retention`: جدول المستخدمين مرتَّباً حسب حجم مرفقاتهم مع تبويب «المعطّلون فقط» — زرّ «تفريغ المرفقات» لكل حساب معطَّل فقط، عملية لا رجعة فيها، تحتاج تأكيدَين صريحَين، تُعيد البايتات المُحرَّرة). النسبة للمؤسّسة عبر `creator.schoolId`/`student.schoolId`.
 
 **ولي الأمر:** دور `PARENT` + جدول ربط `ParentLink` (متعدّد-لمتعدّد: ولي ← عدّة أبناء، وطالب ← عدّة أولياء). **المدير** ينشئ الوليّ ويربطه بأبنائه بلصق رموز الطلاب (بعزل المؤسّسة) من `/admin/parents` (قائمة/إنشاء/إدارة روابط). **لوحة الوليّ** `/parent`: أبناؤه ونتائج كلّ ابن (قراءة فقط) عبر `SessionReviewView` المشترك — مع **فحص ملكية صارم** (`parentOwnsStudent`) لكل وصول لبيانات طالب، وإخفاء النتيجة ما دامت بانتظار التصحيح. الدخول الموحّد يعمل للوليّ (بريد/اسم).
 
@@ -100,15 +100,43 @@
 
 **إتاحة وصول:** متحكّم تكبير النصّ (يُحفظ على الجهاز)، زرّ «الرئيسية» في كل صفحة. تواريخ بحقل أرقام خاصّ (`DateTimeField`) + عرض `formatDateTime` داخل `‹bdi›`.
 
-**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind` بقيمة `QUESTION_IMAGE` و`Attachment.questionId`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`)، **`Notification`**، **`Annotation`**، **`QuestionReport`** (+`QuestionReportStatus`)، **`GradeAppeal`** (+`AppealStatus`، علاقتا `ExamSession.appeals` و`User.gradeAppeals`) (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.{extraAttempts, studentArchivedAt}`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `TeacherProfile.{isIndependent, studentLimit}`, `User.email` صار اختيارياً.
+**شارات الإنجاز للطالب:** `src/lib/badges.ts` — دالة `computeBadges(BadgeInputs): Badge[]` نقية (بلا قاعدة بيانات) تشتقّ 8 شارات من إحصاءات الجلسات المنتهية: الخطوة الأولى (1 اختبار) / المثابر (5) / المجتهد (10) / العلامة العالية (≥90%) / المثالي (100%) / سيّد المفهوم (80% في مفهوم واحد) / 5 مفاهيم / سيّد المادة. `BadgeGrid` يعرض المُكتسَبة (ذهبية) والمقفولة (رمادية) بعدّادات تقدّم في `/student/progress`.
+
+**استيراد بنك الأسئلة الخارجي + البنك العام:**
+- `src/lib/questionImport.ts` — دالة `normalizeBankJson(raw)` نقية تحوِّل JSON خارجياً (أنواع: `multiple_choice/true_false/ORDER/MATCH/CONCEPT_MAP/DIAGRAM_LABEL/ESSAY` + مرادفاتها) إلى `NormalizedQuestion[]` مع تجميع الأخطاء لكل سؤال. قاعدة التحويل: `MCQ`→`MULTIPLE_CHOICE`، `TF`→`TRUE_FALSE`، `ORDER`→`ORDER`، `MATCH`→`MATCHING`، `CONCEPT_MAP`→`FILL_BLANK`، `LABEL/DIAGRAM_LABEL`→`DIAGRAM_LABEL`، والباقي→`ESSAY`. `DIAGRAM_LABEL` يُحوَّل لخيارات مثل `FILL_BLANK` ويُضاف `image_description` للنصّ مع تحذير «الصورة لاحقاً». 80+ اختبار Vitest.
+- `src/lib/questionImportServer.ts` — `prepareImport(file, targets)` مشترك (teacher + admin): يُطبَّع + يُتحقَّق Zod + ملخّص.
+- `src/lib/questionCreate.ts` — `buildQuestionCreateData(d, {creatorId, isPublic?})` مشترك لبناء payload الإنشاء في Prisma.
+- `POST /api/teacher/questions/import` — المدرّس يستورد لبنكه الخاصّ (`isPublic:false`).
+- `POST /api/admin/questions/import` — المدير العام فقط يستورد للبنك العام (`isPublic:true`).
+- `<QuestionImporter>` — مكوِّن قابل للإعادة (`endpoint`/`bankPath`/`bankLabel` كـprops): معاينة قبل التأكيد + ملخّص (مقبولة/مرفوضة/إجمالي العلامات).
+- `/admin/questions/import` — صفحة استيراد للمدير العام (كل المواد).
+- **البنك العام** — `Question.isPublic`: المدرّس يتصفّح أسئلة البنك العام في موادّه (`/teacher/questions/public`، فلترة بالمادة/النوع/النصّ + ترقيم) وينسخ السؤال لبنكه الخاصّ (`POST /api/teacher/questions/[id]/copy`، يتحقّق من `isPublic` وتدريس المادة، ينسخ بـ`isPublic:false`). زرّ `<CopyPublicQuestionButton>` بحالات idle→loading→done/error.
+- **BANK/IMPORT_SPEC.md** — مواصفة تقنية كاملة لصيغة JSON الخارجية (للمطوّرين وأنظمة الاستيراد الآلي).
+- **BANK/TEACHER_PROMPT.md** — نصّ جاهز للنسخ يعطيه المدرّس لذكاء اصطناعي محلّي (ChatGPT/Claude) لتوليد JSON متوافق مع المنصّة دون تعديل.
+
+**دورة حياة حساب المدرّس (مغادرة آمنة):**
+- `POST /api/admin/users/[id]/set-active` — تفعيل/تعطيل مدرّس بدون أو مع cascade لطلابه، في transaction.
+- `POST /api/admin/users/[id]/offboard` — **المغادرة الذكية** (`teacherOffboard.ts` في transaction واحدة): (1) تعطيل المدرّس، (2) تعطيل كل تسجيلاته مع الطلاب، (3) طلابه الذين خُلِق حسابهم بـ`createdById` ولا تسجيلات فعّالة أخرى → يُعطَّلون؛ ذوو تسجيلات أخرى → يبقون. (4) حذف مرفقات المدرّس + الطلاب الحصريّين. يُعيد: `{deactivatedStudents, keptStudents, deletedAttachments, freedBytes}`.
+- `GET /api/admin/users/[id]/export` — تصدير حزمة المدرّس الكاملة JSON (اختبارات/أسئلة/طلاب/جلسات/مرفقات بـbase64، `TEACHER_EXPORT_FORMAT=bac-teacher-export v1`) للتنزيل بترويسة `Content-Disposition`.
+- `POST /api/teacher/account/deletion-request` — المدرّس يطلب حذف حسابه من `/account`: ينشئ إشعاراً لكل المدراء (schoolId + superadmin)، مع تكرار-مانع (إن وُجد إشعار مفتوح بنفس الرابط يُعيد `{alreadyRequested:true}`).
+- `<TeacherLifecyclePanel>` في صفحة تعديل المدرّس (`/admin/users/[id]/edit`): رابط تصدير + مفتاح تعطيل/تفعيل + قسم «المغادرة الذكية» بتأكيد مزدوج يعرض النتيجة تفصيلاً.
+- `<RequestAccountDeletion>` في `/account` للمدرّس: تأكيد مزدوج + يوضّح أنّه طلب للمدير لا حذف فوري.
+
+**إضافات المخطط بعد الأساس:** `Unit`، `School`، `CustomFieldDef`، **`ParentLink`**، **`AppSetting`**، **`Attachment`** (+`AttachmentKind` بقيمة `QUESTION_IMAGE` و`Attachment.questionId`، `Quiz.isFileBased`، `ExamSession.{needsGrading,teacherFeedback}`)، **`Notification`**، **`Annotation`**، **`QuestionReport`** (+`QuestionReportStatus`)، **`GradeAppeal`** (+`AppealStatus`، علاقتا `ExamSession.appeals` و`User.gradeAppeals`) (+ قيمة `PARENT` في `Role` وعلاقتا `User.{parentLinks, studentParents}`)؛ وحقول: `User.{isSuperAdmin, schoolId, createdById, customData}`, `Chapter.unitId`, `Quiz.{accessCode, allowCodeJoin}`, `QuizAssignment.{extraAttempts, studentArchivedAt}`, `StudentProfile.{fatherName, motherName, address, isExternal}`, `StudentAnswer.needsReview`, `TeacherProfile.{isIndependent, studentLimit}`, `User.email` صار اختيارياً، `Question.isPublic` (للبنك العام).
 
 > البذرة الحالية (`prisma/seed.ts`) **تصفّر كل شيء** ثم تبني **سيناريو اختبار شاملاً**: المدير العام + صفّ «بكالوريا علمي» + 9 مواد مُشجَّرة، ومؤسّسة «ثانوية النور» بمدير مدرسة و**12 مدرّساً** (مدرّس لكل مادة + مدرّس ثانٍ للمواد الثلاث BIO/PHYS/CHEM) و**طالبَين** مسجّلَين في المواد الثلاث، مع بيانات تُمرّن كل الميزات: بنك أسئلة بكل الأنواع (+ملء الفراغات)، واختبارات في كل الحالات (تلقائي مكتمل→أرشيف المدرّس، تصحيح يدويّ+اعتراض مفتوح، مسودّة، مؤرشف، محذوف المحتوى مع بقاء الدرجة، ورقي مُصحَّح بتعليق صورة)، وأرشفة طالب وإشعارات. الحسابات: `admin@example.com`/`Admin@123` (عام)، `manager@nour.edu`/`Admin@123` (مدير مدرسة)، `t.bio@nour.edu`/`Teacher@123` (صلاحيات ملفّات+إدارة طلاب)، `student1@nour.edu`/`student2@nour.edu`/`Student@123`. استخدم Git دائماً.
 
 ## خارطة الطريق (التالي)
-- ~~تشجير لوحة المدير~~ ✅ تمّ: تبويب الطلاب/المدرّسين شجرياً + صفحة «الصفّ ← مواده» المتداخلة. (لاحقاً عند الحاجة: تحميل كسول للشجرة إن كبر عدد الطلاب — حالياً تُرسَل كاملةً من الخادم بلا ترقيم.)
-- **إرسال بيانات الدخول** بالبريد ثم SMS (خدمات خارجية — يلزم مزوّد ومفاتيح). **مؤجّل**: لا مزوّد متاح حالياً.
+- ~~تشجير لوحة المدير~~ ✅ تمّ: تبويب الطلاب/المدرّسين شجرياً + صفحة «الصفّ ← مواده» المتداخلة.
+- ~~تحميل كسول لشجرة المستخدمين~~ ✅ تمّ: البنية والأعداد تُرسَل فوراً، وعناصر كل صفّ/مؤسّسة تُجلَب عند الفتح عبر `GET /api/admin/users/tree-leaves` (`TreeLazy` descriptor + `Branch` component).
 - ~~لوحة المدير العام: إشراف على البنك العام والاختبارات عبر المؤسّسات~~ ✅ تمّ (نظرة عامة + تصفّح البنك والاختبارات، قراءة فقط).
 - ~~دور ولي الأمر~~ ✅ تمّ (دور `PARENT` + `ParentLink` + لوحة الوليّ، قراءة فقط). لاحقاً: ربط الوليّ بأبنائه من المدرّس أيضاً.
+- ~~سياسة الاحتفاظ ومسح المرفقات~~ ✅ تمّ: `/admin/retention` + `purge-attachments` API.
+- ~~دورة حياة المدرّس (تعطيل/تصدير/مغادرة/طلب حذف)~~ ✅ تمّ.
+- ~~استيراد بنك الأسئلة الخارجي + البنك العام~~ ✅ تمّ.
+- ~~شارات الإنجاز للطالب~~ ✅ تمّ.
+- **إرسال بيانات الدخول** بالبريد ثم SMS (خدمات خارجية — يلزم مزوّد ومفاتيح). **مؤجّل**: لا مزوّد متاح حالياً.
+- **مراجعة أمنية قبل الإطلاق** — audit كل مسارات API (ملكية/صلاحية/عزل المؤسّسة/منع تسرّب الإجابات/المهل الزمنية). **التالي**.
 - بنود Backlog أدناه عند الإذن.
 
 ## Backlog (أفكار مؤجّلة)
