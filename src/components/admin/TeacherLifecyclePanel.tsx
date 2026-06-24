@@ -72,6 +72,17 @@ export default function TeacherLifecyclePanel({
         .
       </p>
 
+      <a
+        href={`/api/admin/users/${userId}/export`}
+        className="mb-4 inline-flex items-center gap-1 rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
+      >
+        ⬇ تصدير بياناته (نسخة احتياطية محمولة)
+      </a>
+      <p className="mb-4 -mt-2 text-xs leading-relaxed text-ink/50">
+        ملفّ JSON واحد يضمّ أسئلته واختباراته وطلابه ومرفقاته — احفظه على جهازك
+        أو فلاشة قبل الحذف.
+      </p>
+
       {studentCount > 0 && (
         <label className="mb-3 flex items-center gap-2 text-sm">
           <input
