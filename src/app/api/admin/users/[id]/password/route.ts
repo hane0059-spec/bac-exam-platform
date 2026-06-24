@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import { passwordSchema } from "@/lib/adminUsers";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,5 +54,14 @@ export async function POST(
     where: { id: target.id },
     data: { passwordHash },
   });
+  // إشعار المستخدم بتغيير كلمة سرّه.
+  try {
+    await createNotification({
+      userId: target.id,
+      type: "password_reset",
+      message: "أُعيدت كلمة سرّك من قِبَل المدير. تواصل مع مديرك إن لم تطلب ذلك.",
+      linkUrl: "/account",
+    });
+  } catch { /* تجاهل أخطاء الإشعار */ }
   return NextResponse.json({ ok: true });
 }

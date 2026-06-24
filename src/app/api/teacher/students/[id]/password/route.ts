@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import { ownedStudent, passwordSchema } from "@/lib/teacherStudents";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,5 +47,14 @@ export async function POST(
     where: { id: params.id },
     data: { passwordHash },
   });
+  // إشعار الطالب بتغيير كلمة سرّه.
+  try {
+    await createNotification({
+      userId: params.id,
+      type: "password_reset",
+      message: "أُعيدت كلمة سرّك من قِبَل مدرّسك. تواصل معه إن لم تطلب ذلك.",
+      linkUrl: "/account",
+    });
+  } catch { /* تجاهل أخطاء الإشعار */ }
   return NextResponse.json({ ok: true });
 }
