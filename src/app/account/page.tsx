@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { roleLabel } from "@/lib/gender";
 import DashboardShell from "@/components/DashboardShell";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import RequestAccountDeletion from "@/components/teacher/RequestAccountDeletion";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,10 @@ export default async function AccountPage() {
           {roleLabel(session.role, session.gender)}
         </p>
       </div>
-      <ChangePasswordForm />
+      <div className="space-y-5">
+        <ChangePasswordForm />
+        {session.role === "TEACHER" && <RequestAccountDeletion />}
+      </div>
     </DashboardShell>
   );
 }
