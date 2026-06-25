@@ -145,7 +145,12 @@ export default function SubjectsForm({
                             aria-hidden
                           />
                         )}
-                        <span className="font-medium text-ink">{s.name}</span>
+                        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                          <span className="font-medium text-ink">{s.name}</span>
+                          <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs text-ink/50">
+                            {gl.name}
+                          </span>
+                        </span>
                       </label>
                     </li>
                   );
