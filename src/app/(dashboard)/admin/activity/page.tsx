@@ -54,6 +54,12 @@ export default async function ActivityPage() {
     (u) => now - u.lastSeenAt!.getTime() >= ONLINE_MS
   );
 
+  function editPath(u: (typeof users)[0]): string {
+    if (u.role === "STUDENT") return `/admin/students/${u.id}/edit`;
+    if (u.role === "PARENT")  return `/admin/parents/${u.id}`;
+    return `/admin/users/${u.id}/edit`;
+  }
+
   function UserRow({ u }: { u: (typeof users)[0] }) {
     const isOnline = now - u.lastSeenAt!.getTime() < ONLINE_MS;
     return (
@@ -75,9 +81,15 @@ export default async function ActivityPage() {
         >
           {roleLabel(u.role, u.gender)}
         </span>
-        <span className="shrink-0 text-sm text-ink/45" dir="rtl">
+        <span className="shrink-0 text-sm text-ink/45 w-20 text-left" dir="rtl">
           {timeAgo(u.lastSeenAt!)}
         </span>
+        <Link
+          href={editPath(u)}
+          className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1 text-xs font-medium text-primary transition hover:bg-primary/5"
+        >
+          عرض / تعديل
+        </Link>
       </div>
     );
   }
