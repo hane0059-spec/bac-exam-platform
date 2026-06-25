@@ -10,6 +10,7 @@ import CreatorNotesField from "@/components/CreatorNotesField";
 interface Subject {
   id: string;
   name: string;
+  gradeLevel: { name: string };
 }
 export interface UserInitial {
   role: "TEACHER" | "ADMIN";
@@ -316,7 +317,12 @@ export default function UserForm({
                       onChange={() => toggleSubject(s.id)}
                       className="accent-primary"
                     />
-                    {s.name}
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                      <span>{s.name}</span>
+                      <span className="rounded-full border border-line bg-surface px-1.5 py-0.5 text-xs text-ink/50">
+                        {s.gradeLevel.name}
+                      </span>
+                    </span>
                   </label>
                 ))}
               </div>

@@ -44,8 +44,8 @@ export default async function EditUserPage({
   if (user.role === "ADMIN" && !canManageAdmins) notFound();
 
   const subjects = await prisma.subject.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
+    select: { id: true, name: true, gradeLevel: { select: { name: true } } },
+    orderBy: [{ gradeLevel: { orderNum: "asc" } }, { name: "asc" }],
   });
 
   // طلاب المدرّس الذين أنشأهم (لتسلسل التعطيل/التفعيل دفعةً).

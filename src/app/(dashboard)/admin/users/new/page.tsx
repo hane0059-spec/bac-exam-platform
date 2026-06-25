@@ -17,8 +17,8 @@ export default async function NewUserPage() {
 
   // مدير المدرسة يرى مواد مؤسّسته فقط (عبر مدرّسيها)؛ المدير العام يرى الكل.
   const subjects = await prisma.subject.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
+    select: { id: true, name: true, gradeLevel: { select: { name: true } } },
+    orderBy: [{ gradeLevel: { orderNum: "asc" } }, { name: "asc" }],
   });
   // اختيار المؤسّسة متاح للمدير العام فقط.
   const schools = ctx.isSuper
