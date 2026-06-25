@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { touchLastSeen } from "@/lib/activity";
 import type { SessionData } from "@/lib/auth";
 
 const genderEnum = z.enum(["MALE", "FEMALE"]);
@@ -39,9 +40,10 @@ export async function getParentSession(): Promise<SessionData | null> {
   if (!session || session.role !== "PARENT") return null;
   const u = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { isActive: true },
+    select: { isActive: true, lastSeenAt: true },
   });
   if (!u?.isActive) return null;
+  touchLastSeen(session.sub, u.lastSeenAt);
   return session;
 }
 

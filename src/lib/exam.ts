@@ -3,6 +3,7 @@
 // تعقيم السؤال (دون كشف الإجابة الصحيحة)، المؤقّت، وإنهاء الجلسة وحساب الدرجة.
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { touchLastSeen } from "@/lib/activity";
 import type { SessionData } from "@/lib/auth";
 import {
   computeScore,
@@ -27,9 +28,10 @@ export async function getStudentSession(): Promise<SessionData | null> {
   if (!session || session.role !== "STUDENT") return null;
   const u = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { isActive: true },
+    select: { isActive: true, lastSeenAt: true },
   });
   if (!u?.isActive) return null;
+  touchLastSeen(session.sub, u.lastSeenAt);
   return session;
 }
 

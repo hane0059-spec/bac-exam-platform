@@ -2,6 +2,7 @@
 // حراسة المدير وهرميته.
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { touchLastSeen } from "@/lib/activity";
 import type { SessionData } from "@/lib/auth";
 
 /** جلسة مدير صالحة أو null. يتحقّق من isActive لمنع وصول المعطَّلين. */
@@ -38,9 +39,10 @@ export async function getAdminContext(): Promise<AdminContext | null> {
   if (!session || session.role !== "ADMIN") return null;
   const u = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { isSuperAdmin: true, schoolId: true, isActive: true },
+    select: { isSuperAdmin: true, schoolId: true, isActive: true, lastSeenAt: true },
   });
   if (!u || !u.isActive) return null;
+  touchLastSeen(session.sub, u.lastSeenAt);
   return {
     session,
     schoolId: u.schoolId,

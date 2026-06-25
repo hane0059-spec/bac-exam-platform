@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { countBlanks, parseNumber } from "@/lib/grading";
+import { touchLastSeen } from "@/lib/activity";
 import type { SessionData } from "@/lib/auth";
 
 /** جلسة مدرّس صالحة أو null. يتحقّق من isActive لحظيّاً لمنع وصول المعطَّلين. */
@@ -12,9 +13,10 @@ export async function getTeacherSession(): Promise<SessionData | null> {
   if (!session || session.role !== "TEACHER") return null;
   const u = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { isActive: true },
+    select: { isActive: true, lastSeenAt: true },
   });
   if (!u?.isActive) return null;
+  touchLastSeen(session.sub, u.lastSeenAt);
   return session;
 }
 

@@ -169,9 +169,10 @@ model User {
   customData   Json?    @map("custom_data") // قيم الحقول المخصّصة
   createdById  String?  @map("created_by_id") // المُنشئ للحساب
   // ملاحظات خاصّة يكتبها مُنشئ الحساب عنه، ويطّلع عليها هو فقط (تُحرَّر دائماً).
-  creatorNotes String?  @map("creator_notes")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  creatorNotes String?   @map("creator_notes")
+  lastSeenAt   DateTime? @map("last_seen_at") // آخر نشاط مُسجَّل (تُحدَّث تلقائياً على كل طلب مصادَق)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
   createdBy          User?    @relation("UserCreator", fields: [createdById], references: [id])

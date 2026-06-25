@@ -48,6 +48,19 @@ export default async function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ctx.isSuper && (
           <Link
+            href="/admin/activity"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">
+              النشاط الحالي
+            </h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              من هو متصل الآن أو نشط خلال آخر 30 دقيقة على المنصّة.
+            </p>
+          </Link>
+        )}
+        {ctx.isSuper && (
+          <Link
             href="/admin/overview"
             className="card p-5 transition hover:border-primary/40"
           >
