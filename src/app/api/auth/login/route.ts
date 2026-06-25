@@ -51,17 +51,27 @@ async function resolveUser(
   const user = byEmail ?? profile?.user ?? tProfile?.user;
   if (user) return { user };
 
-  // الاسم الكامل: احتياطي — يتطلّب مسافتين على الأقل.
+  // الاسم الكامل: احتياطي — يتطلّب جزأين على الأقل.
+  // نجرّب كل تقسيمة ممكنة لدعم الأسماء المركّبة (عبد التواب / عبد الله …).
   const parts = identifier.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
-    const firstName = parts[0];
-    const lastName = parts.slice(1).join(" ");
-    const matches = await prisma.user.findMany({
-      where: { firstName, lastName },
-      take: 2,
-    });
-    if (matches.length === 1) return { user: matches[0] };
-    if (matches.length > 1) return { ambiguous: true };
+    const allMatches: User[] = [];
+    const seen = new Set<string>();
+    // جرّب كل نقطة تقسيم: firstName = parts[0..i], lastName = parts[i+1..]
+    for (let i = 0; i < parts.length - 1; i++) {
+      const firstName = parts.slice(0, i + 1).join(" ");
+      const lastName = parts.slice(i + 1).join(" ");
+      const rows = await prisma.user.findMany({
+        where: { firstName, lastName },
+        take: 3,
+      });
+      for (const r of rows) {
+        if (!seen.has(r.id)) { seen.add(r.id); allMatches.push(r); }
+      }
+      if (allMatches.length > 1) return { ambiguous: true };
+    }
+    if (allMatches.length === 1) return { user: allMatches[0] };
+    if (allMatches.length > 1) return { ambiguous: true };
   }
   return {};
 }
