@@ -68,7 +68,7 @@ export default async function TeacherQuizzesPage({
     <DashboardShell session={session}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold">اختباراتي</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {canFileExams && (
             <Link
               href="/teacher/file-exams/new"

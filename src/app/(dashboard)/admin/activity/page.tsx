@@ -109,15 +109,15 @@ export default async function ActivityPage() {
       {/* إحصاء سريع */}
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <div className="card p-4 text-center">
-          <p className="text-3xl font-bold text-green-600">{online.length}</p>
+          <p className="text-2xl font-bold text-green-600 sm:text-3xl">{online.length}</p>
           <p className="mt-1 text-sm text-ink/60">متصل الآن (آخر 5 د)</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-3xl font-bold text-amber-500">{recent.length}</p>
+          <p className="text-2xl font-bold text-amber-500 sm:text-3xl">{recent.length}</p>
           <p className="mt-1 text-sm text-ink/60">نشط مؤخراً (5–30 د)</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-3xl font-bold text-ink">{users.length}</p>
+          <p className="text-2xl font-bold text-ink sm:text-3xl">{users.length}</p>
           <p className="mt-1 text-sm text-ink/60">إجمالي آخر 30 د</p>
         </div>
       </div>

@@ -124,7 +124,7 @@ export default async function TeacherQuestionsPage({
     <DashboardShell session={session}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold">بنك الأسئلة</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/teacher/curriculum"
             className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"

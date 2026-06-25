@@ -52,7 +52,7 @@ export default async function AdminUsersPage({
     <DashboardShell session={session}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold">المستخدمون</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/admin/students/new"
             className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
