@@ -57,6 +57,7 @@ export default async function EditQuizPage({
       points: true,
       difficulty: true,
       inBank: true,
+      tags: true,
       chapterId: true,
       chapter: { select: { title: true } },
     },
@@ -153,6 +154,7 @@ export default async function EditQuizPage({
           points: Number(q.points),
           difficulty: q.difficulty,
           inBank: q.inBank,
+          tags: q.tags,
           chapterId: q.chapterId,
           chapterTitle: q.chapter?.title ?? null,
         }))}

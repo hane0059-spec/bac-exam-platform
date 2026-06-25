@@ -23,6 +23,7 @@ interface BankQuestion {
   inBank: boolean;
   chapterId: string | null;
   chapterTitle: string | null;
+  tags: string[];
 }
 interface Item {
   questionId: string;
@@ -148,7 +149,7 @@ export default function QuizBuilder({
     if (bankChapter && bankChapter !== "__none__" && q.chapterId !== bankChapter)
       return false;
     const s = bankSearch.trim();
-    if (s && !q.content.includes(s)) return false;
+    if (s && !q.content.includes(s) && !q.tags.some((t) => t.includes(s))) return false;
     return true;
   });
 
@@ -201,6 +202,7 @@ export default function QuizBuilder({
         points: q.points,
         difficulty: "MEDIUM",
         inBank: false,
+        tags: [],
         chapterId: null,
         chapterTitle: null,
       },
@@ -658,7 +660,7 @@ export default function QuizBuilder({
                 className="field flex-1"
                 value={bankSearch}
                 onChange={(e) => setBankSearch(e.target.value)}
-                placeholder="ابحث في نصّ السؤال…"
+                placeholder="ابحث في نصّ السؤال أو الوسوم…"
               />
             </div>
           )}

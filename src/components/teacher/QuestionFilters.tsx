@@ -24,6 +24,7 @@ export default function QuestionFilters({
     unitId: string;
     chapterId: string;
     conceptId: string;
+    tag: string;
   };
 }) {
   const router = useRouter();
@@ -34,8 +35,16 @@ export default function QuestionFilters({
     router.push(`/teacher/questions${q.toString() ? `?${q}` : ""}`);
   }
 
+  function goTag(tag: string) {
+    const q = new URLSearchParams();
+    if (current.subjectId) q.set("subjectId", current.subjectId);
+    if (tag) q.set("tag", tag);
+    router.push(`/teacher/questions${q.toString() ? `?${q}` : ""}`);
+  }
+
   const sel = "field text-sm";
   return (
+    <div className="space-y-2">
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       <select
         className={sel}
@@ -106,6 +115,26 @@ export default function QuestionFilters({
           </option>
         ))}
       </select>
+    </div>
+    {/* بحث بالوسم */}
+    <div className="flex items-center gap-2">
+      <input
+        type="search"
+        className="field flex-1 text-sm"
+        value={current.tag}
+        placeholder="فلترة بالوسم — مثال: كهرباء"
+        onChange={(e) => goTag(e.target.value)}
+      />
+      {current.tag && (
+        <button
+          type="button"
+          onClick={() => goTag("")}
+          className="shrink-0 rounded-lg border border-line px-3 py-2 text-xs text-ink/60 hover:bg-ink/5"
+        >
+          ✕ إلغاء الوسم
+        </button>
+      )}
+    </div>
     </div>
   );
 }

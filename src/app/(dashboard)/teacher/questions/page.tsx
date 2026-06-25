@@ -39,6 +39,7 @@ export default async function TeacherQuestionsPage({
     unitId?: string;
     chapterId?: string;
     conceptId?: string;
+    tag?: string;
     page?: string;
   };
 }) {
@@ -46,7 +47,7 @@ export default async function TeacherQuestionsPage({
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
 
-  const { subjectId = "", unitId = "", chapterId = "", conceptId = "" } =
+  const { subjectId = "", unitId = "", chapterId = "", conceptId = "", tag = "" } =
     searchParams;
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
 
@@ -89,6 +90,7 @@ export default async function TeacherQuestionsPage({
       : unitId
       ? { chapter: { unitId } }
       : {}),
+    ...(tag ? { tags: { has: tag } } : {}),
   };
 
   const [total, questions] = await Promise.all([
@@ -113,6 +115,7 @@ export default async function TeacherQuestionsPage({
     if (unitId) q.set("unitId", unitId);
     if (chapterId) q.set("chapterId", chapterId);
     if (conceptId) q.set("conceptId", conceptId);
+    if (tag) q.set("tag", tag);
     q.set("page", String(p));
     return `/teacher/questions?${q}`;
   }
@@ -152,7 +155,7 @@ export default async function TeacherQuestionsPage({
           units={units.map((u) => ({ id: u.id, name: u.title }))}
           chapters={chapters.map((c) => ({ id: c.id, name: c.title }))}
           lessons={lessons.map((l) => ({ id: l.id, name: l.title }))}
-          current={{ subjectId, unitId, chapterId, conceptId }}
+          current={{ subjectId, unitId, chapterId, conceptId, tag }}
         />
       </div>
 
@@ -188,9 +191,26 @@ export default async function TeacherQuestionsPage({
                 <MathText text={q.content} />
               </p>
               {q.tags.length > 0 && (
-                <p className="mt-1 text-xs text-ink/40">
-                  {q.tags.map((t) => `#${t}`).join("  ")}
-                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {q.tags.map((t) => {
+                    const params = new URLSearchParams();
+                    if (subjectId) params.set("subjectId", subjectId);
+                    params.set("tag", t);
+                    return (
+                      <Link
+                        key={t}
+                        href={`/teacher/questions?${params}`}
+                        className={`rounded-full border px-2 py-0.5 text-xs transition hover:border-primary/40 hover:text-primary ${
+                          tag === t
+                            ? "border-primary/40 bg-primary/8 font-medium text-primary"
+                            : "border-line text-ink/45"
+                        }`}
+                      >
+                        #{t}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
               <div className="mt-3 flex gap-4">
                 <Link

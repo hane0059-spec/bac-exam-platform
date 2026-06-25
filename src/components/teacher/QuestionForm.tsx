@@ -1009,9 +1009,10 @@ export default function QuestionForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          وسوم (افصل بينها بفاصلة، اختياري)
-        </label>
+        <label className="mb-1 block text-sm font-medium">وسوم (اختياري)</label>
+        <p className="mb-1.5 text-xs text-ink/50">
+          كلمات مفتاحية تسرّع إيجاد هذا السؤال في بنك الأسئلة وعند بناء الاختبار — افصل بينها بفاصلة.
+        </p>
         <input
           type="text"
           className="field"
