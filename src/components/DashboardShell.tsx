@@ -6,6 +6,7 @@ import { unreadCount } from "@/lib/notifications";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
 import ThemeToggle from "./ThemeToggle";
+import BrandLogo from "./BrandLogo";
 
 export default async function DashboardShell({
   session,
@@ -27,9 +28,7 @@ export default async function DashboardShell({
             className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-ink/5"
             title="الصفحة الرئيسية"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-bold text-white">
-              ع
-            </div>
+            <BrandLogo size={40} />
             <div>
               <p className="text-sm text-ink/60">{label}</p>
               <p className="font-display text-lg font-bold leading-tight">

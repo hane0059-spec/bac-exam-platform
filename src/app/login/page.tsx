@@ -4,6 +4,7 @@
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import PasswordInput from "@/components/PasswordInput";
+import BrandLogo from "@/components/BrandLogo";
 
 type RoleKey = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT";
 
@@ -99,22 +100,26 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center px-4 py-10">
+    <main className="relative flex min-h-screen flex-col items-center px-4 py-10">
       <div className="absolute left-4 top-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-white shadow-card">
-            ع
+
+      {/* المحتوى المركزي */}
+      <div className="flex flex-1 items-center justify-center w-full">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex justify-center">
+              <BrandLogo size={56} />
+            </div>
+            <h1 className="font-display text-3xl font-bold text-ink">إتقان</h1>
+            <p className="mt-1 text-sm font-medium text-ink/50 tracking-wide">
+              منصة التقييم والتمكّن
+            </p>
+            <p className="mt-3 text-sm text-ink/60">
+              {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
+            </p>
           </div>
-          <h1 className="font-display text-2xl font-bold text-ink">
-            منصة الاختبارات الإلكترونية
-          </h1>
-          <p className="mt-2 text-sm text-ink/60">
-            {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
-          </p>
-        </div>
 
         {!role ? (
           // اختيار النافذة حسب الدور.
@@ -227,7 +232,19 @@ export default function LoginPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
+
+      {/* الحكمة في أسفل الصفحة */}
+      <footer className="mt-8 w-full max-w-md text-center">
+        <div className="mx-auto mb-3 h-px w-24 bg-primary/30" />
+        <p
+          className="text-xl leading-loose text-ink/75"
+          style={{ fontFamily: "var(--font-amiri)" }}
+        >
+          التعب مؤقت والنجاح دائم
+        </p>
+      </footer>
     </main>
   );
 }

@@ -41,8 +41,8 @@ const tinos = Tinos({
 const FONT_VARS = `${cairo.variable} ${tajawal.variable} ${reem.variable} ${amiri.variable} ${tinos.variable}`;
 
 export const metadata: Metadata = {
-  title: "منصة الاختبارات الإلكترونية",
-  description: "منصة اختبارات عربية للطلاب من الابتدائي إلى البكالوريا",
+  title: "إتقان",
+  description: "منصة التقييم والتمكّن",
 };
 
 export default async function RootLayout({
