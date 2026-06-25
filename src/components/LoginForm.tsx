@@ -317,14 +317,6 @@ export default function LoginForm({
                   )}
                 </div>
 
-                {role.key === "ADMIN" && (
-                  <div className="rounded-xl border border-line bg-surface/60 p-3 text-sm text-ink/70">
-                    <p className="mb-1 font-medium text-ink">حساب المدير العام:</p>
-                    <p dir="ltr" className="text-right">
-                      admin@example.com — Admin@123
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           )}
