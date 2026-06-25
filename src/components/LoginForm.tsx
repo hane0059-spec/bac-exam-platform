@@ -268,6 +268,9 @@ export default function LoginForm({
                     onChange={(e) => setIdentifier(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                   />
+                  <p className="mt-1.5 text-xs text-ink/45 leading-relaxed">
+                    إن دخلت بالاسم: اكتبه كاملاً كما سجّله المشرف (بما فيه الاسم المركّب كـ «عبد التواب»).
+                  </p>
                 </div>
 
                 <div>
