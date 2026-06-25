@@ -74,6 +74,15 @@ export default async function TeacherDashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
+          href="/teacher/subjects"
+          className="card p-5 transition hover:border-primary/40"
+        >
+          <h3 className="mb-2 font-display text-lg font-semibold">موادّي</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            اختر المواد التي تدرّسها وعدّلها في أي وقت.
+          </p>
+        </Link>
+        <Link
           href="/teacher/questions"
           className="card p-5 transition hover:border-primary/40"
         >
