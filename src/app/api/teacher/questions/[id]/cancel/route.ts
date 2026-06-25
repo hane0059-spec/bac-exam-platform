@@ -57,7 +57,7 @@ export async function POST(
         select: { id: true, studentId: true },
       })
     : [];
-  for (const s of sessions) await recomputeSessionScore(s.id);
+  await Promise.all(sessions.map((s) => recomputeSessionScore(s.id)));
 
   // عند الإلغاء: عالِج البلاغات المفتوحة على السؤال، وأشعِر الطلاب المتأثّرين.
   if (parsed.data.isCancelled) {

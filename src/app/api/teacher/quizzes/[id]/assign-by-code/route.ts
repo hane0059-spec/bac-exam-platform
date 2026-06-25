@@ -72,8 +72,8 @@ export async function POST(
       notFound.push(code);
       continue;
     }
-    // العزل: الطالب ضمن مؤسّسة المدرّس نفسها.
-    if (profile.user.schoolId !== teacher?.schoolId) {
+    // العزل: كلا الطرفين لهما مؤسّسة وهي نفسها (يمنع تسرّب null===null).
+    if (!teacher?.schoolId || profile.user.schoolId !== teacher.schoolId) {
       otherSchool.push(code);
       continue;
     }

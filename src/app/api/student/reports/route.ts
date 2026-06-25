@@ -35,13 +35,13 @@ export async function POST(req: Request) {
   }
   const d = parsed.data;
 
-  // الملكية: الجلسة لهذا الطالب، والعقدة تخصّ اختبار الجلسة وتحمل سؤالاً.
+  // الملكية: الجلسة لهذا الطالب وجارية الآن (البلاغ أثناء الأداء فقط).
   const exam = await prisma.examSession.findUnique({
     where: { id: d.sessionId },
-    select: { studentId: true, quizId: true },
+    select: { studentId: true, quizId: true, status: true },
   });
-  if (!exam || exam.studentId !== session.sub)
-    return NextResponse.json({ error: "جلسة غير صالحة" }, { status: 403 });
+  if (!exam || exam.studentId !== session.sub || exam.status !== "IN_PROGRESS")
+    return NextResponse.json({ error: "جلسة غير صالحة أو منتهية" }, { status: 403 });
 
   const node = await prisma.quizNode.findUnique({
     where: { id: d.nodeId },

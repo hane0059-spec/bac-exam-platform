@@ -31,28 +31,27 @@ const WINDOW_LABEL: Record<string, string> = {
   PARENT: "أولياء الأمور",
 };
 
-// يحلّ المُعرّف إلى مستخدم: بريد، ثم رمز طالب، ثم اسم كامل (إن لم يلتبس).
+// يحلّ المُعرّف إلى مستخدم: بريد / رمز طالب / رمز مدرّس (بالتوازي)، ثم اسم كامل.
 async function resolveUser(
   identifier: string
 ): Promise<{ user?: User; ambiguous?: boolean }> {
-  const byEmail = await prisma.user.findFirst({
-    where: { email: identifier.toLowerCase() },
-  });
-  if (byEmail) return { user: byEmail };
+  // البحث الثلاثة متوازية لتقليل زمن الاستجابة.
+  const [byEmail, profile, tProfile] = await Promise.all([
+    prisma.user.findFirst({ where: { email: identifier.toLowerCase() } }),
+    prisma.studentProfile.findUnique({
+      where: { studentCode: identifier },
+      include: { user: true },
+    }),
+    prisma.teacherProfile.findUnique({
+      where: { employeeCode: identifier },
+      include: { user: true },
+    }),
+  ]);
 
-  const profile = await prisma.studentProfile.findUnique({
-    where: { studentCode: identifier },
-    include: { user: true },
-  });
-  if (profile) return { user: profile.user };
+  const user = byEmail ?? profile?.user ?? tProfile?.user;
+  if (user) return { user };
 
-  // رمز المدرّس.
-  const tProfile = await prisma.teacherProfile.findUnique({
-    where: { employeeCode: identifier },
-    include: { user: true },
-  });
-  if (tProfile) return { user: tProfile.user };
-
+  // الاسم الكامل: احتياطي — يتطلّب مسافتين على الأقل.
   const parts = identifier.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
     const firstName = parts[0];

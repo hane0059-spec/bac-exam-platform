@@ -75,6 +75,20 @@ export async function POST(
     select: { id: true },
   });
   const ids = sessions.map((s) => s.id);
+
+  // منع التصفير إن كان هناك اعتراض مفتوح — الطالب بانتظار ردّ المدرّس.
+  if (ids.length > 0) {
+    const openAppeals = await prisma.gradeAppeal.count({
+      where: { sessionId: { in: ids }, status: "OPEN" },
+    });
+    if (openAppeals > 0) {
+      return NextResponse.json(
+        { error: "لا يمكن التصفير: يوجد اعتراض مفتوح على إحدى الجلسات" },
+        { status: 409 }
+      );
+    }
+  }
+
   await prisma.$transaction([
     prisma.studentAnswer.deleteMany({ where: { sessionId: { in: ids } } }),
     prisma.examSession.deleteMany({ where: { quizId: quiz.id, studentId } }),
