@@ -17,9 +17,14 @@ export default function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={loading}
-      className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:bg-parchment disabled:opacity-60"
+      className="rounded-lg border border-line bg-surface px-2 py-2 text-sm font-medium text-ink transition hover:bg-parchment disabled:opacity-60 sm:px-4"
     >
-      {loading ? "…" : "تسجيل الخروج"}
+      {loading ? "…" : (
+        <>
+          <span className="sm:hidden">خروج</span>
+          <span className="hidden sm:inline">تسجيل الخروج</span>
+        </>
+      )}
     </button>
   );
 }

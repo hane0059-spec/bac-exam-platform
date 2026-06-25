@@ -81,7 +81,7 @@ export default async function DashboardShell({
             >
               حسابي
             </Link>
-            {/* أيقونات دائمة الظهور */}
+            {/* الإشعارات — دائمة */}
             <Link
               href="/notifications"
               title="الإشعارات"
@@ -94,22 +94,23 @@ export default async function DashboardShell({
                 </span>
               )}
             </Link>
-            <TextSizeControl />
+            {/* TextSizeControl — مخفي على الموبايل (متاح في شريط التنقّل) */}
+            <div className="hidden sm:block"><TextSizeControl /></div>
             <ThemeToggle />
             <LogoutButton />
           </div>
         </div>
         {/* شريط تنقّل موبايل — يظهر فقط على الشاشات الصغيرة */}
-        <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-1.5 sm:hidden">
+        <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 py-1 sm:hidden">
           <Link
             href={dashboardPath(session.role)}
-            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
+            className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
           >
             الرئيسية
           </Link>
           <Link
             href="/account"
-            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
+            className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
           >
             حسابي
           </Link>
@@ -117,10 +118,12 @@ export default async function DashboardShell({
             href={`/guide/${session.role.toLowerCase()}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
+            className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
           >
             الدليل
           </a>
+          {/* TextSizeControl في شريط الموبايل بدلاً من الهيدر */}
+          <div className="mr-auto shrink-0 scale-90"><TextSizeControl /></div>
         </nav>
       </header>
 
