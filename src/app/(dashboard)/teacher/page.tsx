@@ -72,10 +72,10 @@ export default async function TeacherDashboard() {
         placeholder="ابحث في طلابك بالاسم أو الرمز أو البريد أو الهاتف"
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/teacher/subjects"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">موادّي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
@@ -84,7 +84,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/questions"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">بنك الأسئلة</h3>
           <p className="text-sm leading-relaxed text-ink/60">
@@ -93,7 +93,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/keyboard"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">
             لوحة المعادلات
@@ -104,7 +104,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/quizzes"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">
             تكوين الاختبارات
@@ -116,7 +116,7 @@ export default async function TeacherDashboard() {
         {canFileExams && (
           <Link
             href="/teacher/file-exams"
-            className="card p-5 transition hover:border-primary/40"
+            className="card p-4 transition hover:border-primary/40 sm:p-5"
           >
             <h3 className="mb-2 font-display text-lg font-semibold">
               الاختبارات الورقية
@@ -128,7 +128,7 @@ export default async function TeacherDashboard() {
         )}
         <Link
           href="/teacher/students"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">طلابي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
@@ -137,7 +137,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/results"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">
@@ -155,7 +155,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/reports"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">بلاغات الأسئلة</h3>
@@ -171,7 +171,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/appeals"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">

@@ -109,7 +109,7 @@ export default async function StudentQuizzesPage({
             return (
               <div
                 key={q.quizId}
-                className={`card flex flex-col p-5 ${
+                className={`card flex flex-col p-4 sm:p-5 ${
                   soon ? "border-red-300 ring-1 ring-red-200" : ""
                 }`}
               >

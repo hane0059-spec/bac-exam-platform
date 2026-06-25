@@ -43,24 +43,25 @@ export default async function DashboardShell({
         </div>
       )}
       <header className="border-b border-line bg-surface print:hidden">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-3 sm:px-4 sm:py-4">
           <Link
             href={dashboardPath(session.role)}
-            className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-ink/5"
+            className="flex items-center gap-2 rounded-xl p-1 transition hover:bg-ink/5 sm:gap-3"
             title="الصفحة الرئيسية"
           >
-            <BrandLogo size={40} hasLogo={branding.hasLogo} />
+            <BrandLogo size={36} hasLogo={branding.hasLogo} />
             <div>
-              <p className="text-sm text-ink/60">{label}</p>
-              <p className="font-display text-lg font-bold leading-tight">
+              <p className="text-xs text-ink/60 sm:text-sm">{label}</p>
+              <p className="font-display text-base font-bold leading-tight sm:text-lg">
                 {fullName}
               </p>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* روابط ثانوية — مخفية على الموبايل */}
             <Link
               href={dashboardPath(session.role)}
-              className="rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+              className="hidden rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5 sm:inline-flex"
             >
               الرئيسية
             </Link>
@@ -68,22 +69,23 @@ export default async function DashboardShell({
               href={`/guide/${session.role.toLowerCase()}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+              className="hidden rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5 sm:inline-flex"
               title="كيف تستخدم صفحتك؟"
             >
               كيف أستخدم صفحتي؟
             </a>
             <Link
               href="/account"
-              className="rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+              className="hidden rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5 sm:inline-flex"
               title="حسابي وكلمة السر"
             >
               حسابي
             </Link>
+            {/* أيقونات دائمة الظهور */}
             <Link
               href="/notifications"
               title="الإشعارات"
-              className="relative rounded-xl border border-line px-3 py-2 text-sm font-medium transition hover:bg-ink/5"
+              className="relative rounded-xl border border-line px-2.5 py-2 text-sm font-medium transition hover:bg-ink/5 sm:px-3"
             >
               <span aria-hidden>🔔</span>
               {unread > 0 && (
@@ -97,10 +99,33 @@ export default async function DashboardShell({
             <LogoutButton />
           </div>
         </div>
+        {/* شريط تنقّل موبايل — يظهر فقط على الشاشات الصغيرة */}
+        <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-1.5 sm:hidden">
+          <Link
+            href={dashboardPath(session.role)}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
+          >
+            الرئيسية
+          </Link>
+          <Link
+            href="/account"
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
+          >
+            حسابي
+          </Link>
+          <a
+            href={`/guide/${session.role.toLowerCase()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
+          >
+            الدليل
+          </a>
+        </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <div className="mb-8 print:hidden">
+      <main className="mx-auto max-w-5xl px-3 py-5 sm:px-4 sm:py-8">
+        <div className="mb-5 print:hidden sm:mb-8">
           <h1 className="font-display text-2xl font-bold">
             {welcome(session.gender)}، {session.firstName}
           </h1>

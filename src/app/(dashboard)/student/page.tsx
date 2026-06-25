@@ -45,10 +45,10 @@ export default async function StudentDashboard() {
           },
         ]}
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/student/quizzes"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">اختباراتي</h3>
@@ -64,7 +64,7 @@ export default async function StudentDashboard() {
         </Link>
         <Link
           href="/student/progress"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">تقدّمي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
@@ -73,7 +73,7 @@ export default async function StudentDashboard() {
         </Link>
         <Link
           href="/student/subjects"
-          className="card p-5 transition hover:border-primary/40"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
           <h3 className="mb-2 font-display text-lg font-semibold">مواد دراستي</h3>
           <p className="text-sm leading-relaxed text-ink/60">

@@ -385,9 +385,9 @@ export default function QuizRunner({
           />
         </div>
 
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           {!isFill && (
-            <p className="mb-5 text-lg font-medium leading-relaxed">
+            <p className="mb-4 text-base font-medium leading-relaxed sm:mb-5 sm:text-lg">
               <MathText text={question.content} />
             </p>
           )}
@@ -448,7 +448,7 @@ export default function QuizRunner({
                         })
                       }
                       placeholder={`${i + 1}`}
-                      className="mx-1 inline-block w-32 rounded-lg border border-line bg-surface px-2 py-1 text-center text-base align-middle focus:border-primary focus:outline-none"
+                      className="mx-1 inline-block w-20 rounded-lg border border-line bg-surface px-2 py-1 text-center text-sm align-middle focus:border-primary focus:outline-none sm:w-32 sm:text-base"
                       aria-label={`الفراغ ${i + 1}`}
                     />
                   )}
@@ -520,7 +520,7 @@ export default function QuizRunner({
                         return next;
                       })
                     }
-                    className="field w-48"
+                    className="field w-full sm:w-48"
                   >
                     <option value="">— اختر —</option>
                     {question.matchRights?.map((r, k) => (
@@ -599,18 +599,18 @@ export default function QuizRunner({
                 {skipNote}
               </p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={submit}
                 disabled={!canSubmit}
-                className="btn-primary"
+                className="btn-primary w-full sm:w-auto"
               >
                 إرسال الإجابة
               </button>
               <button
                 onClick={skip}
                 type="button"
-                className="rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5"
+                className="w-full rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5 sm:w-auto"
               >
                 تخطٍّ مؤقّت
               </button>
