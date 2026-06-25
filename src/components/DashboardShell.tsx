@@ -3,6 +3,7 @@ import Link from "next/link";
 import { roleLabel, welcome } from "@/lib/gender";
 import { dashboardPath, type SessionData } from "@/lib/auth";
 import { unreadCount } from "@/lib/notifications";
+import { getBranding } from "@/lib/branding";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
 import ThemeToggle from "./ThemeToggle";
@@ -17,10 +18,30 @@ export default async function DashboardShell({
 }) {
   const fullName = `${session.firstName} ${session.lastName}`;
   const label = roleLabel(session.role, session.gender);
-  const unread = await unreadCount(session.sub).catch(() => 0);
+  const [unread, branding] = await Promise.all([
+    unreadCount(session.sub).catch(() => 0),
+    getBranding(),
+  ]);
+  // إعلان عامّ يُعرض أعلى كل لوحة: الصيانة أبرز، وإلا الملاحظة.
+  const banner = branding.maintenance
+    ? { text: `🛠️ ${branding.maintenanceMessage}`, warn: true }
+    : branding.notice
+      ? { text: branding.notice, warn: branding.noticeType === "warning" }
+      : null;
 
   return (
     <div className="min-h-screen">
+      {banner && (
+        <div
+          className={`px-4 py-2 text-center text-sm font-medium leading-relaxed print:hidden ${
+            banner.warn
+              ? "bg-amber-100 text-amber-900"
+              : "bg-primary-light text-primary-dark"
+          }`}
+        >
+          {banner.text}
+        </div>
+      )}
       <header className="border-b border-line bg-surface print:hidden">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <Link
@@ -28,7 +49,7 @@ export default async function DashboardShell({
             className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-ink/5"
             title="الصفحة الرئيسية"
           >
-            <BrandLogo size={40} />
+            <BrandLogo size={40} hasLogo={branding.hasLogo} />
             <div>
               <p className="text-sm text-ink/60">{label}</p>
               <p className="font-display text-lg font-bold leading-tight">

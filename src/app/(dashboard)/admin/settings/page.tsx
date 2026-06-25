@@ -4,8 +4,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import { getAppFont, getPlatformMode } from "@/lib/settings";
+import { getBranding } from "@/lib/branding";
 import DashboardShell from "@/components/DashboardShell";
 import SettingsForm from "@/components/admin/SettingsForm";
+import BrandingForm from "@/components/admin/BrandingForm";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +16,10 @@ export default async function AdminSettingsPage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // إعدادات المنصّة للمدير العام حصراً
 
-  const [font, platformMode] = await Promise.all([
+  const [font, platformMode, branding] = await Promise.all([
     getAppFont(),
     getPlatformMode(),
+    getBranding(),
   ]);
 
   return (
@@ -27,7 +30,10 @@ export default async function AdminSettingsPage() {
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">الإعدادات</h2>
       </div>
-      <SettingsForm currentFont={font} currentMode={platformMode} />
+      <div className="space-y-6">
+        <BrandingForm current={branding} />
+        <SettingsForm currentFont={font} currentMode={platformMode} />
+      </div>
     </DashboardShell>
   );
 }

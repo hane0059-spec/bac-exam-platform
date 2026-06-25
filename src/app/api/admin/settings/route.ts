@@ -9,9 +9,33 @@ import {
   FONT_OPTIONS,
   PLATFORM_MODE_OPTIONS,
 } from "@/lib/settings";
+import { setBranding, type Branding } from "@/lib/branding";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// كائن هوية المنصّة — كل الحقول النصّية مقصوصة بحدود معقولة.
+const brandingSchema = z.object({
+  name: z.string().trim().min(1, "الاسم مطلوب").max(60),
+  tagline: z.string().trim().max(120),
+  showTagline: z.boolean(),
+  hasLogo: z.boolean(),
+  quote: z.string().trim().max(200),
+  showQuote: z.boolean(),
+  quoteSize: z.enum(["sm", "md", "lg", "xl"]),
+  notice: z.string().trim().max(300),
+  noticeType: z.enum(["info", "warning"]),
+  maintenance: z.boolean(),
+  maintenanceMessage: z.string().trim().max(300),
+  contactEmail: z.string().trim().max(120),
+  contactPhone: z.string().trim().max(60),
+  about: z.string().trim().max(1000),
+  showStudentLogin: z.boolean(),
+  showTeacherLogin: z.boolean(),
+  showAdminLogin: z.boolean(),
+  showParentLogin: z.boolean(),
+  windowsLayout: z.enum(["grid", "list"]),
+});
 
 const schema = z.object({
   font: z
@@ -20,6 +44,7 @@ const schema = z.object({
   platformMode: z
     .enum(PLATFORM_MODE_OPTIONS.map((m) => m.key) as [string, ...string[]])
     .optional(),
+  branding: brandingSchema.optional(),
 });
 
 export async function POST(req: Request) {
@@ -47,6 +72,9 @@ export async function POST(req: Request) {
     await setPlatformMode(
       parsed.data.platformMode as Parameters<typeof setPlatformMode>[0]
     );
+  }
+  if (parsed.data.branding) {
+    await setBranding(parsed.data.branding as Branding);
   }
   return NextResponse.json({ ok: true });
 }

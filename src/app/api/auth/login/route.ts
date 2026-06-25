@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { getBranding } from "@/lib/branding";
 import {
   createSessionToken,
   sessionCookieOptions,
@@ -112,6 +113,21 @@ export async function POST(req: Request) {
 
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return invalid;
+
+  // وضع الصيانة: يُمنع الدخول للجميع عدا المدير العام (ليعيد التشغيل).
+  // يُفحَص بعد كلمة السر فقط كي لا يكشف وجود الحساب لغير المُصادَق.
+  if (!user.isSuperAdmin) {
+    const branding = await getBranding();
+    if (branding.maintenance) {
+      return NextResponse.json(
+        {
+          error:
+            branding.maintenanceMessage || "المنصّة متوقّفة مؤقّتاً للصيانة.",
+        },
+        { status: 503 }
+      );
+    }
+  }
 
   // تحقّق النافذة (بعد كلمة السر فقط — لا يكشف وجود الحساب لغير المُصادَق).
   if (parsed.data.role && user.role !== parsed.data.role) {

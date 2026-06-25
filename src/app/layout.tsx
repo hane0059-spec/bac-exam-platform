@@ -4,6 +4,7 @@ import { Cairo, Tajawal, Reem_Kufi, Amiri, Tinos } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css"; // عرض المعادلات (KaTeX)
 import { getAppFont, FONT_CSS } from "@/lib/settings";
+import { getBranding } from "@/lib/branding";
 
 // خطوط يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
 // Amiri/Tinos بدائل ويب للخطوط النظامية (التقليدي/تايمز) لتظهر على كل الأجهزة.
@@ -40,10 +41,13 @@ const tinos = Tinos({
 
 const FONT_VARS = `${cairo.variable} ${tajawal.variable} ${reem.variable} ${amiri.variable} ${tinos.variable}`;
 
-export const metadata: Metadata = {
-  title: "إتقان",
-  description: "منصة التقييم والتمكّن",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getBranding();
+  return {
+    title: branding.name,
+    description: branding.tagline || "منصة التقييم والتمكّن",
+  };
+}
 
 export default async function RootLayout({
   children,
