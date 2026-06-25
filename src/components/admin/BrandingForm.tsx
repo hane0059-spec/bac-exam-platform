@@ -6,16 +6,14 @@ import { useRouter } from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import {
   QUOTE_SIZE_CLASS,
+  QUOTE_SIZE_LABELS,
   type Branding,
   type QuoteSize,
 } from "@/lib/brandingShared";
 
-const QUOTE_SIZES: { key: QuoteSize; label: string }[] = [
-  { key: "sm", label: "صغير" },
-  { key: "md", label: "متوسّط" },
-  { key: "lg", label: "كبير" },
-  { key: "xl", label: "كبير جداً" },
-];
+const QUOTE_SIZES = (
+  Object.keys(QUOTE_SIZE_LABELS) as QuoteSize[]
+).map((key) => ({ key, label: QUOTE_SIZE_LABELS[key] }));
 
 // مفتاح تبديل بسيط.
 function Toggle({

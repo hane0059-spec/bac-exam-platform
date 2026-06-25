@@ -17,6 +17,7 @@ interface RoleWindow {
   hint: string;
   placeholder: string;
   icon: string;
+  accent: string; // لون دائرة الأيقونة (متناسق مع العلامة، آمن للوضع الليلي)
   forgot: string; // إرشاد عند نسيان كلمة السر (لا إرسال — إعادة تعيين بإشراف)
 }
 
@@ -28,6 +29,7 @@ const WINDOWS: RoleWindow[] = [
     hint: "رمز الطالب أو الاسم الكامل أو البريد",
     placeholder: "S-1002 أو الاسم الكامل",
     icon: "🎓",
+    accent: "bg-primary/10 text-primary ring-primary/20",
     forgot:
       "راجع مدرّسك أو إدارة مؤسّستك لإعادة تعيين كلمة سرّك — يمكنهم ذلك فوراً.",
   },
@@ -38,6 +40,7 @@ const WINDOWS: RoleWindow[] = [
     hint: "البريد أو رمز المدرّس أو الاسم",
     placeholder: "name@example.com أو T-1002",
     icon: "🧑‍🏫",
+    accent: "bg-gold/15 text-gold ring-gold/25",
     forgot: "راجع إدارة مؤسّستك (المدير) لإعادة تعيين كلمة سرّك.",
   },
   {
@@ -47,6 +50,7 @@ const WINDOWS: RoleWindow[] = [
     hint: "البريد الإلكتروني",
     placeholder: "admin@example.com",
     icon: "🛡️",
+    accent: "bg-ink/10 text-ink ring-ink/20",
     forgot:
       "مدير المؤسّسة: راجع المدير العام للمنصّة. المدير العام: راجع مسؤول النظام.",
   },
@@ -57,6 +61,7 @@ const WINDOWS: RoleWindow[] = [
     hint: "البريد أو الاسم الكامل",
     placeholder: "name@example.com أو الاسم الكامل",
     icon: "👪",
+    accent: "bg-primary/10 text-primary-dark ring-primary/20",
     forgot: "راجع إدارة مؤسّسة ابنك لإعادة تعيين كلمة سرّك.",
   },
 ];
@@ -78,6 +83,7 @@ export default function LoginForm({ branding }: { branding: Branding }) {
     PARENT: branding.showParentLogin,
   };
   const windows = WINDOWS.filter((w) => visible[w.key]);
+  const isList = branding.windowsLayout === "list";
 
   const hasContact = branding.contactEmail || branding.contactPhone;
   const hasFooterInfo = hasContact || branding.about;
@@ -115,7 +121,17 @@ export default function LoginForm({ branding }: { branding: Branding }) {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center px-4 py-10">
+    <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 py-10">
+      {/* توهّج خلفيّ ناعم أعلى الصفحة لإضفاء حيويّة */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 bg-gradient-to-b from-primary/5 to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl"
+      />
+
       <div className="absolute left-4 top-4">
         <ThemeToggle />
       </div>
@@ -142,19 +158,28 @@ export default function LoginForm({ branding }: { branding: Branding }) {
       {/* المحتوى المركزي */}
       <div className="flex w-full flex-1 items-center justify-center">
         <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex justify-center">
-              <BrandLogo size={56} hasLogo={branding.hasLogo} />
+          <div className="mb-9 text-center">
+            <div className="relative mx-auto mb-5 flex justify-center">
+              <span
+                aria-hidden
+                className="absolute top-1/2 left-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 blur-2xl"
+              />
+              <div className="relative shadow-card rounded-[22px]">
+                <BrandLogo size={76} hasLogo={branding.hasLogo} />
+              </div>
             </div>
-            <h1 className="font-display text-3xl font-bold text-ink">
+            <h1
+              className="text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl"
+              style={{ fontFamily: "var(--font-reem)" }}
+            >
               {branding.name}
             </h1>
             {branding.showTagline && branding.tagline && (
-              <p className="mt-1 text-sm font-medium tracking-wide text-ink/50">
+              <p className="mt-2.5 text-base font-semibold tracking-wide text-gold">
                 {branding.tagline}
               </p>
             )}
-            <p className="mt-3 text-sm text-ink/60">
+            <p className="mt-3 text-sm text-ink/55">
               {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
             </p>
           </div>
@@ -163,41 +188,52 @@ export default function LoginForm({ branding }: { branding: Branding }) {
             // اختيار النافذة حسب الدور.
             <div
               className={
-                branding.windowsLayout === "list"
-                  ? "grid grid-cols-1 gap-3"
-                  : "grid grid-cols-2 gap-3"
+                isList ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 gap-3"
               }
             >
               {windows.map((w) => (
                 <button
                   key={w.key}
                   onClick={() => pick(w)}
-                  className={`card flex items-center gap-2 p-5 transition hover:border-primary/40 ${
-                    branding.windowsLayout === "list"
-                      ? "flex-row justify-start text-right"
-                      : "flex-col text-center"
+                  className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
+                    isList
+                      ? "flex flex-row items-center gap-4 text-right"
+                      : "flex flex-col items-center gap-3 text-center"
                   }`}
                 >
-                  <span className="text-3xl" aria-hidden>
+                  <span
+                    className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl ring-1 transition group-hover:scale-105 ${w.accent}`}
+                    aria-hidden
+                  >
                     {w.icon}
                   </span>
                   <span
                     className={
-                      branding.windowsLayout === "list" ? "flex flex-col" : "contents"
+                      isList ? "flex min-w-0 flex-col" : "flex flex-col items-center"
                     }
                   >
-                    <span className="font-display font-semibold">{w.title}</span>
+                    <span className="font-display font-bold">{w.title}</span>
                     <span className="text-xs text-ink/50">{w.subtitle}</span>
                   </span>
+                  {isList && (
+                    <span className="mr-auto text-primary opacity-0 transition group-hover:opacity-100">
+                      ←
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
           ) : (
             // نموذج الدخول للنافذة المختارة.
             <div className="card p-7">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="flex items-center gap-2 font-display font-semibold">
-                  <span aria-hidden>{role.icon}</span>
+              <div className="mb-5 flex items-center justify-between">
+                <span className="flex items-center gap-3 font-display font-bold">
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ring-1 ${role.accent}`}
+                    aria-hidden
+                  >
+                    {role.icon}
+                  </span>
                   {role.title}
                 </span>
                 <button
@@ -290,26 +326,40 @@ export default function LoginForm({ branding }: { branding: Branding }) {
       </div>
 
       {/* التذييل: الحكمة + التواصل + عن المنصّة */}
-      <footer className="mt-8 w-full max-w-md text-center">
+      <footer className="mt-10 w-full max-w-md text-center">
         {branding.showQuote && branding.quote && (
           <>
-            <div className="mx-auto mb-3 h-px w-24 bg-primary/30" />
+            {/* فاصل زخرفيّ */}
+            <div className="mb-4 flex items-center justify-center gap-3 text-gold/70">
+              <span className="h-px w-12 bg-gradient-to-l from-gold/40 to-transparent" />
+              <span className="text-base" aria-hidden>
+                ✦
+              </span>
+              <span className="h-px w-12 bg-gradient-to-r from-gold/40 to-transparent" />
+            </div>
             <p
-              className={`leading-loose text-ink/75 ${QUOTE_SIZE_CLASS[branding.quoteSize]}`}
+              className={`leading-loose text-ink/80 ${QUOTE_SIZE_CLASS[branding.quoteSize]}`}
               style={{ fontFamily: "var(--font-amiri)" }}
             >
-              {branding.quote}
+              <span className="text-gold/50" aria-hidden>
+                ❝
+              </span>{" "}
+              {branding.quote}{" "}
+              <span className="text-gold/50" aria-hidden>
+                ❞
+              </span>
             </p>
           </>
         )}
 
         {hasFooterInfo && (
-          <div className="mt-5">
+          <div className="mt-6">
             <button
               type="button"
               onClick={() => setShowAbout((v) => !v)}
-              className="text-xs text-primary hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/60 px-4 py-1.5 text-xs font-medium text-ink/70 transition hover:bg-ink/5"
             >
+              <span aria-hidden>ℹ️</span>
               {showAbout ? "إخفاء معلومات المنصّة" : "عن المنصّة والتواصل"}
             </button>
             {showAbout && (
@@ -321,7 +371,7 @@ export default function LoginForm({ branding }: { branding: Branding }) {
                   <div className="space-y-1 border-t border-line pt-2">
                     {branding.contactEmail && (
                       <p>
-                        <span className="font-medium text-ink">البريد: </span>
+                        <span className="font-medium text-ink">📧 البريد: </span>
                         <a
                           href={`mailto:${branding.contactEmail}`}
                           dir="ltr"
@@ -333,7 +383,7 @@ export default function LoginForm({ branding }: { branding: Branding }) {
                     )}
                     {branding.contactPhone && (
                       <p>
-                        <span className="font-medium text-ink">الهاتف: </span>
+                        <span className="font-medium text-ink">📞 الهاتف: </span>
                         <a
                           href={`tel:${branding.contactPhone}`}
                           dir="ltr"

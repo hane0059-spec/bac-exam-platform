@@ -2,7 +2,7 @@
 // أنواع وثوابت هوية المنصّة — آمنة للعميل (لا prisma ولا cache).
 // تستوردها مكوّنات العميل؛ ودوال قاعدة البيانات في branding.ts (خادم فقط).
 
-export type QuoteSize = "sm" | "md" | "lg" | "xl";
+export type QuoteSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 export type NoticeType = "info" | "warning";
 export type WindowsLayout = "grid" | "list";
 
@@ -70,13 +70,27 @@ export const DEFAULT_BRANDING: Branding = {
   windowsLayout: "grid",
 };
 
-// خريطة حجم الحكمة إلى صنف Tailwind.
+// خريطة حجم الحكمة إلى صنف Tailwind (مع تجاوب: أصغر قليلاً على الجوّال).
 export const QUOTE_SIZE_CLASS: Record<QuoteSize, string> = {
-  sm: "text-base",
-  md: "text-xl",
-  lg: "text-2xl",
-  xl: "text-3xl",
+  sm: "text-lg",
+  md: "text-xl sm:text-2xl",
+  lg: "text-2xl sm:text-3xl",
+  xl: "text-3xl sm:text-4xl",
+  "2xl": "text-4xl sm:text-5xl",
+  "3xl": "text-5xl sm:text-6xl",
 };
+
+// تسميات عربية لأحجام الحكمة (للوحة المدير).
+export const QUOTE_SIZE_LABELS: Record<QuoteSize, string> = {
+  sm: "صغير",
+  md: "متوسّط",
+  lg: "كبير",
+  xl: "كبير جداً",
+  "2xl": "ضخم",
+  "3xl": "عملاق",
+};
+
+const QUOTE_SIZE_KEYS: QuoteSize[] = ["sm", "md", "lg", "xl", "2xl", "3xl"];
 
 /** يدمج قيمة محفوظة (قد تكون ناقصة) فوق الافتراضات بأمان أنواع. نقيّة. */
 export function mergeBranding(raw: unknown): Branding {
@@ -93,7 +107,7 @@ export function mergeBranding(raw: unknown): Branding {
     }
   }
   // ضبط القيم المحصورة.
-  if (!["sm", "md", "lg", "xl"].includes(merged.quoteSize))
+  if (!QUOTE_SIZE_KEYS.includes(merged.quoteSize))
     merged.quoteSize = DEFAULT_BRANDING.quoteSize;
   if (!["info", "warning"].includes(merged.noticeType))
     merged.noticeType = DEFAULT_BRANDING.noticeType;

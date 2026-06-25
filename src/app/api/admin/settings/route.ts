@@ -22,7 +22,7 @@ const brandingSchema = z.object({
   hasLogo: z.boolean(),
   quote: z.string().trim().max(200),
   showQuote: z.boolean(),
-  quoteSize: z.enum(["sm", "md", "lg", "xl"]),
+  quoteSize: z.enum(["sm", "md", "lg", "xl", "2xl", "3xl"]),
   notice: z.string().trim().max(300),
   noticeType: z.enum(["info", "warning"]),
   maintenance: z.boolean(),
