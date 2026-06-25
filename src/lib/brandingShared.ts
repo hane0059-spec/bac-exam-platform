@@ -9,6 +9,7 @@ export type WindowsLayout = "grid" | "list";
 export interface Branding {
   // الاسم والهوية
   name: string;
+  nameFont: string; // مفتاح خطّ اسم المنصّة (من فهرس fonts.ts) أو "app"
   tagline: string;
   showTagline: boolean;
   hasLogo: boolean; // هل رُفعت صورة شعار مخصّصة؟
@@ -43,6 +44,7 @@ export interface Branding {
 
 export const DEFAULT_BRANDING: Branding = {
   name: "إتقان",
+  nameFont: "reem", // علامة كلميّة بخطّ كوفي افتراضاً
   tagline: "منصة التقييم والتمكّن",
   showTagline: true,
   hasLogo: false,

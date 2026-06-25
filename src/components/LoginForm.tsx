@@ -66,7 +66,13 @@ const WINDOWS: RoleWindow[] = [
   },
 ];
 
-export default function LoginForm({ branding }: { branding: Branding }) {
+export default function LoginForm({
+  branding,
+  nameFontCss,
+}: {
+  branding: Branding;
+  nameFontCss: string;
+}) {
   const [role, setRole] = useState<RoleWindow | null>(null);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -170,7 +176,7 @@ export default function LoginForm({ branding }: { branding: Branding }) {
             </div>
             <h1
               className="text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl"
-              style={{ fontFamily: "var(--font-reem)" }}
+              style={{ fontFamily: nameFontCss }}
             >
               {branding.name}
             </h1>

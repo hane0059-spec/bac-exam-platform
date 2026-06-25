@@ -10,6 +10,7 @@ import {
   type Branding,
   type QuoteSize,
 } from "@/lib/brandingShared";
+import { FONT_OPTIONS, fontCss } from "@/lib/fonts";
 
 const QUOTE_SIZES = (
   Object.keys(QUOTE_SIZE_LABELS) as QuoteSize[]
@@ -147,6 +148,44 @@ export default function BrandingForm({ current }: { current: Branding }) {
             maxLength={60}
             onChange={(e) => set("name", e.target.value)}
           />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium">خطّ اسم المنصّة</label>
+          <select
+            className="field"
+            value={b.nameFont}
+            onChange={(e) => set("nameFont", e.target.value)}
+          >
+            <option value="app">افتراضي (نفس خطّ المنصّة)</option>
+            <optgroup label="خطوط الويب (تظهر للجميع)">
+              {FONT_OPTIONS.filter((f) => f.kind === "web").map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="خطوط النظام (حسب جهاز الزائر)">
+              {FONT_OPTIONS.filter((f) => f.kind === "system").map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+          <p className="mt-1 text-xs text-ink/50">
+            خطوط النظام تظهر حسب توفّرها على جهاز الزائر، وإلا يُستخدم خطّ ويب بديل.
+          </p>
+          {b.name && (
+            <p
+              className="mt-2 text-center text-4xl font-bold text-ink"
+              style={{
+                fontFamily:
+                  b.nameFont === "app" ? "var(--font-app)" : fontCss(b.nameFont),
+              }}
+            >
+              {b.name}
+            </p>
+          )}
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium">الشعار النصّي (tagline)</label>

@@ -17,6 +17,7 @@ export const dynamic = "force-dynamic";
 // كائن هوية المنصّة — كل الحقول النصّية مقصوصة بحدود معقولة.
 const brandingSchema = z.object({
   name: z.string().trim().min(1, "الاسم مطلوب").max(60),
+  nameFont: z.string().trim().max(40),
   tagline: z.string().trim().max(120),
   showTagline: z.boolean(),
   hasLogo: z.boolean(),

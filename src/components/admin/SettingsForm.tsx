@@ -3,13 +3,8 @@
 // المدير العام: اختيار خطّ المنصّة (يُطبَّق على كل الواجهات).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FONT_OPTIONS,
-  FONT_CSS,
-  PLATFORM_MODE_OPTIONS,
-  type FontKey,
-  type PlatformMode,
-} from "@/lib/settings";
+import { PLATFORM_MODE_OPTIONS, type PlatformMode } from "@/lib/settings";
+import { FONT_OPTIONS, FONT_CSS, type FontKey } from "@/lib/fonts";
 
 export default function SettingsForm({
   currentFont,
@@ -79,38 +74,45 @@ export default function SettingsForm({
       <div className="border-t border-line pt-4">
         <h3 className="mb-1 font-display font-semibold">خطّ المنصّة</h3>
         <p className="text-sm text-ink/60">
-          يُطبَّق على كل واجهات الموقع لجميع المستخدمين.
+          يُطبَّق على كل واجهات الموقع لجميع المستخدمين. خطوط الويب تظهر على كل
+          الأجهزة، أمّا خطوط النظام فتظهر حسب توفّرها على جهاز الزائر، وإلا
+          يُستخدم خطّ ويب بديل تلقائياً.
         </p>
       </div>
 
-      <div className="space-y-2">
-        {FONT_OPTIONS.map((f) => (
-          <label
-            key={f.key}
-            className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition ${
-              font === f.key
-                ? "border-primary bg-primary-light"
-                : "border-line hover:bg-ink/5"
-            }`}
-          >
-            <span className="flex items-center gap-3">
-              <input
-                type="radio"
-                name="font"
-                checked={font === f.key}
-                onChange={() => setFont(f.key)}
-              />
-              <span className="font-medium">{f.label}</span>
-            </span>
-            <span
-              className="text-lg text-ink/70"
-              style={{ fontFamily: FONT_CSS[f.key] }}
+      {(["web", "system"] as const).map((kind) => (
+        <div key={kind} className="space-y-2">
+          <p className="text-xs font-semibold text-ink/50">
+            {kind === "web" ? "خطوط الويب (تظهر للجميع)" : "خطوط النظام (حسب جهاز الزائر)"}
+          </p>
+          {FONT_OPTIONS.filter((f) => f.kind === kind).map((f) => (
+            <label
+              key={f.key}
+              className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3 transition ${
+                font === f.key
+                  ? "border-primary bg-primary-light"
+                  : "border-line hover:bg-ink/5"
+              }`}
             >
-              منصّة الاختبارات الإلكترونية
-            </span>
-          </label>
-        ))}
-      </div>
+              <span className="flex items-center gap-3">
+                <input
+                  type="radio"
+                  name="font"
+                  checked={font === f.key}
+                  onChange={() => setFont(f.key)}
+                />
+                <span className="font-medium">{f.label}</span>
+              </span>
+              <span
+                className="text-lg text-ink/70"
+                style={{ fontFamily: FONT_CSS[f.key] }}
+              >
+                نموذج الخطّ
+              </span>
+            </label>
+          ))}
+        </div>
+      ))}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {done && <p className="text-sm text-primary-dark">تمّ الحفظ ✓</p>}
