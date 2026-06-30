@@ -10,6 +10,15 @@ import { PrismaClient, Role, Gender } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { MATH_ANSWER_TAG } from "../src/lib/mathAnswer";
 
+// حماية: يصفّر كل البيانات — يُمنع في الإنتاج إلا بتأكيد صريح
+// (NODE_ENV=production يُضبَط تلقائياً في بيئات الاستضافة عند البناء/التشغيل).
+if (process.env.NODE_ENV === "production" && process.env.ALLOW_SEED_IN_PRODUCTION !== "true") {
+  throw new Error(
+    "⛔ seed.ts يحذف كل البيانات ويُعيد بناءها — ممنوع تشغيله في الإنتاج. " +
+      "إن كنت متعمّداً، اضبط ALLOW_SEED_IN_PRODUCTION=true مؤقّتاً."
+  );
+}
+
 const prisma = new PrismaClient();
 
 const YEAR = "2025-2026";

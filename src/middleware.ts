@@ -4,7 +4,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   SESSION_COOKIE,
   verifySessionToken,
+  createSessionToken,
+  sessionCookieOptions,
   dashboardPath,
+  MAX_AGE_SECONDS,
   type Role,
 } from "@/lib/auth";
 
@@ -15,6 +18,10 @@ const ROLE_PREFIX: { prefix: string; role: Role }[] = [
   { prefix: "/student", role: "STUDENT" },
   { prefix: "/parent", role: "PARENT" },
 ];
+
+// تجديد منزلق: إن تبقّى أقل من يومين على انتهاء الجلسة، تُعاد إصدار الكوكي
+// بمدّة كاملة جديدة طالما المستخدم نشط — يتفادى انتهاء الجلسة المفاجئ.
+const RENEW_THRESHOLD_SECONDS = 60 * 60 * 24 * 2;
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -55,7 +62,24 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+
+  // تجديد الجلسة منزلقاً إن اقترب انتهاؤها وما زال المستخدم نشطاً.
+  if (session && typeof session.iat === "number") {
+    const ageSeconds = Date.now() / 1000 - session.iat;
+    if (ageSeconds > MAX_AGE_SECONDS - RENEW_THRESHOLD_SECONDS) {
+      const fresh = await createSessionToken({
+        userId: session.sub,
+        role: session.role,
+        gender: session.gender,
+        firstName: session.firstName,
+        lastName: session.lastName,
+      });
+      res.cookies.set(SESSION_COOKIE, fresh, sessionCookieOptions);
+    }
+  }
+
+  return res;
 }
 
 export const config = {

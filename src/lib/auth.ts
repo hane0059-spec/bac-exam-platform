@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
 export const SESSION_COOKIE = "session";
 const ALG = "HS256";
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 أيام
+export const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 أيام
 
 export type Role = "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
 export type Gender = "MALE" | "FEMALE";

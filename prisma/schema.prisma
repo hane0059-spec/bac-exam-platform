@@ -196,6 +196,8 @@ model User {
   questionReports    QuestionReport[]
   gradeAppeals       GradeAppeal[]       @relation("StudentAppeals")
 
+  @@index([role, schoolId])
+  @@index([createdById])
   @@map("users")
 }
 
@@ -285,6 +287,10 @@ model Attachment {
   annotations  Annotation[]
   createdAt    DateTime       @default(now()) @map("created_at")
 
+  @@index([quizId])
+  @@index([sessionId])
+  @@index([questionId])
+  @@index([uploadedById])
   @@map("attachments")
 }
 
@@ -413,6 +419,8 @@ model StudentEnrollment {
   enrolledAt   DateTime @default(now()) @map("enrolled_at")
   isActive     Boolean  @default(true) @map("is_active")
 
+  @@index([studentId, teacherId])
+  @@index([teacherId, subjectId])
   @@map("student_enrollments")
 }
 
@@ -488,6 +496,10 @@ model Question {
   reports         QuestionReport[]
   attachments     Attachment[]
 
+  @@index([creatorId])
+  @@index([subjectId])
+  @@index([chapterId])
+  @@index([isPublic, subjectId])
   @@map("questions")
 }
 
@@ -549,6 +561,8 @@ model Quiz {
   assignments QuizAssignment[]
   attachments Attachment[]
 
+  @@index([creatorId, status])
+  @@index([subjectId])
   @@map("quizzes")
 }
 
@@ -569,6 +583,8 @@ model QuizNode {
   sessions      ExamSession[] @relation("CurrentNode")
   studentAnswers StudentAnswer[]
 
+  @@index([quizId])
+  @@index([questionId])
   @@map("quiz_nodes")
 }
 
@@ -603,6 +619,9 @@ model QuizAssignment {
   // أرشفة الطالب لهذا الاختبار بطلبه (بعد مشاهدة نتيجته) — عرضيٌّ فقط.
   studentArchivedAt DateTime? @map("student_archived_at")
 
+  @@index([studentId])
+  @@index([quizId])
+  @@index([teacherId])
   @@map("quiz_assignments")
 }
 
@@ -637,6 +656,8 @@ model ExamSession {
   attachments Attachment[]
   appeals     GradeAppeal[]
 
+  @@index([quizId, studentId])
+  @@index([studentId])
   @@map("exam_sessions")
 }
 
@@ -657,6 +678,9 @@ model StudentAnswer {
   hintUsed          Boolean        @default(false) @map("hint_used")
   answeredAt        DateTime       @default(now()) @map("answered_at")
 
+  @@index([sessionId])
+  @@index([questionId])
+  @@index([needsReview])
   @@map("student_answers")
 }
 
@@ -677,5 +701,6 @@ model StudentConceptPerformance {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@unique([studentId, conceptId])
+  @@index([studentId])
   @@map("student_concept_performance")
 }

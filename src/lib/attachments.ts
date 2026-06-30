@@ -82,17 +82,18 @@ export async function canAccessAttachment(
     });
     if (quiz?.creatorId === session.sub) return true; // المدرّس المالك
     if (session.role === "STUDENT") {
-      // طالب مُسنَد إليه الاختبار أو له جلسة عليه.
-      const a = await prisma.quizAssignment.findFirst({
-        where: { quizId: att.quizId, studentId: session.sub },
-        select: { id: true },
-      });
-      if (a) return true;
-      const s = await prisma.examSession.findFirst({
-        where: { quizId: att.quizId, studentId: session.sub },
-        select: { id: true },
-      });
-      if (s) return true;
+      // طالب مُسنَد إليه الاختبار أو له جلسة عليه (بالتوازي).
+      const [a, s] = await Promise.all([
+        prisma.quizAssignment.findFirst({
+          where: { quizId: att.quizId, studentId: session.sub },
+          select: { id: true },
+        }),
+        prisma.examSession.findFirst({
+          where: { quizId: att.quizId, studentId: session.sub },
+          select: { id: true },
+        }),
+      ]);
+      if (a || s) return true;
     }
     return false;
   }
