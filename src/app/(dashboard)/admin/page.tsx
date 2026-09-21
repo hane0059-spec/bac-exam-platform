@@ -200,6 +200,17 @@ export default async function AdminDashboard() {
         </Link>
         {ctx.isSuper && (
           <Link
+            href="/admin/resources"
+            className="card p-5 transition hover:border-primary/40"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              ملفّات PDF عامّة (بلا تسجيل دخول) للتدرّب حسب الصفّ.
+            </p>
+          </Link>
+        )}
+        {ctx.isSuper && (
+          <Link
             href="/admin/settings"
             className="card p-5 transition hover:border-primary/40"
           >

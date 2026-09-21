@@ -195,6 +195,7 @@ model User {
   annotations        Annotation[]        @relation("AnnotationAuthor")
   questionReports    QuestionReport[]
   gradeAppeals       GradeAppeal[]       @relation("StudentAppeals")
+  enrichmentFiles    EnrichmentFile[]
 
   @@index([role, schoolId])
   @@index([createdById])
@@ -357,8 +358,26 @@ model GradeLevel {
   orderNum       Int              @map("order_num")
   subjects       Subject[]
   studentProfiles StudentProfile[]
+  enrichmentFiles EnrichmentFile[]
 
   @@map("grade_levels")
+}
+
+// ملفّ PDF عامّ (بلا تسجيل دخول) لصفحة «أسئلة وإثراء» — يرفعه المدير العام فقط.
+model EnrichmentFile {
+  id           String     @id @default(uuid())
+  gradeLevelId String     @map("grade_level_id")
+  gradeLevel   GradeLevel @relation(fields: [gradeLevelId], references: [id], onDelete: Cascade)
+  title        String     // اسم الملف الأصلي كما رُفع من المصدر
+  mimeType     String     @map("mime_type")
+  sizeBytes    Int        @map("size_bytes")
+  data         Bytes
+  uploadedById String     @map("uploaded_by_id")
+  uploadedBy   User       @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@index([gradeLevelId])
+  @@map("enrichment_files")
 }
 
 model Subject {

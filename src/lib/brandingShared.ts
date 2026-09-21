@@ -37,6 +37,8 @@ export interface Branding {
   showTeacherLogin: boolean;
   showAdminLogin: boolean;
   showParentLogin: boolean;
+  // نافذة «أسئلة وإثراء» العامّة (بلا تسجيل دخول) — رابط لا نموذج دخول
+  showResourcesLogin: boolean;
 
   // تخطيط نوافذ الدخول: شبكة عمودين أو قائمة عمود واحد
   windowsLayout: WindowsLayout;
@@ -68,6 +70,7 @@ export const DEFAULT_BRANDING: Branding = {
   showTeacherLogin: true,
   showAdminLogin: true,
   showParentLogin: true,
+  showResourcesLogin: false,
 
   windowsLayout: "grid",
 };

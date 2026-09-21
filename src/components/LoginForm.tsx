@@ -3,6 +3,7 @@
 // نموذج الدخول — كامل المحتوى المرئيّ تتحكّم به هوية المنصّة (Branding)
 // التي يضبطها المدير العام من /admin/settings.
 import { useState } from "react";
+import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import PasswordInput from "@/components/PasswordInput";
 import BrandLogo from "@/components/BrandLogo";
@@ -228,6 +229,36 @@ export default function LoginForm({
                   )}
                 </button>
               ))}
+              {branding.showResourcesLogin && (
+                <Link
+                  href="/resources"
+                  className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
+                    isList
+                      ? "flex flex-row items-center gap-4 text-right"
+                      : "flex flex-col items-center gap-3 text-center"
+                  }`}
+                >
+                  <span
+                    className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl ring-1 ring-gold/25 bg-gold/15 text-gold transition group-hover:scale-105"
+                    aria-hidden
+                  >
+                    📄
+                  </span>
+                  <span
+                    className={
+                      isList ? "flex min-w-0 flex-col" : "flex flex-col items-center"
+                    }
+                  >
+                    <span className="font-display font-bold">أسئلة وإثراء</span>
+                    <span className="text-xs text-ink/50">تدرّب بلا تسجيل دخول</span>
+                  </span>
+                  {isList && (
+                    <span className="mr-auto text-primary opacity-0 transition group-hover:opacity-100">
+                      ←
+                    </span>
+                  )}
+                </Link>
+              )}
             </div>
           ) : (
             // نموذج الدخول للنافذة المختارة.

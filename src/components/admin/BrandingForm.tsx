@@ -411,6 +411,12 @@ export default function BrandingForm({ current }: { current: Branding }) {
             onChange={(v) => set("showParentLogin", v)}
             label="👪 نافذة أولياء الأمور"
           />
+          <Toggle
+            checked={b.showResourcesLogin}
+            onChange={(v) => set("showResourcesLogin", v)}
+            label="📄 نافذة أسئلة وإثراء"
+            hint="رابط عامّ بلا تسجيل دخول — فعّله بعد رفع ملفّات من «أسئلة وإثراء»."
+          />
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium">تخطيط النوافذ</label>
