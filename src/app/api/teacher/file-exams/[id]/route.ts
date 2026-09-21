@@ -63,6 +63,7 @@ export async function PATCH(
       },
       availableFrom: d.availableFrom ? new Date(d.availableFrom) : null,
       availableUntil: d.availableUntil ? new Date(d.availableUntil) : null,
+      allowCodeJoin: d.allowCodeJoin,
     },
   });
 

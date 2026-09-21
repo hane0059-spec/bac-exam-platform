@@ -37,6 +37,7 @@ export const fileExamUpdateSchema = z
     timeLimitSec: z.number().int().positive().nullable().optional(),
     availableFrom: z.string().datetime().nullable().optional(),
     availableUntil: z.string().datetime().nullable().optional(),
+    allowCodeJoin: z.boolean().optional().default(false),
   })
   .superRefine((d, ctx) => {
     if (

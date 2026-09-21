@@ -1,7 +1,7 @@
 "use client";
 // src/components/teacher/QuizBuilder.tsx
 // باني الاختبار: بيانات + إعدادات + نافذة توقيت + اختيار/ترتيب أسئلة + تجاوز علامة + نشر.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MathText from "@/components/MathText";
@@ -11,6 +11,7 @@ import QuestionForm, {
   type SubjectOption,
 } from "@/components/teacher/QuestionForm";
 import type { CustomKeyboard } from "@/components/math/symbolBank";
+import QrCode from "@/components/QrCode";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
@@ -91,6 +92,9 @@ export default function QuizBuilder({
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description);
   const [codeJoin, setCodeJoin] = useState(initial.allowCodeJoin);
+  // أصل الموقع لرابط رمز QR — يُحسَب على العميل فقط (لا وجود لـ window في الخادم).
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
   const [noLimit, setNoLimit] = useState(initial.timeLimitSec === null);
   const [minutes, setMinutes] = useState(
     initial.timeLimitSec ? Math.round(initial.timeLimitSec / 60) : 10
@@ -459,12 +463,25 @@ export default function QuizBuilder({
       <div className="card space-y-2 p-5">
         <h3 className="font-display font-semibold">الوصول بالرمز</h3>
         {initial.accessCode ? (
-          <p className="text-sm">
-            رمز الاختبار:{" "}
-            <span className="font-bold" dir="ltr">
-              {initial.accessCode}
-            </span>
-          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <p className="text-sm">
+              رمز الاختبار:{" "}
+              <span className="font-bold" dir="ltr">
+                {initial.accessCode}
+              </span>
+            </p>
+            {codeJoin && origin && (
+              <div className="text-center">
+                <QrCode
+                  value={`${origin}/student/quizzes?join=${initial.accessCode}`}
+                  size={120}
+                />
+                <p className="mt-1 text-xs text-ink/50">
+                  يمسحه الطالب فينضمّ مباشرة
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
           <p className="text-sm text-ink/50">يُولَّد الرمز عند نشر الاختبار.</p>
         )}

@@ -29,6 +29,7 @@ export default async function FileExamManagePage({
       description: true,
       status: true,
       accessCode: true,
+      allowCodeJoin: true,
       settings: true,
       availableFrom: true,
       availableUntil: true,
@@ -74,6 +75,7 @@ export default async function FileExamManagePage({
           availableUntil: quiz.availableUntil
             ? quiz.availableUntil.toISOString()
             : null,
+          allowCodeJoin: quiz.allowCodeJoin,
         }}
       />
     </DashboardShell>

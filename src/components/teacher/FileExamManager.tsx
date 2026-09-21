@@ -1,12 +1,13 @@
 "use client";
 // src/components/teacher/FileExamManager.tsx
 // المدرّس: إدارة اختبار ورقي — تعديل البيانات، رفع الملف، النشر.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
 import ConfirmButton from "@/components/ConfirmButton";
 import DateTimeField from "@/components/DateTimeField";
+import QrCode from "@/components/QrCode";
 
 function toLocal(iso: string | null): string {
   if (!iso) return "";
@@ -30,6 +31,7 @@ interface Props {
     minutes: string;
     availableFrom: string | null;
     availableUntil: string | null;
+    allowCodeJoin: boolean;
   };
 }
 
@@ -48,9 +50,12 @@ export default function FileExamManager({
   const [minutes, setMinutes] = useState(initial.minutes);
   const [from, setFrom] = useState(toLocal(initial.availableFrom));
   const [until, setUntil] = useState(toLocal(initial.availableUntil));
+  const [codeJoin, setCodeJoin] = useState(initial.allowCodeJoin);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
 
   function flash(m: string) {
     setMsg(m);
@@ -71,6 +76,7 @@ export default function FileExamManager({
         timeLimitSec: minutes ? Number(minutes) * 60 : null,
         availableFrom: from ? new Date(from).toISOString() : null,
         availableUntil: until ? new Date(until).toISOString() : null,
+        allowCodeJoin: codeJoin,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -253,6 +259,37 @@ export default function FileExamManager({
           )}
         </div>
       </div>
+
+      {/* الوصول بالرمز */}
+      {accessCode && (
+        <div className="card space-y-2 p-5">
+          <h3 className="font-display font-semibold">الوصول بالرمز</h3>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={codeJoin}
+              onChange={(e) => setCodeJoin(e.target.checked)}
+              className="accent-primary"
+            />
+            السماح للطلاب بالانضمام عبر الرمز
+          </label>
+          <p className="text-xs text-ink/50">
+            عند الإيقاف لا يعمل الرمز ويصل الطلاب عبر الإسناد فقط. فعّله ثم احفظ
+            التغييرات.
+          </p>
+          {codeJoin && origin && (
+            <div className="pt-1 text-center">
+              <QrCode
+                value={`${origin}/student/quizzes?join=${accessCode}`}
+                size={120}
+              />
+              <p className="mt-1 text-xs text-ink/50">
+                يمسحه الطالب فينضمّ مباشرة
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ملف الاختبار */}
       <div className="card space-y-3 p-5">
