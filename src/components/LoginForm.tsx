@@ -8,6 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import PasswordInput from "@/components/PasswordInput";
 import BrandLogo from "@/components/BrandLogo";
 import QrCode from "@/components/QrCode";
+import FamilyIcon from "@/components/icons/FamilyIcon";
 import { QUOTE_SIZE_CLASS, type Branding } from "@/lib/brandingShared";
 
 type RoleKey = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT";
@@ -18,7 +19,7 @@ interface RoleWindow {
   subtitle: string;
   hint: string;
   placeholder: string;
-  icon: string;
+  icon: React.ReactNode;
   accent: string; // لون دائرة الأيقونة (متناسق مع العلامة، آمن للوضع الليلي)
   forgot: string; // إرشاد عند نسيان كلمة السر (لا إرسال — إعادة تعيين بإشراف)
 }
@@ -62,7 +63,7 @@ const WINDOWS: RoleWindow[] = [
     subtitle: "لمتابعة نتائج الأبناء",
     hint: "البريد أو الاسم الكامل",
     placeholder: "name@example.com أو الاسم الكامل",
-    icon: "👪",
+    icon: <FamilyIcon className="h-8 w-8" />,
     accent: "bg-primary/10 text-primary-dark ring-primary/20",
     forgot: "راجع إدارة مؤسّسة ابنك لإعادة تعيين كلمة سرّك.",
   },
