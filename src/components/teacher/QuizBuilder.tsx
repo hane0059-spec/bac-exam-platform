@@ -475,6 +475,7 @@ export default function QuizBuilder({
                 <QrCode
                   value={`${origin}/student/quizzes?join=${initial.accessCode}`}
                   size={120}
+                  downloadName={`رمز-اختبار-${initial.accessCode}.png`}
                 />
                 <p className="mt-1 text-xs text-ink/50">
                   يمسحه الطالب فينضمّ مباشرة

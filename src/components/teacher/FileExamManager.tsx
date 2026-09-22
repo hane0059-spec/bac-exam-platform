@@ -282,6 +282,7 @@ export default function FileExamManager({
               <QrCode
                 value={`${origin}/student/quizzes?join=${accessCode}`}
                 size={120}
+                downloadName={`رمز-اختبار-${accessCode}.png`}
               />
               <p className="mt-1 text-xs text-ink/50">
                 يمسحه الطالب فينضمّ مباشرة

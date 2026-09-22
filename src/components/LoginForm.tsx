@@ -2,13 +2,12 @@
 // src/components/LoginForm.tsx
 // نموذج الدخول — كامل المحتوى المرئيّ تتحكّم به هوية المنصّة (Branding)
 // التي يضبطها المدير العام من /admin/settings.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import PasswordInput from "@/components/PasswordInput";
 import BrandLogo from "@/components/BrandLogo";
 import QrCode from "@/components/QrCode";
-import { qrSvgString } from "@/lib/qr";
 import { QUOTE_SIZE_CLASS, type Branding } from "@/lib/brandingShared";
 
 type RoleKey = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT";
@@ -88,13 +87,6 @@ export default function LoginForm({
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
   const siteUrl = origin ? `${origin}/login` : "";
-  const siteQrDownload = useMemo(
-    () =>
-      siteUrl
-        ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvgString(siteUrl, 500))}`
-        : "",
-    [siteUrl]
-  );
 
   // نوافذ الدخول الظاهرة حسب إعدادات المدير العام.
   const visible: Record<RoleKey, boolean> = {
@@ -403,14 +395,11 @@ export default function LoginForm({
             <p className="mb-2 text-sm font-medium text-ink/70">
               رمز الدخول إلى المنصّة
             </p>
-            <QrCode value={siteUrl} size={130} />
-            <a
-              href={siteQrDownload}
-              download="رمز-الدخول.svg"
-              className="mt-2 text-xs text-primary hover:underline"
-            >
-              تنزيل الرمز ↓
-            </a>
+            <QrCode
+              value={siteUrl}
+              size={130}
+              downloadName="رمز-الدخول-إلى-المنصة.png"
+            />
           </div>
         )}
 
