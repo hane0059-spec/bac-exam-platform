@@ -19,3 +19,23 @@ export function qrMatrix(value: string): QrMatrix {
   }
   return { size, cells };
 }
+
+/** سلسلة SVG كاملة قائمة بذاتها (للتنزيل كملف) — بنفس منطق رسم QrCode.tsx. */
+export function qrSvgString(value: string, pixels = 400): string {
+  const { size: n, cells } = qrMatrix(value);
+  const cell = pixels / n;
+  let path = "";
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      if (cells[y][x]) {
+        path += `M${x * cell},${y * cell}h${cell}v${cell}h${-cell}z`;
+      }
+    }
+  }
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${pixels}" height="${pixels}" viewBox="0 0 ${pixels} ${pixels}">` +
+    `<rect width="${pixels}" height="${pixels}" fill="#fff"/>` +
+    `<path d="${path}" fill="#000"/>` +
+    `</svg>`
+  );
+}

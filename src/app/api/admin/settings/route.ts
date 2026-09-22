@@ -35,6 +35,7 @@ const brandingSchema = z.object({
   showTeacherLogin: z.boolean(),
   showAdminLogin: z.boolean(),
   showParentLogin: z.boolean(),
+  showResourcesLogin: z.boolean(),
   windowsLayout: z.enum(["grid", "list"]),
 });
 
