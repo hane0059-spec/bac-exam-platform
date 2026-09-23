@@ -1,5 +1,6 @@
 // src/lib/teacherQuiz.ts
 // منطق تكوين الاختبارات للمدرّس: التحقّق، الملكية، وبناء شجرة العُقد الخطّية.
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -103,50 +104,41 @@ export async function rebuildQuizGraph(
   await tx.quizEdge.deleteMany({ where: { quizId } });
   await tx.quizNode.deleteMany({ where: { quizId } });
 
-  const start = await tx.quizNode.create({
-    data: { quizId, nodeType: "START", positionX: 0, positionY: 0 },
-  });
+  // إنشاء دفعي (createMany) بمعرّفات مُولَّدة مسبقاً: عدد الاستعلامات ثابت مهما
+  // كثرت الأسئلة، فلا تنتهي مهلة المعاملة مع بنوك كبيرة (عشرات الأسئلة).
+  const startId = randomUUID();
+  const endId = randomUUID();
+  const qIds = items.map(() => randomUUID());
 
-  const questionNodes = [];
-  for (let i = 0; i < items.length; i++) {
-    const node = await tx.quizNode.create({
-      data: {
+  await tx.quizNode.createMany({
+    data: [
+      { id: startId, quizId, nodeType: "START", positionX: 0, positionY: 0 },
+      ...items.map((it, i) => ({
+        id: qIds[i],
         quizId,
-        nodeType: "QUESTION",
-        questionId: items[i].questionId,
-        pointsOverride:
-          items[i].pointsOverride as unknown as Prisma.Decimal | null,
+        nodeType: "QUESTION" as const,
+        questionId: it.questionId,
+        pointsOverride: it.pointsOverride as unknown as Prisma.Decimal | null,
         positionX: (i + 1) * 200,
         positionY: 0,
-      },
-    });
-    questionNodes.push(node);
-  }
-
-  const end = await tx.quizNode.create({
-    data: {
-      quizId,
-      nodeType: "END",
-      positionX: (items.length + 1) * 200,
-      positionY: 0,
-    },
+      })),
+      { id: endId, quizId, nodeType: "END", positionX: (items.length + 1) * 200, positionY: 0 },
+    ],
   });
 
-  const ordered = [start, ...questionNodes, end];
-  for (let i = 0; i < ordered.length - 1; i++) {
-    await tx.quizEdge.create({
-      data: {
-        quizId,
-        sourceNodeId: ordered[i].id,
-        targetNodeId: ordered[i + 1].id,
-        conditionType: "ALWAYS",
-        priority: 0,
-      },
-    });
-  }
+  const ordered = [startId, ...qIds, endId];
+  await tx.quizEdge.createMany({
+    data: ordered.slice(0, -1).map((src, i) => ({
+      quizId,
+      sourceNodeId: src,
+      targetNodeId: ordered[i + 1],
+      conditionType: "ALWAYS" as const,
+      priority: 0,
+    })),
+  });
 
   await tx.quiz.update({
     where: { id: quizId },
-    data: { startNodeId: start.id },
+    data: { startNodeId: startId },
   });
 }

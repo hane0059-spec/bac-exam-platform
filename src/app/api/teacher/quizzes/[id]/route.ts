@@ -113,7 +113,7 @@ export async function PATCH(
       },
     });
     await rebuildQuizGraph(tx, quiz.id, data.questions);
-  });
+  }, { timeout: 60000, maxWait: 15000 });
 
   return NextResponse.json({ id: quiz.id, structural: true });
 }
