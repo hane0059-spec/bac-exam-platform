@@ -143,6 +143,12 @@ export default async function TeacherQuestionsPage({
           >
             استيراد من ملفّ
           </Link>
+          <Link
+            href="/teacher/questions/analysis"
+            className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
+          >
+            تحليل الأسئلة
+          </Link>
           <Link href="/teacher/questions/new" className="btn-primary">
             + سؤال جديد
           </Link>
