@@ -19,7 +19,13 @@ export default async function AdminResourcesPage() {
     include: {
       enrichmentFiles: {
         orderBy: { createdAt: "desc" },
-        select: { id: true, title: true, sizeBytes: true, createdAt: true },
+        select: {
+          id: true,
+          title: true,
+          sizeBytes: true,
+          createdAt: true,
+          downloadCount: true,
+        },
       },
     },
   });
@@ -56,6 +62,7 @@ export default async function AdminResourcesPage() {
             id: f.id,
             title: f.title,
             sizeBytes: f.sizeBytes,
+            downloadCount: f.downloadCount,
           })),
         }))}
       />

@@ -8,6 +8,7 @@ interface FileRow {
   id: string;
   title: string;
   sizeBytes: number;
+  downloadCount: number;
 }
 interface GradeRow {
   id: string;
@@ -123,6 +124,9 @@ export default function ResourcesManager({
                     <span className="truncate text-sm font-medium">{f.title}</span>
                     <span className="shrink-0 text-xs text-ink/45">
                       {formatBytes(f.sizeBytes)}
+                    </span>
+                    <span className="shrink-0 rounded-full bg-primary-light px-2 py-0.5 text-xs font-medium text-primary-dark">
+                      ⬇ {f.downloadCount}
                     </span>
                   </span>
                   <button

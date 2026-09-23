@@ -1,6 +1,8 @@
 // src/app/api/resources/[id]/route.ts
 // GET: تنزيل ملفّ «أسئلة وإثراء» — عامّ بلا تسجيل دخول، محدود بمعدّل الطلبات.
+// كل طلب ناجح يزيد عدّاد التنزيلات (يظهر للمدير العام فقط في /admin/resources).
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { safeContentDisposition } from "@/lib/resources";
@@ -19,11 +21,22 @@ export async function GET(
     );
   }
 
-  const file = await prisma.enrichmentFile.findUnique({
-    where: { id: params.id },
-    select: { title: true, mimeType: true, data: true },
-  });
-  if (!file) return NextResponse.json({ error: "غير موجود" }, { status: 404 });
+  let file;
+  try {
+    file = await prisma.enrichmentFile.update({
+      where: { id: params.id },
+      data: { downloadCount: { increment: 1 } },
+      select: { title: true, mimeType: true, data: true },
+    });
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2025"
+    ) {
+      return NextResponse.json({ error: "غير موجود" }, { status: 404 });
+    }
+    throw e;
+  }
 
   return new NextResponse(new Uint8Array(file.data), {
     headers: {
