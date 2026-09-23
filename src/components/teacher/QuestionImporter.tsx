@@ -3,6 +3,7 @@
 // استيراد أسئلة من ملفّ JSON: اختيار الهدف ← قراءة الملفّ ← معاينة (dryRun) ← تأكيد.
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IMPORT_PROMPT, IMPORT_TEMPLATE_JSON } from "@/lib/importTemplate";
 
 interface Concept {
   id: string;
@@ -85,6 +86,33 @@ export default function QuestionImporter({
     [chapters, chapterId]
   );
 
+  const [copied, setCopied] = useState(false);
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(IMPORT_PROMPT);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = IMPORT_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+  function downloadTemplate() {
+    const blob = new Blob([IMPORT_TEMPLATE_JSON], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "نموذج-بنك-الأسئلة.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function reset() {
     setSummary(null);
     setDoneCount(null);
@@ -154,6 +182,37 @@ export default function QuestionImporter({
 
   return (
     <div className="space-y-5">
+      {/* نموذج + تعليمات الذكاء الاصطناعي */}
+      <div className="card space-y-3 p-5">
+        <h3 className="font-display text-base font-semibold">
+          لا ملفّ جاهز؟ حضّره بالذكاء الاصطناعي
+        </h3>
+        <ol className="list-inside list-decimal space-y-1 text-sm text-ink/70">
+          <li>انسخ «التعليمات» وألصقها في أي محادثة مع ذكاء اصطناعي (Claude/ChatGPT).</li>
+          <li>ألصق بعدها نصّ الدرس (أو ارفق صفحات الكتاب) وحدّد المادة وعدد الأسئلة.</li>
+          <li>احفظ الناتج في ملفّ بامتداد <span dir="ltr">.json</span> ثم ارفعه أدناه.</li>
+        </ol>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={copyPrompt}
+            className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
+          >
+            {copied ? "تمّ النسخ ✓" : "📋 نسخ التعليمات"}
+          </button>
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
+          >
+            ⬇ تنزيل نموذج JSON
+          </button>
+        </div>
+        <p className="text-xs text-ink/50">
+          النموذج يحوي مثالاً لكل الأنواع السبعة (اختيار، صح/خطأ، ترتيب، مطابقة، ملء فراغات، توسيم رسم، مقالي) — عدّله يدوياً أو اجعل الذكاء الاصطناعي يحاكيه.
+        </p>
+      </div>
+
       {/* الهدف */}
       <div className="card p-5">
         <h3 className="mb-3 font-display text-base font-semibold">
