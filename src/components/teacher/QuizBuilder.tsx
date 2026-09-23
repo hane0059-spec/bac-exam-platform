@@ -30,6 +30,15 @@ interface Item {
   questionId: string;
   pointsOverride: number | null;
 }
+interface TemplateRow {
+  id: string;
+  name: string;
+  timeLimitSec: number | null;
+  maxAttempts: number;
+  revealAnswers: "immediate" | "end";
+  shuffle: boolean;
+  allowCodeJoin: boolean;
+}
 export interface QuizBuilderInitial {
   title: string;
   description: string;
@@ -73,6 +82,7 @@ export default function QuizBuilder({
   bank,
   subjectTree = [],
   customKeyboard,
+  templates: initialTemplates = [],
   initialItems,
   initial,
 }: {
@@ -83,6 +93,7 @@ export default function QuizBuilder({
   bank: BankQuestion[];
   subjectTree?: SubjectOption[];
   customKeyboard?: CustomKeyboard;
+  templates?: TemplateRow[];
   initialItems: Item[];
   initial: QuizBuilderInitial;
 }) {
@@ -124,6 +135,57 @@ export default function QuizBuilder({
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // قوالب الإعدادات (بلا أسئلة) — حفظ/تحميل/حذف.
+  const [templates, setTemplates] = useState<TemplateRow[]>(initialTemplates);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [templateBusy, setTemplateBusy] = useState(false);
+  const [templateError, setTemplateError] = useState("");
+
+  function loadTemplate(t: TemplateRow) {
+    setNoLimit(t.timeLimitSec === null);
+    setMinutes(t.timeLimitSec ? Math.round(t.timeLimitSec / 60) : 10);
+    setMaxAttempts(t.maxAttempts);
+    setReveal(t.revealAnswers);
+    setShuffle(t.shuffle);
+    setCodeJoin(t.allowCodeJoin);
+  }
+
+  async function saveAsTemplate() {
+    const name = newTemplateName.trim();
+    if (!name) return;
+    setTemplateBusy(true);
+    setTemplateError("");
+    const timeLimitSec = noLimit ? null : Math.max(1, Math.round(minutes * 60));
+    const res = await fetch("/api/teacher/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        timeLimitSec,
+        maxAttempts,
+        revealAnswers: reveal,
+        shuffle,
+        allowCodeJoin: codeJoin,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setTemplateBusy(false);
+    if (!res.ok) {
+      setTemplateError(data.error ?? "تعذّر الحفظ.");
+      return;
+    }
+    setTemplates((prev) => [
+      { id: data.id, name, timeLimitSec, maxAttempts, revealAnswers: reveal, shuffle, allowCodeJoin: codeJoin },
+      ...prev,
+    ]);
+    setNewTemplateName("");
+  }
+
+  async function deleteTemplate(id: string) {
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    await fetch(`/api/teacher/templates/${id}`, { method: "DELETE" });
+  }
 
   const bankMap = useMemo(
     () => new Map(questions.map((q) => [q.id, q])),
@@ -382,6 +444,59 @@ export default function QuizBuilder({
       {/* الإعدادات */}
       <div className="card space-y-3 p-5">
         <h3 className="font-display font-semibold">الإعدادات</h3>
+
+        {!ro && (
+          <div className="rounded-xl border border-line p-3">
+            <p className="mb-2 text-sm font-medium">قوالب الإعدادات</p>
+            {templates.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {templates.map((t) => (
+                  <span
+                    key={t.id}
+                    className="flex items-center gap-1 rounded-full border border-line py-1 pr-1 pl-2.5 text-xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => loadTemplate(t)}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {t.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteTemplate(t.id)}
+                      title="حذف القالب"
+                      className="text-ink/40 hover:text-red-600"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                className="field flex-1"
+                placeholder="اسم القالب الجديد (مثال: اختبار قصير)"
+                value={newTemplateName}
+                maxLength={60}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={saveAsTemplate}
+                disabled={templateBusy || !newTemplateName.trim()}
+                className="rounded-xl border border-line px-3 py-2 text-sm font-medium hover:bg-ink/5 disabled:opacity-50"
+              >
+                {templateBusy ? "جارٍ الحفظ…" : "حفظ الإعدادات الحالية كقالب"}
+              </button>
+            </div>
+            {templateError && (
+              <p className="mt-1 text-xs text-red-600">{templateError}</p>
+            )}
+          </div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-sm font-medium">المهلة</label>

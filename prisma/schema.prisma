@@ -196,6 +196,7 @@ model User {
   questionReports    QuestionReport[]
   gradeAppeals       GradeAppeal[]       @relation("StudentAppeals")
   enrichmentFiles    EnrichmentFile[]
+  quizTemplates      QuizTemplate[]
 
   @@index([role, schoolId])
   @@index([createdById])
@@ -549,6 +550,23 @@ model QuestionMatchingPair {
   orderNum   Int      @map("order_num")
 
   @@map("question_matching_pairs")
+}
+
+// قالب إعدادات اختبار (بلا أسئلة) يعيد المدرّس استخدامه عند بناء اختبار جديد.
+model QuizTemplate {
+  id            String   @id @default(uuid())
+  teacherId     String   @map("teacher_id")
+  teacher       User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  name          String
+  timeLimitSec  Int?     @map("time_limit_sec")
+  maxAttempts   Int      @default(1) @map("max_attempts")
+  revealAnswers String   @default("end") @map("reveal_answers") // "immediate" | "end"
+  shuffle       Boolean  @default(false)
+  allowCodeJoin Boolean  @default(false) @map("allow_code_join")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([teacherId, name])
+  @@map("quiz_templates")
 }
 
 // ─────────────────────────────────────────────

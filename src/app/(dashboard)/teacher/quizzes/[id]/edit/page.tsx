@@ -68,6 +68,10 @@ export default async function EditQuizPage({
     (s) => s.id === quiz.subjectId
   );
   const customKeyboard = await getTeacherKeyboard(session.sub);
+  const templates = await prisma.quizTemplate.findMany({
+    where: { teacherId: session.sub },
+    orderBy: { createdAt: "desc" },
+  });
 
   const settings = parseSettings(quiz.settings);
   const structural = await canEditStructure(quiz.id, quiz.status);
@@ -160,6 +164,15 @@ export default async function EditQuizPage({
         }))}
         subjectTree={subjectTree}
         customKeyboard={customKeyboard}
+        templates={templates.map((t) => ({
+          id: t.id,
+          name: t.name,
+          timeLimitSec: t.timeLimitSec,
+          maxAttempts: t.maxAttempts,
+          revealAnswers: t.revealAnswers as "immediate" | "end",
+          shuffle: t.shuffle,
+          allowCodeJoin: t.allowCodeJoin,
+        }))}
         initialItems={initialItems}
         initial={{
           title: quiz.title,
