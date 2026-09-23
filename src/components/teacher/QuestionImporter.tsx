@@ -53,6 +53,7 @@ interface Summary {
   warnings: WarnRow[];
   rejected: RejectRow[];
   sample: SampleRow[];
+  placement?: { placed: number; created: string[] };
 }
 
 export default function QuestionImporter({
@@ -364,6 +365,23 @@ export default function QuestionImporter({
               tone="gold"
             />
           </div>
+
+          {/* التوزيع على المنهج */}
+          {summary.placement && summary.placement.placed > 0 && (
+            <div className="rounded-xl border border-primary/30 bg-primary-light/40 p-3 text-sm">
+              <p className="font-medium text-primary-dark">
+                سيُوزَّع {summary.placement.placed} سؤالاً على الوحدات/الفصول/الدروس حسب الملفّ
+                {summary.placement.created.length > 0 ? " — وسيُنشأ الناقص:" : " (كلّها موجودة في منهجك)."}
+              </p>
+              {summary.placement.created.length > 0 && (
+                <ul className="mt-1 max-h-40 list-inside list-disc space-y-0.5 overflow-auto text-xs text-ink/70">
+                  {summary.placement.created.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* الأعداد لكل نوع */}
           <div>

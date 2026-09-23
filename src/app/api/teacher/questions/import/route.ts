@@ -5,8 +5,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession, teacherTeachesSubject } from "@/lib/teacher";
-import { prepareImport } from "@/lib/questionImportServer";
-import { buildQuestionCreateData } from "@/lib/questionCreate";
+import {
+  prepareImport,
+  placementPreview,
+  commitImport,
+} from "@/lib/questionImportServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,7 +82,11 @@ export async function POST(req: Request) {
   }
 
   if (dryRun) {
-    return NextResponse.json({ dryRun: true, summary: prepared.summary });
+    const placement = await placementPreview(subjectId, prepared.valid);
+    return NextResponse.json({
+      dryRun: true,
+      summary: { ...prepared.summary, placement },
+    });
   }
   if (prepared.valid.length === 0) {
     return NextResponse.json(
@@ -88,19 +95,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const created = await prisma.$transaction(
-    prepared.valid.map(({ data }) => {
-      if (!data.success) throw new Error("بيانات غير صالحة");
-      return prisma.question.create({
-        data: buildQuestionCreateData(data.data, { creatorId: session.sub }),
-        select: { id: true },
-      });
-    })
-  );
+  const done = await commitImport({
+    subjectId,
+    valid: prepared.valid,
+    creatorId: session.sub,
+  });
 
   return NextResponse.json({
     dryRun: false,
-    importedCount: created.length,
+    importedCount: done.count,
+    createdNodes: done.createdNodes,
     rejectedCount: prepared.rejected.length,
   });
 }

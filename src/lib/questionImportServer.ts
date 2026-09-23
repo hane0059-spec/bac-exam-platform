@@ -1,7 +1,16 @@
 // src/lib/questionImportServer.ts
 // تحضير الاستيراد على الخادم: تطبيع الملفّ ← تحقّق كل سؤال بمخطّط المدرّس ←
 // بناء ملخّص المعاينة. مشترك بين استيراد المدرّس واستيراد المدير للبنك العام.
+import { prisma } from "@/lib/prisma";
 import { questionInputSchema } from "@/lib/teacher";
+import { buildQuestionCreateData } from "@/lib/questionCreate";
+import {
+  loadTree,
+  planPlacement,
+  describeCreated,
+  applyPlan,
+  resolvedIds,
+} from "@/lib/importPlacement";
 import {
   normalizeBankJson,
   Q_TYPE_LABEL,
@@ -107,4 +116,49 @@ export function prepareImport(
   }
 
   return { valid, rejected, summary: buildSummary(result, valid, rejected) };
+}
+
+/** معاينة توزيع الأسئلة على المنهج: ما سيُنشأ وعدد الأسئلة الموزَّعة من الملفّ. */
+export async function placementPreview(
+  subjectId: string,
+  valid: ValidItem[]
+): Promise<{ placed: number; created: string[] }> {
+  const tree = await loadTree(prisma, subjectId);
+  const plan = planPlacement(valid.map((v) => v.n.place), tree);
+  return { placed: plan.placedCount, created: describeCreated(plan) };
+}
+
+/** إدراج الصالح في معاملة واحدة: ينشئ الوحدات/الفصول/الدروس الناقصة ثم الأسئلة. */
+export async function commitImport(opts: {
+  subjectId: string;
+  valid: ValidItem[];
+  creatorId: string;
+  isPublic?: boolean;
+}): Promise<{ count: number; createdNodes: number }> {
+  return prisma.$transaction(
+    async (tx) => {
+      const tree = await loadTree(tx, opts.subjectId);
+      const plan = planPlacement(opts.valid.map((v) => v.n.place), tree);
+      await applyPlan(tx, opts.subjectId, plan, tree);
+      let count = 0;
+      for (let i = 0; i < opts.valid.length; i++) {
+        const { data } = opts.valid[i];
+        if (!data.success) throw new Error("بيانات غير صالحة");
+        const ids = resolvedIds(plan.refs[i]);
+        const d = ids.chapterId
+          ? { ...data.data, chapterId: ids.chapterId, conceptId: ids.conceptId }
+          : data.data;
+        await tx.question.create({
+          data: buildQuestionCreateData(d, {
+            creatorId: opts.creatorId,
+            isPublic: opts.isPublic,
+          }),
+          select: { id: true },
+        });
+        count++;
+      }
+      return { count, createdNodes: plan.created.length };
+    },
+    { timeout: 120000, maxWait: 20000 }
+  );
 }

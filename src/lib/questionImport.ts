@@ -36,6 +36,8 @@ export interface NormalizedQuestion {
   acceptedAnswers: string[];
   matchingPairs: NormalizedPair[];
   warnings: string[];
+  /** موضع السؤال في شجرة المنهج من الملفّ (وحدة/فصل/درس بأسمائها) — اختياري. */
+  place?: { unit?: string; chapter?: string; lesson?: string };
 }
 export interface NormalizeError {
   sourceId: string;
@@ -482,6 +484,15 @@ interface BaseFields {
 }
 
 function normalizeOne(q: Raw): NormalizedQuestion {
+  const n = normalizeCore(q);
+  const unit = asStr(q.unit);
+  const chapter = asStr(q.chapter);
+  const lesson = asStr(q.lesson);
+  if (unit || chapter || lesson) n.place = { unit, chapter, lesson };
+  return n;
+}
+
+function normalizeCore(q: Raw): NormalizedQuestion {
   const sourceType = asStr(q.type) ?? "?";
   const conceptId = asStr(q.concept_id);
   const base: BaseFields = {
