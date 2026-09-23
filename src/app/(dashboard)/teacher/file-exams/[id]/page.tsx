@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import FileExamManager from "@/components/teacher/FileExamManager";
 import { parseFileExamSettings } from "@/lib/fileExam";
+import { teacherCanManageStudents } from "@/lib/teacher";
+import { selfRegisterEnabled } from "@/lib/selfRegister";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +78,9 @@ export default async function FileExamManagePage({
             ? quiz.availableUntil.toISOString()
             : null,
           allowCodeJoin: quiz.allowCodeJoin,
+          selfRegister: selfRegisterEnabled(quiz.settings),
         }}
+        canSelfRegister={await teacherCanManageStudents(session.sub)}
       />
     </DashboardShell>
   );

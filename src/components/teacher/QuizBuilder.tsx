@@ -50,6 +50,7 @@ export interface QuizBuilderInitial {
   availableUntil: string | null;
   accessCode: string | null;
   allowCodeJoin: boolean;
+  selfRegister: boolean;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -83,6 +84,7 @@ export default function QuizBuilder({
   subjectTree = [],
   customKeyboard,
   templates: initialTemplates = [],
+  canSelfRegister = false,
   initialItems,
   initial,
 }: {
@@ -94,6 +96,7 @@ export default function QuizBuilder({
   subjectTree?: SubjectOption[];
   customKeyboard?: CustomKeyboard;
   templates?: TemplateRow[];
+  canSelfRegister?: boolean;
   initialItems: Item[];
   initial: QuizBuilderInitial;
 }) {
@@ -103,6 +106,7 @@ export default function QuizBuilder({
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description);
   const [codeJoin, setCodeJoin] = useState(initial.allowCodeJoin);
+  const [selfRegister, setSelfRegister] = useState(initial.selfRegister);
   // أصل الموقع لرابط رمز QR — يُحسَب على العميل فقط (لا وجود لـ window في الخادم).
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
@@ -326,6 +330,7 @@ export default function QuizBuilder({
           maxAttempts,
           revealAnswers: reveal,
           shuffle,
+          selfRegister: canSelfRegister && codeJoin && selfRegister,
         },
         availableFrom: localToIso(from),
         availableUntil: localToIso(until),
@@ -588,12 +593,14 @@ export default function QuizBuilder({
             {codeJoin && origin && (
               <div className="text-center">
                 <QrCode
-                  value={`${origin}/student/quizzes?join=${initial.accessCode}`}
+                  value={`${origin}/join/${initial.accessCode}`}
                   size={120}
                   downloadName={`رمز-اختبار-${initial.accessCode}.png`}
                 />
                 <p className="mt-1 text-xs text-ink/50">
-                  يمسحه الطالب فينضمّ مباشرة
+                  {selfRegister && canSelfRegister
+                    ? "يمسحه الطالب فيسجّل حسابه وينضمّ مباشرة"
+                    : "يمسحه الطالب المسجَّل فينضمّ مباشرة"}
                 </p>
               </div>
             )}
@@ -614,6 +621,25 @@ export default function QuizBuilder({
           عند الإيقاف لا يعمل الرمز ويصل الطلاب عبر الإسناد فقط. فعّله للاختبارات
           المفتوحة وأغلقه متى شئت (يُحفظ بزرّ «حفظ»).
         </p>
+        {canSelfRegister && (
+          <>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={selfRegister}
+                disabled={!codeJoin}
+                onChange={(e) => setSelfRegister(e.target.checked)}
+                className="accent-primary"
+              />
+              السماح للطلاب غير المسجَّلين بإنشاء حسابهم ذاتياً عبر الرمز (يُسجَّلون
+              عندك تلقائياً)
+            </label>
+            <p className="text-xs text-ink/50">
+              يتطلّب تفعيل «الانضمام عبر الرمز» أعلاه. الطالب يُدخل بياناته وكلمة سرّه
+              فيُنشأ حسابه فوراً ويُسنَد له هذا الاختبار. أغلِقه متى شئت.
+            </p>
+          </>
+        )}
       </div>
 
       {/* الأسئلة المختارة */}

@@ -2,7 +2,7 @@
 // PATCH: تعديل بيانات الاختبار الورقي (عنوان/وصف/درجة/توقيت). المدرّس المالك.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession } from "@/lib/teacher";
+import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import { ownedQuiz } from "@/lib/teacherQuiz";
 import { fileExamUpdateSchema, parseFileExamSettings } from "@/lib/fileExam";
 
@@ -37,6 +37,17 @@ export async function PATCH(
   }
   const d = parsed.data;
 
+  if (d.selfRegister && !(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "التسجيل الذاتي يتطلّب صلاحية إدارة الطلاب — اطلبها من إدارة المؤسّسة." },
+      { status: 403 },
+    );
+  }
+  const prevSettings =
+    quiz.settings && typeof quiz.settings === "object"
+      ? (quiz.settings as Record<string, unknown>)
+      : {};
+
   // تغيير الدرجة القصوى ممنوع بعد بدء التصحيح (يفسد النِّسب المحسوبة).
   const cur = parseFileExamSettings(quiz.settings);
   if (d.maxScore !== cur.maxScore) {
@@ -57,6 +68,8 @@ export async function PATCH(
       title: d.title,
       description: d.description || null,
       settings: {
+        ...prevSettings,
+        selfRegister: d.selfRegister,
         maxAttempts: 1,
         maxScore: d.maxScore,
         timeLimitSec: d.timeLimitSec ?? null,

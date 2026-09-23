@@ -38,6 +38,7 @@ export const fileExamUpdateSchema = z
     availableFrom: z.string().datetime().nullable().optional(),
     availableUntil: z.string().datetime().nullable().optional(),
     allowCodeJoin: z.boolean().optional().default(false),
+    selfRegister: z.boolean().optional().default(false),
   })
   .superRefine((d, ctx) => {
     if (

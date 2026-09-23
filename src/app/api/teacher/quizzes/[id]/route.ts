@@ -2,7 +2,7 @@
 // PATCH: حفظ بيانات الاختبار وأسئلته. DELETE: حذف (أو أرشفة إن كان مُستخدَماً).
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getTeacherSession } from "@/lib/teacher";
+import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import {
   ownedQuiz,
   canEditStructure,
@@ -42,6 +42,21 @@ export async function PATCH(
   const data = parsed.data;
   const structural = await canEditStructure(quiz.id, quiz.status);
 
+  // التسجيل الذاتي يُنشئ حسابات طلاب: يشترط صلاحية «إدارة الطلاب» (بقرار المدير).
+  if (
+    data.settings.selfRegister &&
+    !(await teacherCanManageStudents(session.sub))
+  ) {
+    return NextResponse.json(
+      { error: "التسجيل الذاتي يتطلّب صلاحية إدارة الطلاب — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
+  }
+  const prevSettings =
+    quiz.settings && typeof quiz.settings === "object"
+      ? (quiz.settings as Record<string, unknown>)
+      : {};
+
   // بيانات تُعدَّل دائماً: العنوان/الوصف ونافذة التوقيت.
   const metaData = {
     title: data.title,
@@ -53,7 +68,14 @@ export async function PATCH(
 
   if (!structural) {
     // اختبار منشور أو له جلسات: لا تُمسّ الأسئلة ولا الإعدادات المؤثّرة.
-    await prisma.quiz.update({ where: { id: quiz.id }, data: metaData });
+    // التسجيل الذاتي يُعدَّل دائماً (كالانضمام بالرمز) دون مسّ بقية الإعدادات.
+    await prisma.quiz.update({
+      where: { id: quiz.id },
+      data: {
+        ...metaData,
+        settings: { ...prevSettings, selfRegister: data.settings.selfRegister },
+      },
+    });
     return NextResponse.json({ id: quiz.id, structural: false });
   }
 
@@ -85,6 +107,8 @@ export async function PATCH(
           timeLimitSec: data.settings.timeLimitSec,
           maxAttempts: data.settings.maxAttempts,
           revealAnswers: data.settings.revealAnswers,
+          shuffle: data.settings.shuffle,
+          selfRegister: data.settings.selfRegister,
         },
       },
     });

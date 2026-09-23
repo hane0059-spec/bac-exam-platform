@@ -32,7 +32,9 @@ interface Props {
     availableFrom: string | null;
     availableUntil: string | null;
     allowCodeJoin: boolean;
+    selfRegister: boolean;
   };
+  canSelfRegister?: boolean;
 }
 
 export default function FileExamManager({
@@ -42,6 +44,7 @@ export default function FileExamManager({
   accessCode,
   examFile,
   initial,
+  canSelfRegister = false,
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initial.title);
@@ -51,6 +54,7 @@ export default function FileExamManager({
   const [from, setFrom] = useState(toLocal(initial.availableFrom));
   const [until, setUntil] = useState(toLocal(initial.availableUntil));
   const [codeJoin, setCodeJoin] = useState(initial.allowCodeJoin);
+  const [selfRegister, setSelfRegister] = useState(initial.selfRegister);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -77,6 +81,7 @@ export default function FileExamManager({
         availableFrom: from ? new Date(from).toISOString() : null,
         availableUntil: until ? new Date(until).toISOString() : null,
         allowCodeJoin: codeJoin,
+        selfRegister: canSelfRegister && codeJoin && selfRegister,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -277,10 +282,23 @@ export default function FileExamManager({
             عند الإيقاف لا يعمل الرمز ويصل الطلاب عبر الإسناد فقط. فعّله ثم احفظ
             التغييرات.
           </p>
+          {canSelfRegister && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={selfRegister}
+                disabled={!codeJoin}
+                onChange={(e) => setSelfRegister(e.target.checked)}
+                className="accent-primary"
+              />
+              السماح للطلاب غير المسجَّلين بإنشاء حسابهم ذاتياً عبر الرمز (يُسجَّلون
+              عندك تلقائياً)
+            </label>
+          )}
           {codeJoin && origin && (
             <div className="pt-1 text-center">
               <QrCode
-                value={`${origin}/student/quizzes?join=${accessCode}`}
+                value={`${origin}/join/${accessCode}`}
                 size={120}
                 downloadName={`رمز-اختبار-${accessCode}.png`}
               />

@@ -8,7 +8,8 @@ import DashboardShell from "@/components/DashboardShell";
 import QuizBuilder from "@/components/teacher/QuizBuilder";
 import { parseSettings } from "@/lib/exam";
 import { canEditStructure } from "@/lib/teacherQuiz";
-import { getTeacherSubjectTree } from "@/lib/teacher";
+import { getTeacherSubjectTree, teacherCanManageStudents } from "@/lib/teacher";
+import { selfRegisterEnabled } from "@/lib/selfRegister";
 import { getTeacherKeyboard } from "@/lib/teacherKeyboard";
 
 export const dynamic = "force-dynamic";
@@ -68,6 +69,7 @@ export default async function EditQuizPage({
     (s) => s.id === quiz.subjectId
   );
   const customKeyboard = await getTeacherKeyboard(session.sub);
+  const canSelfRegister = await teacherCanManageStudents(session.sub);
   const templates = await prisma.quizTemplate.findMany({
     where: { teacherId: session.sub },
     orderBy: { createdAt: "desc" },
@@ -189,7 +191,9 @@ export default async function EditQuizPage({
             : null,
           accessCode: quiz.accessCode,
           allowCodeJoin: quiz.allowCodeJoin,
+          selfRegister: selfRegisterEnabled(quiz.settings),
         }}
+        canSelfRegister={canSelfRegister}
       />
     </DashboardShell>
   );
