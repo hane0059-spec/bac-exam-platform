@@ -14,12 +14,15 @@ export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [openReports, openAppeals, needsGrading, canFileExams, studentCount, quizCount] =
+  const [openReports, openAppeals, openParentMsgs, needsGrading, canFileExams, studentCount, quizCount] =
     await Promise.all([
       prisma.questionReport.count({
         where: { status: "OPEN", question: { creatorId: session.sub } },
       }),
       prisma.gradeAppeal.count({
+        where: { status: "OPEN", session: { quiz: { creatorId: session.sub } } },
+      }),
+      prisma.parentMessage.count({
         where: { status: "OPEN", session: { quiz: { creatorId: session.sub } } },
       }),
       // بانتظار تصحيح يدويّ: ورقيّ (needsGrading) أو عاديّ فيه إجابة بانتظار المراجعة.
@@ -185,6 +188,22 @@ export default async function TeacherDashboard() {
           </div>
           <p className="text-sm leading-relaxed text-ink/60">
             اعتراضات الطلاب على نتائج التصحيح اليدوي — راجعها وأعد التصحيح.
+          </p>
+        </Link>
+        <Link
+          href="/teacher/parent-messages"
+          className="card p-4 transition hover:border-primary/40 sm:p-5"
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">رسائل أولياء الأمور</h3>
+            {openParentMsgs > 0 && (
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                {openParentMsgs}
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-ink/60">
+            اعتراضات وشكر وطلبات إعادة اختبار من أولياء الأمور — اقرأها وردّ عليها.
           </p>
         </Link>
       </div>

@@ -24,15 +24,15 @@ enum Role {
 
 // المؤسّسة التعليمية (مدرسة/معهد) — وعاء العزل بين المستخدمين.
 model School {
-  id        String   @id @default(uuid())
-  name      String
-  type      String? // "مدرسة" / "معهد"
-  isActive  Boolean  @default(true) @map("is_active")
+  id          String   @id @default(uuid())
+  name        String
+  type        String? // "مدرسة" / "معهد"
+  isActive    Boolean  @default(true) @map("is_active")
   // ملاحظات خاصّة يكتبها مُنشئها (المدير العام) ويطّلع عليها هو فقط.
   notes       String?
-  createdById String? @map("created_by_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  users     User[]
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  users       User[]
 
   @@map("schools")
 }
@@ -62,7 +62,7 @@ model CustomFieldDef {
   id        String          @id @default(uuid())
   label     String
   fieldKey  String          @unique @map("field_key")
-  fieldType CustomFieldType  @default(TEXT) @map("field_type")
+  fieldType CustomFieldType @default(TEXT) @map("field_type")
   options   String[] // لقوائم SELECT
   required  Boolean         @default(false)
   appliesTo String          @default("ALL") @map("applies_to") // ALL|STUDENT|TEACHER|ADMIN
@@ -153,21 +153,21 @@ enum AppealStatus {
 // ─────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(uuid())
-  email        String?  @unique
-  passwordHash String   @map("password_hash")
+  id           String    @id @default(uuid())
+  email        String?   @unique
+  passwordHash String    @map("password_hash")
   role         Role
   gender       Gender
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
   phone        String?
-  avatarUrl    String?  @map("avatar_url")
-  isActive     Boolean  @default(true) @map("is_active")
-  isSuperAdmin Boolean  @default(false) @map("is_super_admin") // مدير عام (صلاحية كاملة)
-  schoolId     String?  @map("school_id") // المؤسّسة (null = على مستوى المنصّة)
-  school       School?  @relation(fields: [schoolId], references: [id])
-  customData   Json?    @map("custom_data") // قيم الحقول المخصّصة
-  createdById  String?  @map("created_by_id") // المُنشئ للحساب
+  avatarUrl    String?   @map("avatar_url")
+  isActive     Boolean   @default(true) @map("is_active")
+  isSuperAdmin Boolean   @default(false) @map("is_super_admin") // مدير عام (صلاحية كاملة)
+  schoolId     String?   @map("school_id") // المؤسّسة (null = على مستوى المنصّة)
+  school       School?   @relation(fields: [schoolId], references: [id])
+  customData   Json?     @map("custom_data") // قيم الحقول المخصّصة
+  createdById  String?   @map("created_by_id") // المُنشئ للحساب
   // ملاحظات خاصّة يكتبها مُنشئ الحساب عنه، ويطّلع عليها هو فقط (تُحرَّر دائماً).
   creatorNotes String?   @map("creator_notes")
   lastSeenAt   DateTime? @map("last_seen_at") // آخر نشاط مُسجَّل (تُحدَّث تلقائياً على كل طلب مصادَق)
@@ -175,28 +175,30 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  createdBy          User?    @relation("UserCreator", fields: [createdById], references: [id])
-  createdUsers       User[]   @relation("UserCreator")
-  studentProfile     StudentProfile?
-  teacherProfile     TeacherProfile?
-  teacherSubjects    TeacherSubject[]
-  teacherEnrollments StudentEnrollment[] @relation("TeacherEnrollments")
-  studentEnrollments StudentEnrollment[] @relation("StudentEnrollments")
-  createdQuestions   Question[]
-  createdQuizzes     Quiz[]
-  examSessions       ExamSession[]
-  assignments        QuizAssignment[]    @relation("StudentAssignments")
-  givenAssignments   QuizAssignment[]    @relation("TeacherAssignments")
+  createdBy           User?               @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers        User[]              @relation("UserCreator")
+  studentProfile      StudentProfile?
+  teacherProfile      TeacherProfile?
+  teacherSubjects     TeacherSubject[]
+  teacherEnrollments  StudentEnrollment[] @relation("TeacherEnrollments")
+  studentEnrollments  StudentEnrollment[] @relation("StudentEnrollments")
+  createdQuestions    Question[]
+  createdQuizzes      Quiz[]
+  examSessions        ExamSession[]
+  assignments         QuizAssignment[]    @relation("StudentAssignments")
+  givenAssignments    QuizAssignment[]    @relation("TeacherAssignments")
   // ولي الأمر: روابطه بأبنائه؛ والطالب: روابط أوليائه (متعدّد-لمتعدّد).
-  parentLinks        ParentLink[]        @relation("ParentLinks")
-  studentParents     ParentLink[]        @relation("StudentParents")
-  uploadedAttachments Attachment[]       @relation("UploadedBy")
-  notifications      Notification[]
-  annotations        Annotation[]        @relation("AnnotationAuthor")
-  questionReports    QuestionReport[]
-  gradeAppeals       GradeAppeal[]       @relation("StudentAppeals")
-  enrichmentFiles    EnrichmentFile[]
-  quizTemplates      QuizTemplate[]
+  parentLinks         ParentLink[]        @relation("ParentLinks")
+  studentParents      ParentLink[]        @relation("StudentParents")
+  uploadedAttachments Attachment[]        @relation("UploadedBy")
+  notifications       Notification[]
+  annotations         Annotation[]        @relation("AnnotationAuthor")
+  questionReports     QuestionReport[]
+  gradeAppeals        GradeAppeal[]       @relation("StudentAppeals")
+  parentMessagesSent  ParentMessage[]     @relation("ParentMessagesSent")
+  parentMessagesAbout ParentMessage[]     @relation("ParentMessagesAbout")
+  enrichmentFiles     EnrichmentFile[]
+  quizTemplates       QuizTemplate[]
 
   @@index([role, schoolId])
   @@index([createdById])
@@ -238,6 +240,39 @@ model GradeAppeal {
   @@index([sessionId])
   @@index([status])
   @@map("grade_appeals")
+}
+
+enum ParentMessageKind {
+  OBJECTION
+  THANKS
+  RETAKE_REQUEST
+}
+
+enum ParentMessageStatus {
+  OPEN
+  ANSWERED
+}
+
+// رسالة من وليّ أمر إلى مدرّس اختبار ابنه (اعتراض/شكر/طلب إعادة) + ردّ المدرّس.
+model ParentMessage {
+  id              String              @id @default(uuid())
+  parentId        String              @map("parent_id")
+  parent          User                @relation("ParentMessagesSent", fields: [parentId], references: [id], onDelete: Cascade)
+  studentId       String              @map("student_id")
+  student         User                @relation("ParentMessagesAbout", fields: [studentId], references: [id], onDelete: Cascade)
+  sessionId       String              @map("session_id")
+  session         ExamSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  kind            ParentMessageKind
+  body            String
+  status          ParentMessageStatus @default(OPEN)
+  teacherResponse String?             @map("teacher_response")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  respondedAt     DateTime?           @map("responded_at")
+
+  @@index([sessionId])
+  @@index([parentId])
+  @@index([status])
+  @@map("parent_messages")
 }
 
 // إشعار داخل التطبيق لمستخدم (مثل: تصحيح اختبار).
@@ -327,14 +362,14 @@ model StudentProfile {
 }
 
 model TeacherProfile {
-  id            String  @id @default(uuid())
-  userId        String  @unique @map("user_id")
-  user          User    @relation(fields: [userId], references: [id])
-  employeeCode  String  @unique @map("employee_code")
-  qualification String?
-  bio           String?
+  id                String  @id @default(uuid())
+  userId            String  @unique @map("user_id")
+  user              User    @relation(fields: [userId], references: [id])
+  employeeCode      String  @unique @map("employee_code")
+  qualification     String?
+  bio               String?
   // خاصّية اختيارية يفعّلها المدير عند الطلب: إنشاء اختبارات ورقية/مرفوعة (لتقليل التخزين).
-  canFileExams  Boolean @default(false) @map("can_file_exams")
+  canFileExams      Boolean @default(false) @map("can_file_exams")
   // إذن المدير للمدرّس بإضافة وإدارة حسابات الطلاب (الإسناد يبقى حرّاً دائماً).
   canManageStudents Boolean @default(false) @map("can_manage_students")
   // مدرّس مستقلّ يدير مؤسّسته بنفسه (هو المدير والمدرّس)، يُنشئه المدير العام.
@@ -353,11 +388,11 @@ model TeacherProfile {
 // ─────────────────────────────────────────────
 
 model GradeLevel {
-  id             String           @id @default(uuid())
-  name           String           // "بكالوريا علمي"
-  code           String           @unique // "BAC_SCI"
-  orderNum       Int              @map("order_num")
-  subjects       Subject[]
+  id              String           @id @default(uuid())
+  name            String // "بكالوريا علمي"
+  code            String           @unique // "BAC_SCI"
+  orderNum        Int              @map("order_num")
+  subjects        Subject[]
   studentProfiles StudentProfile[]
   enrichmentFiles EnrichmentFile[]
 
@@ -366,19 +401,19 @@ model GradeLevel {
 
 // ملفّ PDF عامّ (بلا تسجيل دخول) لصفحة «أسئلة وإثراء» — يرفعه المدير العام فقط.
 model EnrichmentFile {
-  id           String     @id @default(uuid())
-  gradeLevelId String     @map("grade_level_id")
-  gradeLevel   GradeLevel @relation(fields: [gradeLevelId], references: [id], onDelete: Cascade)
-  title        String     // اسم الملف الأصلي كما رُفع من المصدر
-  mimeType     String     @map("mime_type")
-  sizeBytes    Int        @map("size_bytes")
-  data         Bytes?     // فارغ للمنشور النصّي (kind=TEXT)
-  kind         String     @default("FILE") // FILE | TEXT
-  body         String?    // نصّ المنشور (kind=TEXT)
-  uploadedById String     @map("uploaded_by_id")
-  uploadedBy   User       @relation(fields: [uploadedById], references: [id])
-  downloadCount Int       @default(0) @map("download_count")
-  createdAt    DateTime   @default(now()) @map("created_at")
+  id            String     @id @default(uuid())
+  gradeLevelId  String     @map("grade_level_id")
+  gradeLevel    GradeLevel @relation(fields: [gradeLevelId], references: [id], onDelete: Cascade)
+  title         String // اسم الملف الأصلي كما رُفع من المصدر
+  mimeType      String     @map("mime_type")
+  sizeBytes     Int        @map("size_bytes")
+  data          Bytes? // فارغ للمنشور النصّي (kind=TEXT)
+  kind          String     @default("FILE") // FILE | TEXT
+  body          String? // نصّ المنشور (kind=TEXT)
+  uploadedById  String     @map("uploaded_by_id")
+  uploadedBy    User       @relation(fields: [uploadedById], references: [id])
+  downloadCount Int        @default(0) @map("download_count")
+  createdAt     DateTime   @default(now()) @map("created_at")
 
   @@index([gradeLevelId])
   @@map("enrichment_files")
@@ -386,13 +421,13 @@ model EnrichmentFile {
 
 model Subject {
   id           String     @id @default(uuid())
-  name         String     // "الفيزياء والكيمياء"
+  name         String // "الفيزياء والكيمياء"
   code         String     @unique // "PHYS_CHEM"
   gradeLevelId String     @map("grade_level_id")
   gradeLevel   GradeLevel @relation(fields: [gradeLevelId], references: [id])
   description  String?
   iconUrl      String?    @map("icon_url")
-  color        String?    // HEX color
+  color        String? // HEX color
   isActive     Boolean    @default(true) @map("is_active")
 
   units           Unit[]
@@ -452,13 +487,13 @@ model StudentEnrollment {
 // ─────────────────────────────────────────────
 
 model Chapter {
-  id          String    @id @default(uuid())
-  subjectId   String    @map("subject_id")
-  subject     Subject   @relation(fields: [subjectId], references: [id])
-  unitId      String?   @map("unit_id")
-  unit        Unit?     @relation(fields: [unitId], references: [id])
+  id          String     @id @default(uuid())
+  subjectId   String     @map("subject_id")
+  subject     Subject    @relation(fields: [subjectId], references: [id])
+  unitId      String?    @map("unit_id")
+  unit        Unit?      @relation(fields: [unitId], references: [id])
   title       String
-  orderNum    Int       @map("order_num")
+  orderNum    Int        @map("order_num")
   description String?
   concepts    Concept[]
   questions   Question[]
@@ -467,14 +502,14 @@ model Chapter {
 }
 
 model Concept {
-  id          String    @id @default(uuid())
-  chapterId   String    @map("chapter_id")
-  chapter     Chapter   @relation(fields: [chapterId], references: [id])
+  id          String                      @id @default(uuid())
+  chapterId   String                      @map("chapter_id")
+  chapter     Chapter                     @relation(fields: [chapterId], references: [id])
   title       String
   description String?
-  parentId    String?   @map("parent_id")
-  parent      Concept?  @relation("ConceptHierarchy", fields: [parentId], references: [id])
-  children    Concept[] @relation("ConceptHierarchy")
+  parentId    String?                     @map("parent_id")
+  parent      Concept?                    @relation("ConceptHierarchy", fields: [parentId], references: [id])
+  children    Concept[]                   @relation("ConceptHierarchy")
   questions   Question[]
   performance StudentConceptPerformance[]
 
@@ -512,12 +547,12 @@ model Question {
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
-  options         QuestionOption[]
-  matchingPairs   QuestionMatchingPair[]
-  quizNodes       QuizNode[]
-  studentAnswers  StudentAnswer[]
-  reports         QuestionReport[]
-  attachments     Attachment[]
+  options        QuestionOption[]
+  matchingPairs  QuestionMatchingPair[]
+  quizNodes      QuizNode[]
+  studentAnswers StudentAnswer[]
+  reports        QuestionReport[]
+  attachments    Attachment[]
 
   @@index([creatorId])
   @@index([subjectId])
@@ -530,7 +565,7 @@ model QuestionOption {
   id          String   @id @default(uuid())
   questionId  String   @map("question_id")
   question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  label       String   // 'أ', 'ب', 'ج', 'د'
+  label       String // 'أ', 'ب', 'ج', 'د'
   content     String
   contentHtml String?  @map("content_html")
   mediaUrl    String?  @map("media_url")
@@ -576,24 +611,24 @@ model QuizTemplate {
 // ─────────────────────────────────────────────
 
 model Quiz {
-  id            String     @id @default(uuid())
-  creatorId     String     @map("creator_id")
-  creator       User       @relation(fields: [creatorId], references: [id])
-  subjectId     String     @map("subject_id")
-  subject       Subject    @relation(fields: [subjectId], references: [id])
-  title         String
-  description   String?
-  mode          QuizMode   @default(LINEAR)
-  status        QuizStatus @default(DRAFT)
-  accessCode    String?    @unique @map("access_code") // رمز تسلسلي للدخول للاختبار
-  allowCodeJoin Boolean    @default(false) @map("allow_code_join") // السماح بالانضمام عبر الرمز
-  isFileBased   Boolean    @default(false) @map("is_file_based") // اختبار ورقي/مرفوع (صورة/PDF + تصحيح يدوي)
-  startNodeId   String?    @map("start_node_id")
-  settings      Json       @default("{}") // { timeLimit, maxAttempts, ... }
-  availableFrom DateTime?  @map("available_from")
-  availableUntil DateTime? @map("available_until")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  id             String     @id @default(uuid())
+  creatorId      String     @map("creator_id")
+  creator        User       @relation(fields: [creatorId], references: [id])
+  subjectId      String     @map("subject_id")
+  subject        Subject    @relation(fields: [subjectId], references: [id])
+  title          String
+  description    String?
+  mode           QuizMode   @default(LINEAR)
+  status         QuizStatus @default(DRAFT)
+  accessCode     String?    @unique @map("access_code") // رمز تسلسلي للدخول للاختبار
+  allowCodeJoin  Boolean    @default(false) @map("allow_code_join") // السماح بالانضمام عبر الرمز
+  isFileBased    Boolean    @default(false) @map("is_file_based") // اختبار ورقي/مرفوع (صورة/PDF + تصحيح يدوي)
+  startNodeId    String?    @map("start_node_id")
+  settings       Json       @default("{}") // { timeLimit, maxAttempts, ... }
+  availableFrom  DateTime?  @map("available_from")
+  availableUntil DateTime?  @map("available_until")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
 
   nodes       QuizNode[]
   edges       QuizEdge[]
@@ -607,20 +642,20 @@ model Quiz {
 }
 
 model QuizNode {
-  id         String   @id @default(uuid())
-  quizId     String   @map("quiz_id")
-  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  questionId String?  @map("question_id")
-  question   Question? @relation(fields: [questionId], references: [id])
-  nodeType   NodeType @map("node_type")
-  pointsOverride Decimal? @db.Decimal(5, 2) @map("points_override")
-  positionX  Float    @default(0) @map("position_x")
-  positionY  Float    @default(0) @map("position_y")
-  metadata   Json?
+  id             String    @id @default(uuid())
+  quizId         String    @map("quiz_id")
+  quiz           Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionId     String?   @map("question_id")
+  question       Question? @relation(fields: [questionId], references: [id])
+  nodeType       NodeType  @map("node_type")
+  pointsOverride Decimal?  @map("points_override") @db.Decimal(5, 2)
+  positionX      Float     @default(0) @map("position_x")
+  positionY      Float     @default(0) @map("position_y")
+  metadata       Json?
 
-  outgoingEdges QuizEdge[]    @relation("SourceNode")
-  incomingEdges QuizEdge[]    @relation("TargetNode")
-  sessions      ExamSession[] @relation("CurrentNode")
+  outgoingEdges  QuizEdge[]      @relation("SourceNode")
+  incomingEdges  QuizEdge[]      @relation("TargetNode")
+  sessions       ExamSession[]   @relation("CurrentNode")
   studentAnswers StudentAnswer[]
 
   @@index([quizId])
@@ -629,33 +664,33 @@ model QuizNode {
 }
 
 model QuizEdge {
-  id              String        @id @default(uuid())
-  quizId          String        @map("quiz_id")
-  quiz            Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  sourceNodeId    String        @map("source_node_id")
-  sourceNode      QuizNode      @relation("SourceNode", fields: [sourceNodeId], references: [id])
-  targetNodeId    String        @map("target_node_id")
-  targetNode      QuizNode      @relation("TargetNode", fields: [targetNodeId], references: [id])
-  conditionType   EdgeCondition @map("condition_type")
-  conditionValue  Json?         @map("condition_value") // { optionId, score }
-  label           String?
-  priority        Int           @default(0) // لترتيب تقييم الشروط
+  id             String        @id @default(uuid())
+  quizId         String        @map("quiz_id")
+  quiz           Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  sourceNodeId   String        @map("source_node_id")
+  sourceNode     QuizNode      @relation("SourceNode", fields: [sourceNodeId], references: [id])
+  targetNodeId   String        @map("target_node_id")
+  targetNode     QuizNode      @relation("TargetNode", fields: [targetNodeId], references: [id])
+  conditionType  EdgeCondition @map("condition_type")
+  conditionValue Json?         @map("condition_value") // { optionId, score }
+  label          String?
+  priority       Int           @default(0) // لترتيب تقييم الشروط
 
   @@map("quiz_edges")
 }
 
 model QuizAssignment {
-  id         String    @id @default(uuid())
-  quizId     String    @map("quiz_id")
-  quiz       Quiz      @relation(fields: [quizId], references: [id])
-  studentId  String?   @map("student_id")
-  student    User?     @relation("StudentAssignments", fields: [studentId], references: [id])
-  teacherId  String?   @map("teacher_id")
-  teacher    User?     @relation("TeacherAssignments", fields: [teacherId], references: [id])
-  assignedAt DateTime  @default(now()) @map("assigned_at")
-  dueDate    DateTime? @map("due_date")
+  id                String    @id @default(uuid())
+  quizId            String    @map("quiz_id")
+  quiz              Quiz      @relation(fields: [quizId], references: [id])
+  studentId         String?   @map("student_id")
+  student           User?     @relation("StudentAssignments", fields: [studentId], references: [id])
+  teacherId         String?   @map("teacher_id")
+  teacher           User?     @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  assignedAt        DateTime  @default(now()) @map("assigned_at")
+  dueDate           DateTime? @map("due_date")
   // محاولات إضافية ممنوحة لهذا الطالب فوق حدّ الاختبار (لإعادة الامتحان).
-  extraAttempts Int    @default(0) @map("extra_attempts")
+  extraAttempts     Int       @default(0) @map("extra_attempts")
   // أرشفة الطالب لهذا الاختبار بطلبه (بعد مشاهدة نتيجته) — عرضيٌّ فقط.
   studentArchivedAt DateTime? @map("student_archived_at")
 
@@ -682,8 +717,8 @@ model ExamSession {
   startedAt        DateTime      @default(now()) @map("started_at")
   completedAt      DateTime?     @map("completed_at")
   timeSpent        Int           @default(0) @map("time_spent") // seconds
-  totalScore       Decimal       @default(0) @db.Decimal(6, 2) @map("total_score")
-  maxPossibleScore Decimal       @default(0) @db.Decimal(6, 2) @map("max_possible_score")
+  totalScore       Decimal       @default(0) @map("total_score") @db.Decimal(6, 2)
+  maxPossibleScore Decimal       @default(0) @map("max_possible_score") @db.Decimal(6, 2)
   percentage       Decimal       @default(0) @db.Decimal(5, 2)
   attemptNumber    Int           @default(1) @map("attempt_number")
   deviceInfo       Json?         @map("device_info")
@@ -692,9 +727,10 @@ model ExamSession {
   needsGrading     Boolean       @default(false) @map("needs_grading")
   teacherFeedback  String?       @map("teacher_feedback")
 
-  answers     StudentAnswer[]
-  attachments Attachment[]
-  appeals     GradeAppeal[]
+  answers        StudentAnswer[]
+  attachments    Attachment[]
+  appeals        GradeAppeal[]
+  parentMessages ParentMessage[]
 
   @@index([quizId, studentId])
   @@index([studentId])
@@ -702,21 +738,21 @@ model ExamSession {
 }
 
 model StudentAnswer {
-  id                String         @id @default(uuid())
-  sessionId         String         @map("session_id")
-  session           ExamSession    @relation(fields: [sessionId], references: [id])
-  questionId        String         @map("question_id")
-  question          Question       @relation(fields: [questionId], references: [id])
-  nodeId            String         @map("node_id")
-  node              QuizNode       @relation(fields: [nodeId], references: [id])
-  selectedOptions   QuestionOption[] @relation("SelectedOptions")
-  textAnswer        String?        @map("text_answer")
-  isCorrect         Boolean        @map("is_correct")
-  scoreEarned       Decimal        @default(0) @db.Decimal(5, 2) @map("score_earned")
-  needsReview       Boolean        @default(false) @map("needs_review") // بانتظار تصحيح المدرّس
-  timeSpent         Int            @default(0) @map("time_spent") // seconds
-  hintUsed          Boolean        @default(false) @map("hint_used")
-  answeredAt        DateTime       @default(now()) @map("answered_at")
+  id              String           @id @default(uuid())
+  sessionId       String           @map("session_id")
+  session         ExamSession      @relation(fields: [sessionId], references: [id])
+  questionId      String           @map("question_id")
+  question        Question         @relation(fields: [questionId], references: [id])
+  nodeId          String           @map("node_id")
+  node            QuizNode         @relation(fields: [nodeId], references: [id])
+  selectedOptions QuestionOption[] @relation("SelectedOptions")
+  textAnswer      String?          @map("text_answer")
+  isCorrect       Boolean          @map("is_correct")
+  scoreEarned     Decimal          @default(0) @map("score_earned") @db.Decimal(5, 2)
+  needsReview     Boolean          @default(false) @map("needs_review") // بانتظار تصحيح المدرّس
+  timeSpent       Int              @default(0) @map("time_spent") // seconds
+  hintUsed        Boolean          @default(false) @map("hint_used")
+  answeredAt      DateTime         @default(now()) @map("answered_at")
 
   @@index([sessionId])
   @@index([questionId])
@@ -729,16 +765,16 @@ model StudentAnswer {
 // ─────────────────────────────────────────────
 
 model StudentConceptPerformance {
-  id            String   @id @default(uuid())
-  studentId     String   @map("student_id")
-  conceptId     String   @map("concept_id")
-  concept       Concept  @relation(fields: [conceptId], references: [id])
-  subjectId     String   @map("subject_id")
-  totalAttempts Int      @default(0) @map("total_attempts")
-  correctCount  Int      @default(0) @map("correct_count")
-  masteryScore  Decimal  @default(0) @db.Decimal(5, 2) @map("mastery_score")
+  id            String    @id @default(uuid())
+  studentId     String    @map("student_id")
+  conceptId     String    @map("concept_id")
+  concept       Concept   @relation(fields: [conceptId], references: [id])
+  subjectId     String    @map("subject_id")
+  totalAttempts Int       @default(0) @map("total_attempts")
+  correctCount  Int       @default(0) @map("correct_count")
+  masteryScore  Decimal   @default(0) @map("mastery_score") @db.Decimal(5, 2)
   lastPracticed DateTime? @map("last_practiced")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   @@unique([studentId, conceptId])
   @@index([studentId])

@@ -8,6 +8,7 @@ import { getSessionReview } from "@/lib/exam";
 import DashboardShell from "@/components/DashboardShell";
 import SessionReviewView from "@/components/SessionReviewView";
 import ImageAnnotator from "@/components/ImageAnnotator";
+import ParentMessageBox from "@/components/parent/ParentMessageBox";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,18 @@ export default async function ChildSessionReviewPage({
     },
   });
   if (!exam || exam.studentId !== params.studentId) notFound();
+
+  const pastRaw = await prisma.parentMessage.findMany({
+    where: { sessionId: params.sessionId, parentId: session.sub },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, kind: true, body: true, status: true, teacherResponse: true, createdAt: true },
+  });
+  const messageBox = (
+    <ParentMessageBox
+      sessionId={params.sessionId}
+      past={pastRaw.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() }))}
+    />
+  );
 
   const studentName = `${exam.student.firstName} ${exam.student.lastName}`;
 
@@ -106,6 +119,7 @@ export default async function ChildSessionReviewPage({
             )}
           </div>
         )}
+        {messageBox}
       </DashboardShell>
     );
   }
@@ -125,6 +139,7 @@ export default async function ChildSessionReviewPage({
       ) : (
         <SessionReviewView review={review} />
       )}
+      {messageBox}
     </DashboardShell>
   );
 }
