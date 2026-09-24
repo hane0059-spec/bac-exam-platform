@@ -1,6 +1,8 @@
 // src/app/api/teacher/quizzes/[id]/route.ts
 // PATCH: حفظ بيانات الاختبار وأسئلته. DELETE: حذف (أو أرشفة إن كان مُستخدَماً).
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import { recomputeSessionScore } from "@/lib/exam";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import {
@@ -67,16 +69,88 @@ export async function PATCH(
   };
 
   if (!structural) {
-    // اختبار منشور أو له جلسات: لا تُمسّ الأسئلة ولا الإعدادات المؤثّرة.
-    // التسجيل الذاتي يُعدَّل دائماً (كالانضمام بالرمز) دون مسّ بقية الإعدادات.
-    await prisma.quiz.update({
-      where: { id: quiz.id },
-      data: {
-        ...metaData,
-        settings: { ...prevSettings, selfRegister: data.settings.selfRegister },
+    // اختبار منشور أو له جلسات: لا تُضاف/تُحذف/تُرتَّب الأسئلة، لكن يُسمح بتعديل
+    // المهلة والمحاولات وكشف التصحيح والخلط وعلامات الأسئلة الموجودة.
+    // (المؤرشف/محذوف المحتوى: بيانات وصفية فقط.)
+    const tunable = quiz.status !== "ARCHIVED";
+    const nodes = tunable
+      ? await prisma.quizNode.findMany({
+          where: { quizId: quiz.id, nodeType: "QUESTION", questionId: { not: null } },
+          select: {
+            id: true,
+            questionId: true,
+            pointsOverride: true,
+            question: { select: { points: true } },
+          },
+        })
+      : [];
+    const byQuestion = new Map(nodes.map((n) => [n.questionId as string, n]));
+    const changes: { nodeId: string; oldPts: number; newPts: number; override: number | null }[] = [];
+    for (const it of data.questions) {
+      const n = byQuestion.get(it.questionId);
+      if (!n) continue;
+      const base = Number(n.question?.points ?? 0);
+      const oldPts = Number(n.pointsOverride ?? base);
+      const newPts = it.pointsOverride ?? base;
+      const oldOverride = n.pointsOverride === null ? null : Number(n.pointsOverride);
+      if (oldOverride !== it.pointsOverride)
+        changes.push({ nodeId: n.id, oldPts, newPts, override: it.pointsOverride });
+    }
+
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.quiz.update({
+          where: { id: quiz.id },
+          data: {
+            ...metaData,
+            settings: tunable
+              ? {
+                  ...prevSettings,
+                  timeLimitSec: data.settings.timeLimitSec,
+                  maxAttempts: data.settings.maxAttempts,
+                  revealAnswers: data.settings.revealAnswers,
+                  shuffle: data.settings.shuffle,
+                  selfRegister: data.settings.selfRegister,
+                }
+              : { ...prevSettings, selfRegister: data.settings.selfRegister },
+          },
+        });
+        for (const c of changes) {
+          await tx.quizNode.update({
+            where: { id: c.nodeId },
+            data: { pointsOverride: c.override as unknown as Prisma.Decimal | null },
+          });
+          // الدرجة المكتسبة مُخزَّنة مطلقةً: تُقاس بنفس النسبة لتبقى نسبة الصواب كما هي.
+          if (c.oldPts > 0 && c.oldPts !== c.newPts) {
+            const answers = await tx.studentAnswer.findMany({
+              where: { nodeId: c.nodeId, scoreEarned: { gt: 0 } },
+              select: { id: true, scoreEarned: true },
+            });
+            const ratio = c.newPts / c.oldPts;
+            for (const a of answers) {
+              const v = Math.min(c.newPts, Math.round(Number(a.scoreEarned) * ratio * 100) / 100);
+              await tx.studentAnswer.update({ where: { id: a.id }, data: { scoreEarned: v } });
+            }
+          } else if (c.oldPts === 0 && c.newPts > 0) {
+            await tx.studentAnswer.updateMany({
+              where: { nodeId: c.nodeId, isCorrect: true },
+              data: { scoreEarned: c.newPts },
+            });
+          }
+        }
       },
-    });
-    return NextResponse.json({ id: quiz.id, structural: false });
+      { timeout: 60000, maxWait: 15000 },
+    );
+
+    // إعادة حساب الجلسات المنتهية بعد تغيّر العلامات.
+    if (changes.length > 0) {
+      const sessions = await prisma.examSession.findMany({
+        where: { quizId: quiz.id, status: { in: ["COMPLETED", "TIMED_OUT"] } },
+        select: { id: true },
+      });
+      await Promise.all(sessions.map((s) => recomputeSessionScore(s.id)));
+    }
+    return NextResponse.json({ id: quiz.id, structural: false, pointsChanged: changes.length });
   }
 
   // تحقّق ملكية الأسئلة وانتماؤها لمادة الاختبار.

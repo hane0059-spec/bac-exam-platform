@@ -84,7 +84,7 @@ export default async function ChildSessionReviewPage({
               {Number(exam.percentage)}%
             </p>
             <p className="text-center text-sm text-ink/60">
-              {Number(exam.totalScore)} من {Number(exam.maxPossibleScore)} نقطة
+              {Number(exam.totalScore)} من {Number(exam.maxPossibleScore)} درجة
             </p>
             {exam.teacherFeedback && (
               <div className="rounded-xl bg-ink/5 p-3 text-sm leading-relaxed">

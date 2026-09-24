@@ -101,7 +101,9 @@ export default function QuizBuilder({
   initial: QuizBuilderInitial;
 }) {
   const router = useRouter();
-  const ro = !canEditStructure; // بنية مقفلة
+  const ro = !canEditStructure; // بنية مقفلة (الأسئلة: إضافة/حذف/ترتيب)
+  // الإعدادات والعلامات تبقى قابلةً للتعديل للمنشور/المُستخدَم (لا للمؤرشف).
+  const tune = status !== "ARCHIVED";
 
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description);
@@ -420,8 +422,8 @@ export default function QuizBuilder({
         ro && (
           <div className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
             {status === "PUBLISHED"
-              ? "الاختبار منشور: يمكن تعديل العنوان والوصف ونافذة التوقيت فقط. لتغيير الأسئلة ألغِ النشر أولاً (قبل بدء أي طالب)."
-              : "الاختبار مُستخدَم في جلسات: بنيته مقفلة حفاظاً على النتائج."}
+              ? "الاختبار منشور: يمكنك تعديل العنوان والوصف والتوقيت والمهلة والمحاولات وكشف التصحيح والخلط ودرجات الأسئلة (تُعاد حسابات النتائج السابقة تلقائياً). لإضافة الأسئلة أو حذفها أو إعادة ترتيبها ألغِ النشر أولاً (قبل بدء أي طالب)."
+              : "الاختبار مُستخدَم في جلسات: الأسئلة مقفلة (لا إضافة/حذف/ترتيب) حفاظاً على النتائج، ويمكنك تعديل الإعدادات ودرجات الأسئلة."}
           </div>
         )
       )}
@@ -511,7 +513,7 @@ export default function QuizBuilder({
                 min={1}
                 className="field"
                 value={minutes}
-                disabled={ro || noLimit}
+                disabled={!tune || noLimit}
                 onChange={(e) => setMinutes(Number(e.target.value))}
               />
               <span className="text-sm text-ink/60">دقيقة</span>
@@ -520,7 +522,7 @@ export default function QuizBuilder({
               <input
                 type="checkbox"
                 checked={noLimit}
-                disabled={ro}
+                disabled={!tune}
                 onChange={(e) => setNoLimit(e.target.checked)}
               />
               بلا مهلة
@@ -534,7 +536,7 @@ export default function QuizBuilder({
               max={10}
               className="field"
               value={maxAttempts}
-              disabled={ro}
+              disabled={!tune}
               onChange={(e) => setMaxAttempts(Number(e.target.value))}
             />
           </div>
@@ -543,7 +545,7 @@ export default function QuizBuilder({
             <select
               className="field"
               value={reveal}
-              disabled={ro}
+              disabled={!tune}
               onChange={(e) =>
                 setReveal(e.target.value as "immediate" | "end")
               }
@@ -557,7 +559,7 @@ export default function QuizBuilder({
           <input
             type="checkbox"
             checked={shuffle}
-            disabled={ro}
+            disabled={!tune}
             onChange={(e) => setShuffle(e.target.checked)}
             className="accent-primary"
           />
@@ -663,7 +665,7 @@ export default function QuizBuilder({
                 </button>
               )}
             <span className="text-sm text-ink/60">
-              المجموع: {totalPoints} نقطة
+              المجموع: {totalPoints} درجة
             </span>
           </div>
         </div>
@@ -707,9 +709,9 @@ export default function QuizBuilder({
                     className="field w-20 px-2 py-1 text-sm"
                     placeholder={String(q?.points ?? "")}
                     value={it.pointsOverride ?? ""}
-                    disabled={ro}
+                    disabled={!tune}
                     onChange={(e) => setOverride(idx, e.target.value)}
-                    title="تجاوز العلامة (اتركه فارغاً للافتراضي)"
+                    title="درجة السؤال في هذا الاختبار (اتركه فارغاً للافتراضي)"
                   />
                   {!ro && (
                     <div className="flex items-center gap-1">
@@ -956,7 +958,7 @@ function QRow({ q, onAdd }: { q: BankQuestion; onAdd: () => void }) {
           <MathText text={q.content} />
         </p>
         <span className="text-xs text-ink/40">
-          {TYPE_LABEL[q.type]} • {q.points} نقطة
+          {TYPE_LABEL[q.type]} • {q.points} درجة
           {q.chapterTitle && ` • ${q.chapterTitle}`}
         </span>
       </div>

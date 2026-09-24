@@ -153,7 +153,7 @@ export default async function AdminQuestionsPage({
                   <span className="text-ink/50">• {q.chapter.title}</span>
                 )}
                 <span className="text-ink/50">• {DIFF_LABEL[q.difficulty]}</span>
-                <span className="text-ink/50">• {Number(q.points)} نقطة</span>
+                <span className="text-ink/50">• {Number(q.points)} درجة</span>
                 {q._count.studentAnswers > 0 && (
                   <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-gold">
                     مُستخدَم

@@ -365,7 +365,7 @@ export default function FileExamRunner({
               {finished.percentage}%
             </p>
             <p className="mt-1 text-sm text-ink/60">
-              {finished.score} من {finished.max} نقطة
+              {finished.score} من {finished.max} درجة
             </p>
           </div>
           {finished.feedback && (

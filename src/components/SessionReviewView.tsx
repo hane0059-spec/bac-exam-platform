@@ -16,7 +16,7 @@ export default function SessionReviewView({
         <p className="text-ink/60">«{review.quizTitle}»</p>
         <p className={`my-2 font-display text-5xl font-bold ${tone}`}>{pct}%</p>
         <p className="text-sm text-ink/60">
-          {review.totalScore} من {review.maxPossibleScore} نقطة
+          {review.totalScore} من {review.maxPossibleScore} درجة
           {review.status === "TIMED_OUT" && " · انتهى الوقت"}
           {review.status === "IN_PROGRESS" && " · قيد الأداء"}
         </p>

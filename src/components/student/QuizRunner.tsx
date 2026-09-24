@@ -831,7 +831,7 @@ function ResultView({ result }: { result: ResultData }) {
               {pct}%
             </p>
             <p className="text-sm text-ink/60">
-              {result.totalScore} من {result.maxPossibleScore} نقطة
+              {result.totalScore} من {result.maxPossibleScore} درجة
               {result.status === "TIMED_OUT" && " · انتهى الوقت"}
             </p>
           </>
