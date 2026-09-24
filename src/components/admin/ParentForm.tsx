@@ -39,7 +39,7 @@ export default function ParentForm({
         firstName,
         lastName,
         gender,
-        email: email || undefined,
+        email: email.trim() || undefined,
         password,
         studentCodes: splitCodes(codes),
         creatorNotes,
@@ -101,6 +101,9 @@ export default function ParentForm({
       <input
         className="field"
         dir="ltr"
+        type="text"
+        autoComplete="off"
+        name="parent-email"
         placeholder="البريد الإلكتروني (اختياري)"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -108,6 +111,7 @@ export default function ParentForm({
       <input
         className="field"
         type="password"
+        autoComplete="new-password"
         placeholder="كلمة السر (6 أحرف على الأقل)"
         value={password}
         onChange={(e) => setPassword(e.target.value)}

@@ -8,8 +8,9 @@ import type { SessionData } from "@/lib/auth";
 
 const genderEnum = z.enum(["MALE", "FEMALE"]);
 const optionalEmail = z.preprocess(
-  (v) => (v === "" || v == null ? undefined : v),
-  z.string().trim().email("بريد إلكتروني غير صالح").optional(),
+  (v) =>
+    v == null || (typeof v === "string" && v.trim() === "") ? undefined : v,
+  z.string().trim().email("بريد إلكتروني غير صالح (اتركه فارغاً إن لم يكن لديه بريد)").optional(),
 );
 
 export const parentCreateSchema = z.object({
