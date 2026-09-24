@@ -372,7 +372,9 @@ model EnrichmentFile {
   title        String     // اسم الملف الأصلي كما رُفع من المصدر
   mimeType     String     @map("mime_type")
   sizeBytes    Int        @map("size_bytes")
-  data         Bytes
+  data         Bytes?     // فارغ للمنشور النصّي (kind=TEXT)
+  kind         String     @default("FILE") // FILE | TEXT
+  body         String?    // نصّ المنشور (kind=TEXT)
   uploadedById String     @map("uploaded_by_id")
   uploadedBy   User       @relation(fields: [uploadedById], references: [id])
   downloadCount Int       @default(0) @map("download_count")

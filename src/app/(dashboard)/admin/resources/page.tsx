@@ -25,6 +25,9 @@ export default async function AdminResourcesPage() {
           sizeBytes: true,
           createdAt: true,
           downloadCount: true,
+          kind: true,
+          body: true,
+          mimeType: true,
         },
       },
     },
@@ -38,7 +41,7 @@ export default async function AdminResourcesPage() {
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">أسئلة وإثراء</h2>
         <p className="mt-1 text-sm text-ink/60">
-          ملفّات PDF عامّة (بلا تسجيل دخول) يحمّلها أي طالب من صفحة{" "}
+          لوحة إعلانات عامّة (بلا تسجيل دخول): ملفّات PDF/Word وصور ومنشورات نصّية لكل صفّ، يراها أي زائر في صفحة{" "}
           <a
             href="/resources"
             target="_blank"
@@ -63,6 +66,9 @@ export default async function AdminResourcesPage() {
             title: f.title,
             sizeBytes: f.sizeBytes,
             downloadCount: f.downloadCount,
+            kind: f.kind,
+            body: f.body,
+            mimeType: f.mimeType,
           })),
         }))}
       />

@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
-import { validateResourceFile } from "@/lib/resources";
+import { resolveResourceMime, validateResourceBytes } from "@/lib/resources";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,15 +34,19 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "لا ملف مرفوع" }, { status: 400 });
   }
-  const check = validateResourceFile(file);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const check = validateResourceBytes(
+    resolveResourceMime(file.name, file.type),
+    buffer.length,
+    buffer.subarray(0, 16),
+  );
   if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   const created = await prisma.enrichmentFile.create({
     data: {
       gradeLevelId,
-      title: file.name.slice(0, 200) || "ملف.pdf",
-      mimeType: file.type,
+      title: file.name.slice(0, 200) || "ملف",
+      mimeType: check.mime,
       sizeBytes: buffer.length,
       data: buffer,
       uploadedById: ctx.session.sub,
