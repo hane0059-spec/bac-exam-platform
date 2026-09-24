@@ -54,7 +54,7 @@ export default function ParentMessageBox({
   }
 
   return (
-    <div className="card mt-6 space-y-3 p-5 print:hidden">
+    <div className="card mb-6 space-y-3 p-5 print:hidden">
       <h3 className="font-display font-semibold">مراسلة مدرّس الاختبار</h3>
       <div className="flex flex-wrap gap-2">
         {(Object.keys(KIND) as PastMessage["kind"][]).map((k) => (

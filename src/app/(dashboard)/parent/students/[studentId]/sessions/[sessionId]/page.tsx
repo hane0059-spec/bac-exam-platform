@@ -80,6 +80,7 @@ export default async function ChildSessionReviewPage({
     return (
       <DashboardShell session={session}>
         {back}
+        {messageBox}
         {exam.needsGrading ? (
           <div className="card p-8 text-center text-ink/60">
             هذه المحاولة بانتظار تصحيح المدرّس.
@@ -119,7 +120,6 @@ export default async function ChildSessionReviewPage({
             )}
           </div>
         )}
-        {messageBox}
       </DashboardShell>
     );
   }
@@ -132,6 +132,7 @@ export default async function ChildSessionReviewPage({
   return (
     <DashboardShell session={session}>
       {back}
+      {messageBox}
       {pending ? (
         <div className="card p-8 text-center text-ink/60">
           هذه المحاولة بانتظار تصحيح المدرّس — تظهر النتيجة بعد اكتماله.
@@ -139,7 +140,6 @@ export default async function ChildSessionReviewPage({
       ) : (
         <SessionReviewView review={review} />
       )}
-      {messageBox}
     </DashboardShell>
   );
 }
