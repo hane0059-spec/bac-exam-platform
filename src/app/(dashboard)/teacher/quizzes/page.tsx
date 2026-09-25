@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { teacherCanFileExams } from "@/lib/teacher";
 import { computeDoneQuizIds } from "@/lib/teacherArchive";
 import DashboardShell from "@/components/DashboardShell";
+import TeacherPageLink from "@/components/teacher/TeacherPageLink";
+import { teacherLinkToken } from "@/lib/teacherLink";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,10 @@ export default async function TeacherQuizzesPage({
 
   const tab: Tab = searchParams.tab === "archive" ? "archive" : "active";
 
+  const profile = await prisma.teacherProfile.findUnique({
+    where: { userId: session.sub },
+    select: { employeeCode: true },
+  });
   const [quizzes, canFileExams] = await Promise.all([
     prisma.quiz.findMany({
       where: { creatorId: session.sub },
@@ -66,6 +72,9 @@ export default async function TeacherQuizzesPage({
 
   return (
     <DashboardShell session={session}>
+      {profile && (
+        <TeacherPageLink path={`/t/${teacherLinkToken(profile.employeeCode)}`} />
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl font-bold">اختباراتي</h2>
         <div className="flex flex-wrap gap-2">
