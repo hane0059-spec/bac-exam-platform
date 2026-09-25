@@ -73,6 +73,7 @@ interface ResultData {
   totalScore: number;
   maxPossibleScore: number;
   percentage: number;
+  teacherFeedback?: string | null;
   items: ResultItem[];
   sessionId?: string;
   quizId?: string;
@@ -837,6 +838,13 @@ function ResultView({ result }: { result: ResultData }) {
           </>
         )}
       </div>
+
+      {!pending && result.teacherFeedback && (
+        <div className="rounded-2xl border border-gold/40 bg-gold/10 p-4 text-sm leading-relaxed">
+          <p className="mb-1 font-medium text-gold">💬 ملاحظة مدرّسك</p>
+          <p className="whitespace-pre-wrap">{result.teacherFeedback}</p>
+        </div>
+      )}
 
       {!pending && result.quizId && (
         <div className="flex flex-wrap gap-2 print:hidden">

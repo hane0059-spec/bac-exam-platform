@@ -8,6 +8,7 @@ import { getSessionReview } from "@/lib/exam";
 import DashboardShell from "@/components/DashboardShell";
 import SessionReviewView from "@/components/SessionReviewView";
 import GradePanel from "@/components/teacher/GradePanel";
+import SessionFeedbackBox from "@/components/teacher/SessionFeedbackBox";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,13 @@ export default async function TeacherSessionReviewPage({
               explanation: it.explanation,
             }))}
         />
+        {review.status !== "IN_PROGRESS" && (
+          <SessionFeedbackBox
+            sessionId={params.id}
+            initial={review.teacherFeedback ?? ""}
+            assignHref={`/teacher/quizzes/${exam.quizId}/assign`}
+          />
+        )}
         <SessionReviewView review={review} />
       </div>
     </DashboardShell>

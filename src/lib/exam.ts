@@ -492,6 +492,7 @@ export interface SessionReview {
   totalScore: number;
   maxPossibleScore: number;
   percentage: number;
+  teacherFeedback: string | null;
   items: SessionReviewItem[];
 }
 
@@ -674,6 +675,7 @@ export async function getSessionReview(
     totalScore: Number(exam.totalScore),
     maxPossibleScore: Number(exam.maxPossibleScore),
     percentage: Number(exam.percentage),
+    teacherFeedback: exam.teacherFeedback ?? null,
     items,
   };
 }

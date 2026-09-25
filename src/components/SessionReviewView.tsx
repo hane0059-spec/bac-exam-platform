@@ -22,6 +22,13 @@ export default function SessionReviewView({
         </p>
       </div>
 
+      {review.teacherFeedback && (
+        <div className="rounded-2xl border border-gold/40 bg-gold/10 p-4 text-sm leading-relaxed">
+          <p className="mb-1 font-medium text-gold">💬 ملاحظة المدرّس</p>
+          <p className="whitespace-pre-wrap">{review.teacherFeedback}</p>
+        </div>
+      )}
+
       <div className="space-y-3">
         {review.items.map((it) => (
           <div

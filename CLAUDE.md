@@ -68,6 +68,8 @@
 
 **صفحة اختبارات المدرّس العامّة** (`/t/[token]`، بلا مخطط): رابط ثابت موقَّع `رمز-المدرّس.توقيع` (`src/lib/teacherLink.ts`، HMAC بـ`AUTH_SECRET` فلا يُخمَّن ولا يُعدَّد المدرّسون؛ تغيير `AUTH_SECRET` يُبطل الروابط) يعرض اسم المدرّس واختباراته المنشورة المفعّل فيها `allowCodeJoin` ضمن نافذة الإتاحة وغير المحذوفة المحتوى، وكل اختبار يفتح `/join/[code]`. يظهر الرابط مع «نسخ» أعلى `/teacher/quizzes` (`TeacherPageLink`).
 
+**ملاحظة المدرّس على النتيجة** (بلا مخطط، `ExamSession.teacherFeedback`): في صفحة مراجعة الجلسة (`/teacher/sessions/[id]`) صندوق «ملاحظتك للطالب» (`SessionFeedbackBox`: عبارات جاهزة للتشجيع/الإعادة + رابط «منح محاولة إضافية») → `POST /api/teacher/sessions/[id]/feedback` (ملكية الاختبار، جلسة منتهية، ≤1000 حرف، إشعار الطالب عند التغيير) وتظهر بجانب النتيجة للطالب (`QuizRunner`) ولوليّ الأمر (`SessionReviewView`) عبر `SessionReview.teacherFeedback`؛ وللورقي عبر مساره الخاصّ.
+
 **المتابعة:** نتائج المدرّس لكل اختبار + مراجعة جلسة كل طالب (`getSessionReview` مشترك) + **تصدير النتائج Excel** (`/api/teacher/quizzes/[id]/results/export`، RTL، بعزل الملكية).
 
 **بحث المدرّس في طلابه:** صندوق بحث في `/teacher/students` (بالاسم/الرمز/البريد/الهاتف) ضمن طلابه (إنشاءً أو تسجيلاً) — يعيد استخدام `UserSearchBox` بـ`basePath`.
