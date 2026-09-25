@@ -127,7 +127,13 @@ export default function LoginForm({
         return;
       }
       // إعادة تحميل كاملة ليلتقط الـ middleware الكوكي.
-      window.location.href = data.redirect ?? "/";
+      // العودة لصفحة انضمام اختبار (/join/رمز) بعد دخول طالب قادم من رابط اختبار.
+      const next = new URLSearchParams(window.location.search).get("next");
+      const safeNext =
+        next && /^\/join\/[A-Za-z0-9_-]{1,40}$/.test(next) && (data.redirect ?? "").startsWith("/student")
+          ? next
+          : null;
+      window.location.href = safeNext ?? data.redirect ?? "/";
     } catch {
       setError("تعذّر الاتصال بالخادم");
       setLoading(false);

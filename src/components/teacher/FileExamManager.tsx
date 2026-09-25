@@ -8,6 +8,7 @@ import ImageUploadField from "@/components/ImageUploadField";
 import ConfirmButton from "@/components/ConfirmButton";
 import DateTimeField from "@/components/DateTimeField";
 import QrCode from "@/components/QrCode";
+import QuizShareLink from "@/components/QuizShareLink";
 
 function toLocal(iso: string | null): string {
   if (!iso) return "";
@@ -305,6 +306,7 @@ export default function FileExamManager({
               <p className="mt-1 text-xs text-ink/50">
                 يمسحه الطالب فينضمّ مباشرة
               </p>
+              <QuizShareLink url={`${origin}/join/${accessCode}`} />
             </div>
           )}
         </div>

@@ -12,6 +12,7 @@ import QuestionForm, {
 } from "@/components/teacher/QuestionForm";
 import type { CustomKeyboard } from "@/components/math/symbolBank";
 import QrCode from "@/components/QrCode";
+import QuizShareLink from "@/components/QuizShareLink";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
@@ -603,6 +604,17 @@ export default function QuizBuilder({
                   {selfRegister && canSelfRegister
                     ? "يمسحه الطالب فيسجّل حسابه وينضمّ مباشرة"
                     : "يمسحه الطالب المسجَّل فينضمّ مباشرة"}
+                </p>
+              </div>
+            )}
+            {codeJoin && origin && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">رابط الاختبار للمشاركة</p>
+                <QuizShareLink url={`${origin}/join/${initial.accessCode}`} />
+                <p className="mt-1 text-xs text-ink/50">
+                  {selfRegister && canSelfRegister
+                    ? "الطالب المسجَّل يدخل الاختبار مباشرة بعد تسجيل دخوله، وغير المسجَّل ينشئ حسابه ثم يدخل."
+                    : "الطالب المسجَّل يدخل الاختبار مباشرة بعد تسجيل دخوله."}
                 </p>
               </div>
             )}

@@ -13,7 +13,7 @@ function JoinByCodeInner() {
   const [ok, setOk] = useState("");
   const autoTried = useRef(false);
 
-  async function join(codeToJoin: string) {
+  async function join(codeToJoin: string, goToQuiz = false) {
     setError("");
     setOk("");
     setBusy(true);
@@ -30,6 +30,11 @@ function JoinByCodeInner() {
     }
     setOk(`تمت إضافة: ${data.title}`);
     setCode("");
+    // القادم من رابط الاختبار يدخل صفحة الاختبار مباشرة.
+    if (goToQuiz && data.quizId) {
+      router.push(`/student/quizzes/${data.quizId}`);
+      return;
+    }
     router.refresh();
   }
 
@@ -40,7 +45,7 @@ function JoinByCodeInner() {
     autoTried.current = true;
     // تنظيف الرابط فوراً لتفادي إعادة المحاولة عند التحديث.
     router.replace("/student/quizzes");
-    join(fromQr);
+    join(fromQr, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 

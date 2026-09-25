@@ -40,19 +40,35 @@ export default async function JoinPage({ params }: { params: { code: string } })
           </div>
         </div>
       ) : quiz ? (
+        <>
+          <div className="card mb-4 space-y-2 p-5 text-center">
+            <p className="text-sm text-ink/70">
+              لديك حساب في المنصّة؟ سجّل دخولك وستدخل الاختبار مباشرة.
+            </p>
+            <Link
+              href={`/login?next=${encodeURIComponent(`/join/${params.code}`)}`}
+              className="btn-primary inline-block"
+            >
+              لديّ حساب — تسجيل الدخول
+            </Link>
+          </div>
         <SelfRegisterForm
           code={params.code}
           quizTitle={quiz.title}
           subjectName={quiz.subject.name}
           teacherName={`${quiz.creator.firstName} ${quiz.creator.lastName}`}
         />
+        </>
       ) : (
         <div className="card p-6 text-center">
           <p className="mb-3 text-ink/70">
             التسجيل الذاتي عبر هذا الرمز غير متاح. إن كان لديك حساب فادخل به ثم
             أدخل رمز الاختبار في «اختباراتي».
           </p>
-          <Link href="/login" className="btn-primary inline-block">
+          <Link
+            href={`/login?next=${encodeURIComponent(`/join/${params.code}`)}`}
+            className="btn-primary inline-block"
+          >
             تسجيل الدخول
           </Link>
         </div>

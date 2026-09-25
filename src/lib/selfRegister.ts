@@ -54,7 +54,7 @@ export async function findSelfRegisterQuiz(code: string) {
 }
 
 export type RegisterResult =
-  | { ok: true; studentId: string; studentCode: string; firstName: string; lastName: string; gender: "MALE" | "FEMALE"; quizTitle: string }
+  | { ok: true; studentId: string; studentCode: string; firstName: string; lastName: string; gender: "MALE" | "FEMALE"; quizTitle: string; quizId: string }
   | { ok: false; status: number; error: string };
 
 export async function registerStudentViaQuiz(
@@ -132,6 +132,7 @@ export async function registerStudentViaQuiz(
         lastName: d.lastName,
         gender: d.gender,
         quizTitle: quiz.title,
+        quizId: quiz.id,
       };
     } catch (e) {
       if (

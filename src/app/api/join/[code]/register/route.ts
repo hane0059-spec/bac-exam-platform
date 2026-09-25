@@ -58,6 +58,7 @@ export async function POST(
     ok: true,
     studentCode: result.studentCode,
     quizTitle: result.quizTitle,
+    quizId: result.quizId,
   });
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
   return res;

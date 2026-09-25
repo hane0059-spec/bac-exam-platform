@@ -23,7 +23,7 @@ export default function SelfRegisterForm({
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ studentCode: string } | null>(null);
+  const [done, setDone] = useState<{ studentCode: string; quizId?: string } | null>(null);
 
   async function submit() {
     setError("");
@@ -46,7 +46,7 @@ export default function SelfRegisterForm({
         setError(data.error ?? "تعذّر التسجيل.");
         return;
       }
-      setDone({ studentCode: data.studentCode });
+      setDone({ studentCode: data.studentCode, quizId: data.quizId });
     } catch {
       setError("تعذّر الاتصال بالخادم.");
     } finally {
@@ -70,8 +70,11 @@ export default function SelfRegisterForm({
         <p className="text-xs text-ink/50">
           تدخل بهذا الرمز (أو باسمك الكامل) مع كلمة السرّ التي اخترتها.
         </p>
-        <a href="/student/quizzes" className="btn-primary inline-block">
-          ابدأ من اختباراتي ←
+        <a
+          href={done.quizId ? `/student/quizzes/${done.quizId}` : "/student/quizzes"}
+          className="btn-primary inline-block"
+        >
+          ادخل الاختبار ←
         </a>
       </div>
     );
