@@ -5,6 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getBranding } from "@/lib/branding";
 import { formatFileSize, kindOfMime } from "@/lib/resources";
+import Linkify from "@/components/Linkify";
 import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -99,7 +100,7 @@ export default async function ResourcesPage() {
                             <span className="text-xs text-ink/45">{fmtDate(p.createdAt)}</span>
                           </div>
                           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/80">
-                            {p.body}
+                            <Linkify text={p.body ?? ""} />
                           </p>
                         </article>
                       ))}

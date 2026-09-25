@@ -1,4 +1,5 @@
 // src/components/DashboardShell.tsx
+import Linkify from "@/components/Linkify";
 import Link from "next/link";
 import { roleLabel, welcome } from "@/lib/gender";
 import { dashboardPath, type SessionData } from "@/lib/auth";
@@ -39,7 +40,7 @@ export default async function DashboardShell({
               : "bg-primary-light text-primary-dark"
           }`}
         >
-          {banner.text}
+          <Linkify text={banner.text} />
         </div>
       )}
       <header className="border-b border-line bg-surface print:hidden">

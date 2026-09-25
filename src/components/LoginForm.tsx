@@ -3,6 +3,7 @@
 // نموذج الدخول — كامل المحتوى المرئيّ تتحكّم به هوية المنصّة (Branding)
 // التي يضبطها المدير العام من /admin/settings.
 import { useEffect, useState } from "react";
+import Linkify from "@/components/Linkify";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import PasswordInput from "@/components/PasswordInput";
@@ -159,7 +160,7 @@ export default function LoginForm({
       {/* بانر الصيانة (أبرز) أو الملاحظة العامّة */}
       {branding.maintenance ? (
         <div className="mb-6 w-full max-w-md rounded-2xl border border-amber-400 bg-amber-50 px-4 py-3 text-center text-sm font-medium leading-relaxed text-amber-900">
-          🛠️ {branding.maintenanceMessage}
+          🛠️ <Linkify text={branding.maintenanceMessage} />
         </div>
       ) : (
         branding.notice && (
@@ -170,7 +171,7 @@ export default function LoginForm({
                 : "border-primary/30 bg-primary-light text-primary-dark"
             }`}
           >
-            {branding.notice}
+            <Linkify text={branding.notice} />
           </div>
         )
       )}
@@ -423,7 +424,7 @@ export default function LoginForm({
             {showAbout && (
               <div className="mt-3 space-y-2 rounded-xl border border-line bg-surface/60 p-4 text-right text-sm leading-relaxed text-ink/70">
                 {branding.about && (
-                  <p className="whitespace-pre-line">{branding.about}</p>
+                  <p className="whitespace-pre-line"><Linkify text={branding.about} /></p>
                 )}
                 {hasContact && (
                   <div className="space-y-1 border-t border-line pt-2">
