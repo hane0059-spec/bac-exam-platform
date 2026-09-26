@@ -2,6 +2,7 @@
 // src/components/student/FileExamRunner.tsx
 // أداء اختبار ورقي: عرض ملف الاختبار، رفع صور الإجابة، الإرسال، وعرض النتيجة.
 import { useState, useEffect, useRef } from "react";
+import StudentMessageBox, { type StudentPastMessage } from "@/components/student/StudentMessageBox";
 import { useRouter } from "next/navigation";
 import ImageUploadField from "@/components/ImageUploadField";
 import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
@@ -59,6 +60,7 @@ interface Finished {
   uploads: Upload[];
   sessionId: string;
   appeal: AppealState | null;
+  messages?: StudentPastMessage[];
 }
 
 function FilePreview({ att }: { att: Upload }) {
@@ -374,6 +376,10 @@ export default function FileExamRunner({
               {finished.feedback}
             </div>
           )}
+          <StudentMessageBox
+            sessionId={finished.sessionId}
+            past={finished.messages ?? []}
+          />
           {finished.uploads.some((u) => (u.annotations?.length ?? 0) > 0) && (
             <p className="text-xs text-ink/50">
               اضغط الأرقام الحمراء على الصورة لقراءة تعليقات المدرّس.

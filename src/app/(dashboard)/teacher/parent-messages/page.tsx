@@ -35,8 +35,47 @@ export default async function TeacherParentMessagesPage() {
     },
   });
 
-  const items: ParentMessageItem[] = rows.map((m) => ({
+  const studentRows = await prisma.studentMessage.findMany({
+    where: { session: { quiz: { creatorId: session.sub } } },
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    take: 200,
+    select: {
+      id: true,
+      kind: true,
+      body: true,
+      status: true,
+      teacherResponse: true,
+      createdAt: true,
+      sessionId: true,
+      student: { select: { firstName: true, lastName: true } },
+      session: {
+        select: { quizId: true, quiz: { select: { title: true, isFileBased: true } } },
+      },
+    },
+  });
+
+  const fromStudents: ParentMessageItem[] = studentRows.map((m) => ({
     id: m.id,
+    from: "student",
+    kind: m.kind,
+    body: m.body,
+    status: m.status,
+    teacherResponse: m.teacherResponse,
+    createdAt: m.createdAt.toISOString(),
+    parentName: "",
+    studentName: `${m.student.firstName} ${m.student.lastName}`,
+    quizTitle: m.session.quiz.title,
+    sessionHref: m.session.quiz.isFileBased
+      ? `/teacher/file-exams/${m.session.quizId}/submissions`
+      : `/teacher/sessions/${m.sessionId}`,
+    assignHref: m.session.quiz.isFileBased
+      ? `/teacher/file-exams/${m.session.quizId}`
+      : `/teacher/quizzes/${m.session.quizId}/assign`,
+  }));
+
+  const fromParents: ParentMessageItem[] = rows.map((m) => ({
+    id: m.id,
+    from: "parent",
     kind: m.kind,
     body: m.body,
     status: m.status,
@@ -52,12 +91,15 @@ export default async function TeacherParentMessagesPage() {
       ? `/teacher/file-exams/${m.session.quizId}`
       : `/teacher/quizzes/${m.session.quizId}/assign`,
   }));
+  const items = [...fromStudents, ...fromParents].sort(
+    (a, b) => b.createdAt.localeCompare(a.createdAt),
+  );
   const open = items.filter((i) => i.status === "OPEN");
   const done = items.filter((i) => i.status === "ANSWERED");
 
   return (
     <DashboardShell session={session}>
-      <h2 className="mb-6 font-display text-xl font-bold">رسائل أولياء الأمور</h2>
+      <h2 className="mb-6 font-display text-xl font-bold">الرسائل الواردة (الطلاب وأولياء الأمور)</h2>
       {items.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">لا رسائل حتى الآن.</div>
       ) : (
@@ -67,14 +109,14 @@ export default async function TeacherParentMessagesPage() {
             {open.length === 0 ? (
               <p className="text-sm text-ink/40">لا رسائل بانتظار الردّ.</p>
             ) : (
-              open.map((m) => <ParentMessageRow key={m.id} item={m} />)
+              open.map((m) => <ParentMessageRow key={`${m.from}-${m.id}`} item={m} />)
             )}
           </section>
           {done.length > 0 && (
             <section className="space-y-3">
               <h3 className="text-sm font-medium text-ink/50">تمّ الردّ ({done.length})</h3>
               {done.map((m) => (
-                <ParentMessageRow key={m.id} item={m} />
+                <ParentMessageRow key={`${m.from}-${m.id}`} item={m} />
               ))}
             </section>
           )}

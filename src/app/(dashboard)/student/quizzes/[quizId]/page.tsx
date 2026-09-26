@@ -141,6 +141,14 @@ export default async function TakeQuizPage({
       })
     : null;
 
+  const lastMessages = finished
+    ? await prisma.studentMessage.findMany({
+        where: { sessionId: finished.id, studentId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, kind: true, body: true, status: true, teacherResponse: true },
+      })
+    : [];
+
   const open = isWithinWindow(quiz.availableFrom, quiz.availableUntil);
   const maxAttempts = settings.maxAttempts + assignment.extraAttempts;
   const canStart = open && !inProgress && finishedCount < maxAttempts;
@@ -184,6 +192,7 @@ export default async function TakeQuizPage({
                 uploads: finished.attachments,
                 sessionId: finished.id,
                 appeal: lastAppeal,
+                messages: lastMessages,
               }
             : null
         }

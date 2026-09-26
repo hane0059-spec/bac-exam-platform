@@ -3,6 +3,7 @@
 // مُشغّل الاختبار للطالب: بدء/استئناف، عرض الأسئلة، تصحيح فوري، ثم النتيجة والمراجعة.
 // لا يستقبل أي إجابة صحيحة قبل الإرسال؛ المؤقّت عرضيّ فقط والفرض على الخادم.
 import { useCallback, useEffect, useRef, useState } from "react";
+import StudentMessageBox, { type StudentPastMessage } from "@/components/student/StudentMessageBox";
 import Link from "next/link";
 import { splitFillTemplate, countBlanks } from "@/lib/grading";
 import AppealBox, { type AppealState } from "@/components/student/AppealBox";
@@ -74,6 +75,7 @@ interface ResultData {
   maxPossibleScore: number;
   percentage: number;
   teacherFeedback?: string | null;
+  messages?: StudentPastMessage[];
   items: ResultItem[];
   sessionId?: string;
   quizId?: string;
@@ -338,7 +340,12 @@ export default function QuizRunner({
   }
 
   if (phase === "finished" && result) {
-    return <ResultView result={result} />;
+    return (
+      <ResultView
+        result={result}
+        onReload={() => sessionId && void loadResult(sessionId)}
+      />
+    );
   }
 
   if ((phase === "question" || startedFeedback) && question) {
@@ -806,7 +813,13 @@ function FeedbackCard({
   );
 }
 
-function ResultView({ result }: { result: ResultData }) {
+function ResultView({
+  result,
+  onReload,
+}: {
+  result: ResultData;
+  onReload: () => void;
+}) {
   const pct = result.percentage;
   const tone = pct >= 50 ? "text-primary-dark" : "text-red-600";
   const pending = result.items.some((it) => it.needsReview);
@@ -844,6 +857,14 @@ function ResultView({ result }: { result: ResultData }) {
           <p className="mb-1 font-medium text-gold">💬 ملاحظة مدرّسك</p>
           <p className="whitespace-pre-wrap">{result.teacherFeedback}</p>
         </div>
+      )}
+
+      {!pending && result.sessionId && (
+        <StudentMessageBox
+          sessionId={result.sessionId}
+          past={result.messages ?? []}
+          onSent={onReload}
+        />
       )}
 
       {!pending && result.quizId && (

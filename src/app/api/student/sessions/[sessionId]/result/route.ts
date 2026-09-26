@@ -50,8 +50,16 @@ export async function GET(
     select: { studentArchivedAt: true },
   });
 
+  // رسائل الطالب إلى مدرّسه عن هذه الجلسة (وردوده).
+  const messages = await prisma.studentMessage.findMany({
+    where: { sessionId: params.sessionId, studentId: session.sub },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, kind: true, body: true, status: true, teacherResponse: true },
+  });
+
   return NextResponse.json({
     ...review,
+    messages,
     sessionId: params.sessionId,
     quizId: exam.quizId,
     appealable,

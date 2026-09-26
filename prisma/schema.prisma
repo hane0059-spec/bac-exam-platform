@@ -195,6 +195,7 @@ model User {
   annotations         Annotation[]        @relation("AnnotationAuthor")
   questionReports     QuestionReport[]
   gradeAppeals        GradeAppeal[]       @relation("StudentAppeals")
+  studentMessages     StudentMessage[]    @relation("StudentMessagesSent")
   parentMessagesSent  ParentMessage[]     @relation("ParentMessagesSent")
   parentMessagesAbout ParentMessage[]     @relation("ParentMessagesAbout")
   enrichmentFiles     EnrichmentFile[]
@@ -273,6 +274,33 @@ model ParentMessage {
   @@index([parentId])
   @@index([status])
   @@map("parent_messages")
+}
+
+enum StudentMessageKind {
+  QUESTION
+  RETAKE_REQUEST
+  THANKS
+}
+
+// رسالة من طالب إلى مدرّس اختباره بعد اعتماد نتيجته + ردّ المدرّس (الحالة تعيد استخدام
+// ParentMessageStatus).
+model StudentMessage {
+  id              String              @id @default(uuid())
+  studentId       String              @map("student_id")
+  student         User                @relation("StudentMessagesSent", fields: [studentId], references: [id], onDelete: Cascade)
+  sessionId       String              @map("session_id")
+  session         ExamSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  kind            StudentMessageKind
+  body            String
+  status          ParentMessageStatus @default(OPEN)
+  teacherResponse String?             @map("teacher_response")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  respondedAt     DateTime?           @map("responded_at")
+
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([status])
+  @@map("student_messages")
 }
 
 // إشعار داخل التطبيق لمستخدم (مثل: تصحيح اختبار).
@@ -727,10 +755,11 @@ model ExamSession {
   needsGrading     Boolean       @default(false) @map("needs_grading")
   teacherFeedback  String?       @map("teacher_feedback")
 
-  answers        StudentAnswer[]
-  attachments    Attachment[]
-  appeals        GradeAppeal[]
-  parentMessages ParentMessage[]
+  answers         StudentAnswer[]
+  attachments     Attachment[]
+  appeals         GradeAppeal[]
+  parentMessages  ParentMessage[]
+  studentMessages StudentMessage[]
 
   @@index([quizId, studentId])
   @@index([studentId])

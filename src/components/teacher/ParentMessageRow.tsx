@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 
 export interface ParentMessageItem {
   id: string;
-  kind: "OBJECTION" | "THANKS" | "RETAKE_REQUEST";
+  from?: "parent" | "student";
+  kind: "OBJECTION" | "THANKS" | "RETAKE_REQUEST" | "QUESTION";
   body: string;
   status: "OPEN" | "ANSWERED";
   teacherResponse: string | null;
@@ -21,6 +22,7 @@ export interface ParentMessageItem {
 
 const KIND: Record<string, string> = {
   OBJECTION: "اعتراض",
+  QUESTION: "سؤال عن النتيجة",
   THANKS: "شكر",
   RETAKE_REQUEST: "طلب إعادة اختبار",
 };
@@ -34,7 +36,10 @@ export default function ParentMessageRow({ item }: { item: ParentMessageItem }) 
   async function reply() {
     setBusy(true);
     setError("");
-    const res = await fetch(`/api/teacher/parent-messages/${item.id}`, {
+    const res = await fetch(
+      item.from === "student"
+        ? `/api/teacher/student-messages/${item.id}`
+        : `/api/teacher/parent-messages/${item.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ response }),
@@ -56,10 +61,12 @@ export default function ParentMessageRow({ item }: { item: ParentMessageItem }) 
             <span className="rounded-full bg-primary-light px-2 py-0.5 text-xs font-medium text-primary-dark">
               {KIND[item.kind]}
             </span>
-            <span className="font-medium">وليّ أمر {item.studentName}</span>
+            <span className="font-medium">
+              {item.from === "student" ? `الطالب ${item.studentName}` : `وليّ أمر ${item.studentName}`}
+            </span>
           </div>
           <p className="mt-0.5 text-sm text-ink/60">
-            {item.parentName} — «{item.quizTitle}»
+            {item.from === "student" ? "" : `${item.parentName} — `}«{item.quizTitle}»
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
