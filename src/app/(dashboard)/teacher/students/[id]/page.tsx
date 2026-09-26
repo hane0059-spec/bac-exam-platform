@@ -1,6 +1,7 @@
 // src/app/(dashboard)/teacher/students/[id]/page.tsx
 // صفحة الطالب لدى المدرّس: معلومات + إسناد اختبار من اختباراته. متاحة لأي مدرّس
 // على طلابه (إنشاءً أو تسجيلاً)، بلا اشتراط canManageStudents — الإسناد حرّ دائماً.
+import { sweepExpiredSessions } from "@/lib/exam";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -77,6 +78,10 @@ export default async function TeacherStudentPage({
   });
   const assignedQuizIds = new Set(assignments.map((a) => a.quizId));
 
+  await sweepExpiredSessions({
+    studentId: student.id,
+    quiz: { creatorId: session.sub },
+  });
   const sessions = await prisma.examSession.findMany({
     where: {
       studentId: student.id,

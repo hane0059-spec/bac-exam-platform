@@ -5,7 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { roleLabel } from "@/lib/gender";
-import { parseSettings } from "@/lib/exam";
+import { parseSettings, sweepExpiredSessions } from "@/lib/exam";
 import DashboardShell from "@/components/DashboardShell";
 import AssignPanel, {
   type AssignStudent,
@@ -43,6 +43,7 @@ export default async function AssignQuizPage({
   });
 
   const studentIds = enrollments.map((e) => e.studentId);
+  await sweepExpiredSessions({ quizId: quiz.id });
   const [assignments, sessions] = await Promise.all([
     prisma.quizAssignment.findMany({
       where: { quizId: quiz.id, studentId: { in: studentIds } },

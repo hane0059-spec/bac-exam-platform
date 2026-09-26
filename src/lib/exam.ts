@@ -1,6 +1,7 @@
 // src/lib/exam.ts
 // منطق حلقة الطالب على الخادم: الحراسة، إعدادات الاختبار، اجتياز الشجرة الخطّي،
 // تعقيم السؤال (دون كشف الإجابة الصحيحة)، المؤقّت، وإنهاء الجلسة وحساب الدرجة.
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { touchLastSeen } from "@/lib/activity";
@@ -396,6 +397,7 @@ export interface StudentQuizListItem {
 export async function listStudentQuizzes(
   studentId: string
 ): Promise<StudentQuizListItem[]> {
+  await sweepExpiredSessions({ studentId });
   const assignments = await prisma.quizAssignment.findMany({
     where: { studentId, quiz: { status: "PUBLISHED" } },
     include: {
@@ -757,7 +759,9 @@ export async function finalizeFileSessionIfExpired(
 
 export async function finalizeSession(
   sessionId: string,
-  status: "COMPLETED" | "TIMED_OUT"
+  status: "COMPLETED" | "TIMED_OUT",
+  /** وقت الانتهاء الفعلي (للإنهاء المتأخّر عند انتهاء المهلة: بدء + مدّة الاختبار). */
+  endedAt?: Date
 ) {
   const session = await prisma.examSession.findUnique({
     where: { id: sessionId },
@@ -790,15 +794,17 @@ export async function finalizeSession(
     })
   );
 
-  const timeSpent = Math.floor(
-    (Date.now() - session.startedAt.getTime()) / 1000
+  const end = endedAt ?? new Date();
+  const timeSpent = Math.max(
+    0,
+    Math.floor((end.getTime() - session.startedAt.getTime()) / 1000)
   );
 
   const updated = await prisma.examSession.update({
     where: { id: sessionId },
     data: {
       status,
-      completedAt: new Date(),
+      completedAt: end,
       totalScore: score.earned,
       maxPossibleScore: score.max,
       percentage: score.percentage,
@@ -888,4 +894,43 @@ export async function recomputeSessionScore(sessionId: string): Promise<void> {
   } catch {
     // تجاهل أخطاء التحليلات.
   }
+}
+
+/**
+ * يُنهي الجلسات «قيد الأداء» التي انتهت مهلتها ولم يُرسلها الطالب (أغلق المتصفّح
+ * أو انقطع)، فلا تبقى معلّقةً في قوائم المدرّس. الإنهاء كسول: يُستدعى عند فتح
+ * الصفحات التي تعرض الجلسات. الطالب لا يفقد شيئاً: تُحسَب درجته من إجاباته حتى
+ * لحظة الانتهاء، ووقت الانتهاء = بدء + مدّة الاختبار.
+ */
+export async function sweepExpiredSessions(
+  where: Prisma.ExamSessionWhereInput
+): Promise<number> {
+  const open = await prisma.examSession.findMany({
+    where: { ...where, status: "IN_PROGRESS" },
+    select: {
+      id: true,
+      startedAt: true,
+      quiz: { select: { isFileBased: true, settings: true } },
+    },
+  });
+  let n = 0;
+  for (const s of open) {
+    try {
+      if (s.quiz.isFileBased) {
+        if (await finalizeFileSessionIfExpired(s.id)) n++;
+        continue;
+      }
+      const limit = parseSettings(s.quiz.settings).timeLimitSec;
+      if (!limit || !isExpired(s.startedAt, limit)) continue;
+      await finalizeSession(
+        s.id,
+        "TIMED_OUT",
+        new Date(s.startedAt.getTime() + limit * 1000)
+      );
+      n++;
+    } catch {
+      // فشل جلسة واحدة لا يمنع بقيّتها.
+    }
+  }
+  return n;
 }

@@ -1,5 +1,6 @@
 // src/app/(dashboard)/teacher/results/page.tsx
 // متابعة المدرّس: اختباراته مع إحصاءات الأداء.
+import { sweepExpiredSessions } from "@/lib/exam";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -13,6 +14,7 @@ export default async function TeacherResultsPage() {
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");
 
+  await sweepExpiredSessions({ quiz: { creatorId: session.sub } });
   const quizzes = await prisma.quiz.findMany({
     where: { creatorId: session.sub },
     orderBy: { updatedAt: "desc" },

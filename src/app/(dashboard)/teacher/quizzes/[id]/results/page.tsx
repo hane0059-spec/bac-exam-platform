@@ -1,5 +1,6 @@
 // src/app/(dashboard)/teacher/quizzes/[id]/results/page.tsx
 // تفاصيل نتائج اختبار: جلسات الطلاب ودرجاتهم.
+import { sweepExpiredSessions } from "@/lib/exam";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -28,6 +29,7 @@ export default async function QuizResultsPage({
   const quiz = await prisma.quiz.findUnique({ where: { id: params.id } });
   if (!quiz || quiz.creatorId !== session.sub) notFound();
 
+  await sweepExpiredSessions({ quizId: quiz.id });
   const sessions = await prisma.examSession.findMany({
     where: { quizId: quiz.id },
     orderBy: { startedAt: "desc" },
