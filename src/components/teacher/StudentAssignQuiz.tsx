@@ -4,7 +4,7 @@
 // مع موعد اختياري، وعرض/إلغاء الإسنادات الحالية. يعيد استخدام مسار الإسناد القائم.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDateTime } from "@/lib/datetime";
+import LocalTime from "@/components/LocalTime";
 import DateTimeField from "@/components/DateTimeField";
 
 export interface AssignableQuiz {
@@ -146,7 +146,7 @@ export default function StudentAssignQuiz({
                   {q.dueDate && (
                     <span className="text-ink/50">
                       الاستحقاق:{" "}
-                      <bdi dir="ltr">{formatDateTime(q.dueDate)}</bdi>
+                      <bdi dir="ltr"><LocalTime value={q.dueDate} /></bdi>
                     </span>
                   )}
                   {q.statusLabel && (

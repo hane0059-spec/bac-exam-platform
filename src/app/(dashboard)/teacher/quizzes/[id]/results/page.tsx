@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { formatDateTime } from "@/lib/datetime";
+import LocalTime from "@/components/LocalTime";
 import DashboardShell from "@/components/DashboardShell";
 
 export const dynamic = "force-dynamic";
@@ -164,7 +164,7 @@ export default async function QuizResultsPage({
                   </td>
                   <td className="p-2">{s.attemptNumber}</td>
                   <td className="p-2 text-ink/60">
-                    <bdi dir="ltr">{formatDateTime(s.startedAt)}</bdi>
+                    <bdi dir="ltr"><LocalTime value={s.startedAt} /></bdi>
                   </td>
                   <td className="p-2">
                     {s.status !== "IN_PROGRESS" && (

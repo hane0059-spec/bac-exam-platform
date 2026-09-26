@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getParentSession, parentOwnsStudent } from "@/lib/parent";
-import { formatDateTime } from "@/lib/datetime";
+import LocalTime from "@/components/LocalTime";
 import DashboardShell from "@/components/DashboardShell";
 
 export const dynamic = "force-dynamic";
@@ -83,7 +83,7 @@ export default async function ChildResultsPage({
                   <span className="font-medium">{s.quiz.title}</span>
                   {s.completedAt && (
                     <p className="mt-0.5 text-xs text-ink/40">
-                      <bdi dir="ltr">{formatDateTime(s.completedAt)}</bdi>
+                      <bdi dir="ltr"><LocalTime value={s.completedAt} /></bdi>
                     </p>
                   )}
                 </div>

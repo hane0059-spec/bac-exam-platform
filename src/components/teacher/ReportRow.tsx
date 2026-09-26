@@ -1,6 +1,7 @@
 "use client";
 // src/components/teacher/ReportRow.tsx
 // المدرّس: معالجة/تجاهل بلاغ خطأ على سؤال (مع ملاحظة اختيارية).
+import LocalTime from "@/components/LocalTime";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmButton from "@/components/ConfirmButton";
@@ -94,7 +95,7 @@ export default function ReportRow({
         <span className="text-ink/50">البلاغ: </span>
         {reason}
         <p className="mt-1 text-xs text-ink/40">
-          {studentName} • <bdi dir="ltr">{createdAt}</bdi>
+          {studentName} • <bdi dir="ltr"><LocalTime value={createdAt} /></bdi>
         </p>
       </div>
 

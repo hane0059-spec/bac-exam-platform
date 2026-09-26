@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDateTime } from "@/lib/datetime";
+import LocalTime from "@/components/LocalTime";
 
 export interface NotificationItem {
   id: string;
@@ -49,7 +49,7 @@ export default function NotificationsList({
             <div>
               <p className="text-sm leading-relaxed">{n.message}</p>
               <p className="mt-1 text-xs text-ink/40">
-                <bdi dir="ltr">{formatDateTime(n.createdAt)}</bdi>
+                <bdi dir="ltr"><LocalTime value={n.createdAt} /></bdi>
               </p>
             </div>
             {n.linkUrl && (

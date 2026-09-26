@@ -4,7 +4,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { formatDateTime } from "@/lib/datetime";
 import DashboardShell from "@/components/DashboardShell";
 import ReportRow from "@/components/teacher/ReportRow";
 import type { Prisma, QuestionReportStatus } from "@prisma/client";
@@ -88,7 +87,7 @@ export default async function TeacherReportsPage({
               studentName={`${r.student.firstName} ${r.student.lastName}`}
               status={r.status}
               teacherNote={r.teacherNote}
-              createdAt={formatDateTime(r.createdAt)}
+              createdAt={r.createdAt.toISOString()}
             />
           ))}
         </div>

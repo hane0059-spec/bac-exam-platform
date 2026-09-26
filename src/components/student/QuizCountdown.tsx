@@ -4,7 +4,7 @@
 // عند دخول وقت البدء أو انتهاء الإتاحة (دون تحديث يدوي).
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatDateTime } from "@/lib/datetime";
+import LocalTime from "@/components/LocalTime";
 
 function human(ms: number): string {
   const sec = Math.max(0, Math.floor(ms / 1000));
@@ -78,7 +78,7 @@ export default function QuizCountdown({
         <div className="text-ink/60">
           يبدأ:{" "}
           <bdi dir="ltr" className="inline-block">
-            {formatDateTime(from)}
+            <LocalTime value={from} />
           </bdi>
         </div>
       )}
@@ -86,7 +86,7 @@ export default function QuizCountdown({
         <div className="text-ink/60">
           ينتهي:{" "}
           <bdi dir="ltr" className="inline-block">
-            {formatDateTime(until)}
+            <LocalTime value={until} />
           </bdi>
         </div>
       )}

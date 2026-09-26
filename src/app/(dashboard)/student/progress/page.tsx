@@ -8,7 +8,7 @@ import DashboardShell from "@/components/DashboardShell";
 import BadgeGrid from "@/components/student/BadgeGrid";
 import { getStudentProgress } from "@/lib/studentProgress";
 import { computeBadges } from "@/lib/badges";
-import { formatDateTime } from "@/lib/datetime";
+import LocalTime from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -113,7 +113,7 @@ export default async function StudentProgressPage() {
                             {concept.lastPracticed && (
                               <span className="mr-2 text-xs text-ink/40">
                                 آخر ممارسة:{" "}
-                                <bdi>{formatDateTime(concept.lastPracticed)}</bdi>
+                                <bdi><LocalTime value={concept.lastPracticed} /></bdi>
                               </span>
                             )}
                           </span>

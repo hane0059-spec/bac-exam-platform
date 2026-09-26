@@ -5,7 +5,7 @@ import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { ownedQuiz } from "@/lib/teacherQuiz";
-import { formatDateTime } from "@/lib/datetime";
+import { formatDateTimeInZone } from "@/lib/datetime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,9 +18,10 @@ const STATUS: Record<string, string> = {
 };
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } },
 ) {
+  const tz = req.headers.get("x-vercel-ip-timezone");
   const session = await getTeacherSession();
   if (!session)
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -80,7 +81,7 @@ export async function GET(
       inProgress || isPending ? "" : Number(s.percentage),
       s.attemptNumber,
       Math.round(s.timeSpent / 60),
-      s.completedAt ? formatDateTime(s.completedAt) : formatDateTime(s.startedAt),
+      formatDateTimeInZone(s.completedAt ?? s.startedAt, tz),
     ]);
   }
   ws.columns.forEach((c) => (c.width = 18));
