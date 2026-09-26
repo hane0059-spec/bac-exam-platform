@@ -12,6 +12,7 @@ export interface NotificationItem {
   linkUrl: string | null;
   isRead: boolean;
   createdAt: string;
+  status?: { done: boolean; text: string } | null;
 }
 
 export default function NotificationsList({
@@ -52,9 +53,25 @@ export default function NotificationsList({
                 <bdi dir="ltr"><LocalTime value={n.createdAt} /></bdi>
               </p>
             </div>
-            {n.linkUrl && (
-              <span className="shrink-0 text-sm text-primary">عرض ←</span>
-            )}
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              {n.status && (
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    n.status.done
+                      ? "bg-primary text-white"
+                      : "bg-gold/15 text-gold"
+                  }`}
+                >
+                  {n.status.done ? "✓ " : "⏳ "}
+                  {n.status.text}
+                </span>
+              )}
+              {n.linkUrl && (
+                <span className="text-sm text-primary">
+                  {n.status?.done ? "عرض" : "مراجعة"} ←
+                </span>
+              )}
+            </div>
           </div>
         );
         return n.linkUrl ? (

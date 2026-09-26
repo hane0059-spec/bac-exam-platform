@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       userId: exam.quiz.creatorId,
       type: "parent_message",
       message: `رسالة (${KIND_TEXT[kind]}) من وليّ أمر ${exam.student.firstName} ${exam.student.lastName} بخصوص «${exam.quiz.title}».`,
-      linkUrl: "/teacher/parent-messages",
+      linkUrl: `/teacher/parent-messages?p=${msg.id}`,
     });
   } catch {
     // فشل الإشعار لا يكسر الإرسال.

@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       userId: exam.quiz.creatorId,
       type: "student_message",
       message: `رسالة (${KIND_TEXT[kind]}) من ${session.firstName} ${session.lastName} بخصوص «${exam.quiz.title}».`,
-      linkUrl: "/teacher/parent-messages",
+      linkUrl: `/teacher/parent-messages?s=${msg.id}`,
     });
   } catch {
     // فشل الإشعار لا يكسر الإرسال.

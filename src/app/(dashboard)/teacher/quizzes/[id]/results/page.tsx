@@ -170,12 +170,23 @@ export default async function QuizResultsPage({
                   </td>
                   <td className="p-2">
                     {s.status !== "IN_PROGRESS" && (
-                      <Link
-                        href={`/teacher/sessions/${s.id}`}
-                        className="text-primary hover:underline"
-                      >
-                        مراجعة
-                      </Link>
+                      <span className="flex items-center gap-2">
+                        <Link
+                          href={`/teacher/sessions/${s.id}`}
+                          className="text-primary hover:underline"
+                        >
+                          مراجعة
+                        </Link>
+                        {pendingBySession.get(s.id) ? (
+                          <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs text-gold">
+                            ⏳ بانتظار التصحيح
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">
+                            ✓ تمّ التصحيح
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
                 </tr>
