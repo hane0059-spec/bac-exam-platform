@@ -7,6 +7,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { kindOfMime, safeContentDisposition } from "@/lib/resources";
+import { getSession } from "@/lib/session";
+import { studentCanSeeTeacherEnrichment } from "@/lib/enrichment";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,10 +32,32 @@ export async function GET(
 
   const meta = await prisma.enrichmentFile.findUnique({
     where: { id: params.id },
-    select: { kind: true, mimeType: true },
+    select: { kind: true, mimeType: true, teacherId: true },
   });
   if (!meta || meta.kind !== "FILE")
     return NextResponse.json({ error: "غير موجود" }, { status: 404 });
+
+  // محتوى مدرّس خاصّ: لا يُبَثّ إلا لصاحبه أو لطالب مسجَّل عنده أو للمدير العام
+  // (وإلا 404 لعدم كشف وجوده). المحتوى العامّ (teacherId=null) يبقى بلا جلسة.
+  const isPrivate = meta.teacherId !== null;
+  if (isPrivate) {
+    const s = await getSession();
+    let allowed = false;
+    if (s) {
+      if (s.role === "TEACHER") allowed = s.sub === meta.teacherId;
+      else if (s.role === "STUDENT")
+        allowed = await studentCanSeeTeacherEnrichment(s.sub, meta.teacherId!);
+      else if (s.role === "ADMIN") {
+        const u = await prisma.user.findUnique({
+          where: { id: s.sub },
+          select: { isSuperAdmin: true, isActive: true },
+        });
+        allowed = !!u?.isActive && u.isSuperAdmin;
+      }
+    }
+    if (!allowed)
+      return NextResponse.json({ error: "غير موجود" }, { status: 404 });
+  }
 
   const isImage = kindOfMime(meta.mimeType) === "image";
   const inline = isImage && !wantsDownload;
@@ -71,7 +95,7 @@ export async function GET(
         inline ? "inline" : "attachment",
       ),
       "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": isPrivate ? "private, no-store" : "public, max-age=3600",
     },
   });
 }

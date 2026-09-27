@@ -28,8 +28,15 @@ function formatBytes(n: number): string {
 
 export default function ResourcesManager({
   gradeLevels,
+  endpoints = {
+    upload: "/api/admin/resources",
+    post: "/api/admin/resources/post",
+    remove: "/api/admin/resources",
+  },
 }: {
   gradeLevels: GradeRow[];
+  /** نقاط النهاية (الافتراضي: المدير العام؛ المدرّس يمرّر نقاطه الخاصّة). */
+  endpoints?: { upload: string; post: string; remove: string };
 }) {
   const router = useRouter();
   const [gradeId, setGradeId] = useState(gradeLevels[0]?.id ?? "");
@@ -44,7 +51,7 @@ export default function ResourcesManager({
   async function publishPost() {
     setError("");
     setPosting(true);
-    const res = await fetch("/api/admin/resources/post", {
+    const res = await fetch(endpoints.post, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gradeLevelId: gradeId, title: postTitle, body: postBody }),
@@ -66,7 +73,7 @@ export default function ResourcesManager({
     const fd = new FormData();
     fd.append("gradeLevelId", gradeId);
     fd.append("file", file);
-    const res = await fetch("/api/admin/resources", { method: "POST", body: fd });
+    const res = await fetch(endpoints.upload, { method: "POST", body: fd });
     setBusy(false);
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
@@ -80,7 +87,7 @@ export default function ResourcesManager({
   async function remove(id: string) {
     if (!confirm("حذف هذا الملف نهائياً؟")) return;
     setDeletingId(id);
-    const res = await fetch(`/api/admin/resources/${id}`, { method: "DELETE" });
+    const res = await fetch(`${endpoints.remove}/${id}`, { method: "DELETE" });
     setDeletingId(null);
     if (!res.ok) {
       setError("تعذّر الحذف.");

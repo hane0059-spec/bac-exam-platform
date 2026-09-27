@@ -18,6 +18,7 @@ export default async function AdminResourcesPage() {
     orderBy: { orderNum: "asc" },
     include: {
       enrichmentFiles: {
+        where: { teacherId: null },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,

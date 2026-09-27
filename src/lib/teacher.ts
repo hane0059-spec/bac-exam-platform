@@ -29,6 +29,15 @@ export async function teacherCanFileExams(teacherId: string): Promise<boolean> {
   return !!p?.canFileExams;
 }
 
+/** هل فعّل المدير العام «أسئلة وإثراء» الخاصّة بهذا المدرّس؟ */
+export async function teacherCanEnrichment(teacherId: string): Promise<boolean> {
+  const p = await prisma.teacherProfile.findUnique({
+    where: { userId: teacherId },
+    select: { canEnrichment: true },
+  });
+  return !!p?.canEnrichment;
+}
+
 /** هل أذن المدير لهذا المدرّس بإضافة وإدارة الطلاب؟ (الإسناد حرّ دائماً.) */
 export async function teacherCanManageStudents(
   teacherId: string

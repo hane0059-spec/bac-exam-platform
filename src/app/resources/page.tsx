@@ -26,6 +26,7 @@ export default async function ResourcesPage() {
       orderBy: { orderNum: "asc" },
       include: {
         enrichmentFiles: {
+          where: { teacherId: null },
           orderBy: { createdAt: "desc" },
           select: {
             id: true,

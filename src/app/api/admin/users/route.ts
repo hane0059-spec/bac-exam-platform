@@ -128,6 +128,8 @@ export async function POST(req: Request) {
                 employeeCode: await nextEmployeeCode(),
                 qualification: d.qualification || null,
                 canFileExams: d.canFileExams,
+                // تفعيل «أسئلة وإثراء» الخاصّة: للمدير العام فقط.
+                canEnrichment: actorIsSuper ? d.canEnrichment : false,
                 // المستقلّ يدير طلابه دائماً.
                 canManageStudents: independent ? true : d.canManageStudents,
                 isIndependent: independent,

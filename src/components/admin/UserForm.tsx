@@ -22,6 +22,7 @@ export interface UserInitial {
   qualification: string;
   subjectIds: string[];
   canFileExams: boolean;
+  canEnrichment?: boolean;
   canManageStudents: boolean;
   isSuperAdmin: boolean;
   isIndependent: boolean;
@@ -73,6 +74,9 @@ export default function UserForm({
   const [canFileExams, setCanFileExams] = useState(
     initial?.canFileExams ?? false
   );
+  const [canEnrichment, setCanEnrichment] = useState(
+    initial?.canEnrichment ?? false
+  );
   const [canManageStudents, setCanManageStudents] = useState(
     initial?.canManageStudents ?? false
   );
@@ -121,6 +125,7 @@ export default function UserForm({
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
             canFileExams: isTeacher ? canFileExams : false,
+            canEnrichment: isTeacher && canManageAdmins ? canEnrichment : false,
             canManageStudents: isTeacher ? canManageStudents : false,
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
             schoolId: schools ? schoolId || null : undefined,
@@ -141,6 +146,7 @@ export default function UserForm({
             qualification,
             subjectIds: isTeacher ? subjectIds : [],
             canFileExams: isTeacher ? canFileExams : false,
+            canEnrichment: isTeacher && canManageAdmins ? canEnrichment : false,
             canManageStudents: isTeacher ? canManageStudents : false,
             isSuperAdmin: role === "ADMIN" ? superAdmin : false,
             studentLimit:
@@ -337,6 +343,17 @@ export default function UserForm({
             />
             السماح بإنشاء اختبارات ورقية/مرفوعة (صور/PDF)
           </label>
+          {canManageAdmins && (
+            <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={canEnrichment}
+                onChange={(e) => setCanEnrichment(e.target.checked)}
+                className="accent-primary"
+              />
+              تفعيل صفحة «أسئلة وإثراء» الخاصّة بهذا المدرّس (لا يراها إلا طلابه المسجّلون عنده)
+            </label>
+          )}
           {!isIndependent && (
             <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
               <input

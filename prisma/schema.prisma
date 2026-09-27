@@ -199,7 +199,9 @@ model User {
   parentMessagesSent  ParentMessage[]     @relation("ParentMessagesSent")
   parentMessagesAbout ParentMessage[]     @relation("ParentMessagesAbout")
   enrichmentFiles     EnrichmentFile[]
-  quizTemplates       QuizTemplate[]
+  teacherEnrichment   EnrichmentFile[]    @relation("TeacherEnrichment")
+
+  quizTemplates QuizTemplate[]
 
   @@index([role, schoolId])
   @@index([createdById])
@@ -398,6 +400,8 @@ model TeacherProfile {
   bio               String?
   // خاصّية اختيارية يفعّلها المدير عند الطلب: إنشاء اختبارات ورقية/مرفوعة (لتقليل التخزين).
   canFileExams      Boolean @default(false) @map("can_file_exams")
+  // يفعّلها المدير العام: صفحة «أسئلة وإثراء» خاصّة بهذا المدرّس لطلابه المسجّلين عنده فقط.
+  canEnrichment     Boolean @default(false) @map("can_enrichment")
   // إذن المدير للمدرّس بإضافة وإدارة حسابات الطلاب (الإسناد يبقى حرّاً دائماً).
   canManageStudents Boolean @default(false) @map("can_manage_students")
   // مدرّس مستقلّ يدير مؤسّسته بنفسه (هو المدير والمدرّس)، يُنشئه المدير العام.
@@ -440,10 +444,14 @@ model EnrichmentFile {
   body          String? // نصّ المنشور (kind=TEXT)
   uploadedById  String     @map("uploaded_by_id")
   uploadedBy    User       @relation(fields: [uploadedById], references: [id])
+  // null = محتوى المدير العام العامّ؛ وإلا محتوى خاصّ بهذا المدرّس (لطلابه المسجّلين فقط).
+  teacherId     String?    @map("teacher_id")
+  teacher       User?      @relation("TeacherEnrichment", fields: [teacherId], references: [id], onDelete: Cascade)
   downloadCount Int        @default(0) @map("download_count")
   createdAt     DateTime   @default(now()) @map("created_at")
 
   @@index([gradeLevelId])
+  @@index([teacherId])
   @@map("enrichment_files")
 }
 

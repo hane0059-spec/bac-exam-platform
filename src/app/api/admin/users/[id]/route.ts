@@ -120,6 +120,7 @@ export async function PATCH(
                 update: {
                   qualification: d.qualification || null,
                   canFileExams: d.canFileExams,
+                  ...(actorIsSuper ? { canEnrichment: d.canEnrichment } : {}),
                   canManageStudents: d.canManageStudents,
                   // تعديل حدّ طلاب المدرّس المستقلّ (للمدير العام فقط).
                   ...(actorIsSuper && target.teacherProfile?.isIndependent

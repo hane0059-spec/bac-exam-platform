@@ -19,6 +19,7 @@ export const userCreateSchema = z.object({
   qualification: z.string().trim().optional(),
   subjectIds: z.array(z.string().min(1)).default([]),
   canFileExams: z.boolean().default(false),
+  canEnrichment: z.boolean().default(false),
   canManageStudents: z.boolean().default(false),
   isSuperAdmin: z.boolean().default(false),
   schoolId: z.string().min(1).nullish(),
@@ -38,6 +39,7 @@ export const userUpdateSchema = z.object({
   qualification: z.string().trim().optional(),
   subjectIds: z.array(z.string().min(1)).default([]),
   canFileExams: z.boolean().default(false),
+  canEnrichment: z.boolean().default(false),
   canManageStudents: z.boolean().default(false),
   isSuperAdmin: z.boolean().default(false),
   // تعديل حدّ طلاب المدرّس المستقلّ (للمدير العام).

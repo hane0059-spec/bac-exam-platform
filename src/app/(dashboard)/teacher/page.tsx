@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { teacherCanFileExams } from "@/lib/teacher";
+import { teacherCanFileExams, teacherCanEnrichment } from "@/lib/teacher";
 import DashboardShell from "@/components/DashboardShell";
 import StatBar from "@/components/StatBar";
 import UserSearchBox from "@/components/admin/UserSearchBox";
@@ -14,6 +14,7 @@ export default async function TeacherDashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
 
+  const canEnrichment = await teacherCanEnrichment(session.sub);
   const [openReports, openAppeals, openParentMsgs, needsGrading, canFileExams, studentCount, quizCount] =
     await Promise.all([
       prisma.questionReport.count({
@@ -121,6 +122,17 @@ export default async function TeacherDashboard() {
             بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر.
           </p>
         </Link>
+        {canEnrichment && (
+          <Link
+            href="/teacher/enrichment"
+            className="card p-4 transition hover:border-primary/40 sm:p-5"
+          >
+            <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
+            <p className="text-sm leading-relaxed text-ink/60">
+              انشر ملفّات وصوراً وإعلانات يراها طلابك المسجّلون عندك فقط.
+            </p>
+          </Link>
+        )}
         {canFileExams && (
           <Link
             href="/teacher/file-exams"
