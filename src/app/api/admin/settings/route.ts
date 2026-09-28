@@ -9,7 +9,10 @@ import {
   setAppBgColor,
   FONT_OPTIONS,
   PLATFORM_MODE_OPTIONS,
-  BG_COLOR_OPTIONS,
+  BG_HUE_MIN,
+  BG_HUE_MAX,
+  BG_LIGHTNESS_MIN,
+  BG_LIGHTNESS_MAX,
 } from "@/lib/settings";
 import { setBranding, type Branding } from "@/lib/branding";
 
@@ -48,8 +51,13 @@ const schema = z.object({
   platformMode: z
     .enum(PLATFORM_MODE_OPTIONS.map((m) => m.key) as [string, ...string[]])
     .optional(),
+  // null = إلغاء التخصيص (رجوع للون المحايد الافتراضي).
   bgColor: z
-    .enum(BG_COLOR_OPTIONS.map((c) => c.key) as [string, ...string[]])
+    .object({
+      h: z.number().int().min(BG_HUE_MIN).max(BG_HUE_MAX),
+      l: z.number().int().min(BG_LIGHTNESS_MIN).max(BG_LIGHTNESS_MAX),
+    })
+    .nullable()
     .optional(),
   branding: brandingSchema.optional(),
 });
@@ -80,8 +88,8 @@ export async function POST(req: Request) {
       parsed.data.platformMode as Parameters<typeof setPlatformMode>[0]
     );
   }
-  if (parsed.data.bgColor) {
-    await setAppBgColor(parsed.data.bgColor as Parameters<typeof setAppBgColor>[0]);
+  if (parsed.data.bgColor !== undefined) {
+    await setAppBgColor(parsed.data.bgColor);
   }
   if (parsed.data.branding) {
     await setBranding(parsed.data.branding as Branding);

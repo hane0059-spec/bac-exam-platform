@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Cairo, Tajawal, Reem_Kufi, Amiri, Tinos } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css"; // عرض المعادلات (KaTeX)
-import { getAppFont, FONT_CSS, getAppBgColor, BG_COLOR_RGB } from "@/lib/settings";
+import { getAppFont, FONT_CSS, getAppBgColor, bgColorToRgb } from "@/lib/settings";
 import { getBranding } from "@/lib/branding";
 
 // خطوط يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
@@ -64,12 +64,15 @@ export default async function RootLayout({
     >
       <head>
         {/* لون خلفية المنصّة (--parchment) — الوضع النهاري فقط (@media screen)
-            وخارج .dark، فلا يمسّ الوضع الليلي ولا الطباعة (تُجبَر بيضاء دائماً). */}
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `@media screen { :root:not(.dark) { --parchment: ${BG_COLOR_RGB[bgColor]}; } }`,
-          }}
-        />
+            وخارج .dark، فلا يمسّ الوضع الليلي ولا الطباعة (تُجبَر بيضاء دائماً).
+            بلا تخصيص (bgColor=null) لا نحقن شيئاً فيبقى اللون المحايد الافتراضي. */}
+        {bgColor && (
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `@media screen { :root:not(.dark) { --parchment: ${bgColorToRgb(bgColor)}; } }`,
+            }}
+          />
+        )}
       </head>
       <body>
         {/* تطبيق حجم النصّ والوضع الليلي المحفوظين قبل أول رسم (تفادي الوميض). */}

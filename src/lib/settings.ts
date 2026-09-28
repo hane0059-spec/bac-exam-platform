@@ -4,12 +4,23 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { isFontKey, type FontKey } from "@/lib/fonts";
-import { isBgColorKey, type BgColorKey } from "@/lib/bgColors";
+import { isBgColorValue, type BgColorValue } from "@/lib/bgColors";
 
 export { FONT_OPTIONS, FONT_CSS, FONT_KEYS, isFontKey, fontCss } from "@/lib/fonts";
 export type { FontKey, FontKind } from "@/lib/fonts";
-export { BG_COLOR_OPTIONS, BG_COLOR_RGB, isBgColorKey } from "@/lib/bgColors";
-export type { BgColorKey } from "@/lib/bgColors";
+export {
+  BG_SATURATION,
+  BG_HUE_MIN,
+  BG_HUE_MAX,
+  BG_LIGHTNESS_MIN,
+  BG_LIGHTNESS_MAX,
+  BG_HUE_DEFAULT,
+  BG_LIGHTNESS_DEFAULT,
+  isBgColorValue,
+  bgColorToRgb,
+  bgColorToHslCss,
+} from "@/lib/bgColors";
+export type { BgColorValue } from "@/lib/bgColors";
 
 /** خطّ المنصّة الحالي (افتراضي cairo). مُجمَّع خلال الطلب الواحد. */
 export const getAppFont = cache(async (): Promise<FontKey> => {
@@ -30,22 +41,31 @@ export async function setAppFont(value: FontKey): Promise<void> {
   });
 }
 
-/** لون خلفية المنصّة الحالي (افتراضي "default"). الوضع النهاري فقط. */
-export const getAppBgColor = cache(async (): Promise<BgColorKey> => {
+/** لون خلفية المنصّة المخصَّص (null = بلا تخصيص، يبقى اللون المحايد الافتراضي). */
+export const getAppBgColor = cache(async (): Promise<BgColorValue | null> => {
   try {
     const row = await prisma.appSetting.findUnique({ where: { key: "bg_color" } });
-    if (isBgColorKey(row?.value)) return row!.value as BgColorKey;
+    if (row?.value) {
+      const parsed: unknown = JSON.parse(row.value);
+      if (isBgColorValue(parsed)) return parsed;
+    }
   } catch {
-    // عند غياب الجدول/الاتصال: الافتراضي.
+    // عند غياب الجدول/الاتصال أو قيمة تالفة: بلا تخصيص.
   }
-  return "default";
+  return null;
 });
 
-export async function setAppBgColor(value: BgColorKey): Promise<void> {
+/** null يمسح التخصيص ويعيد اللون المحايد الافتراضي. */
+export async function setAppBgColor(value: BgColorValue | null): Promise<void> {
+  if (value === null) {
+    await prisma.appSetting.deleteMany({ where: { key: "bg_color" } });
+    return;
+  }
+  const json = JSON.stringify(value);
   await prisma.appSetting.upsert({
     where: { key: "bg_color" },
-    update: { value },
-    create: { key: "bg_color", value },
+    update: { value: json },
+    create: { key: "bg_color", value: json },
   });
 }
 
