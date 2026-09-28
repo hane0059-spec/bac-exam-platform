@@ -86,6 +86,12 @@ export default async function TeacherQuizzesPage({
               + اختبار ورقي
             </Link>
           )}
+          <Link
+            href="/teacher/quizzes/generate"
+            className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
+          >
+            🎲 توليد تلقائي
+          </Link>
           <Link href="/teacher/quizzes/new" className="btn-primary">
             + اختبار جديد
           </Link>
