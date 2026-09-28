@@ -23,7 +23,12 @@ interface RoleWindow {
   icon: React.ReactNode;
   accent: string; // لون دائرة الأيقونة (متناسق مع العلامة، آمن للوضع الليلي)
   forgot: string; // إرشاد عند نسيان كلمة السر (لا إرسال — إعادة تعيين بإشراف)
+  features: string[]; // ماذا تقدّم هذه النافذة (تُعرَض دائماً على الحاسوب، وقابلة للطيّ على الموبايل)
 }
+
+// جملة تعريف عامّة بهدف المنصّة — تظهر فوق نوافذ الدخول قبل اختيار أيّ دور.
+const PLATFORM_INTRO =
+  "منصّة اختبارات إلكترونية متكاملة: بنك أسئلة بكل الأنواع، تصحيح آليّ وجزئيّ، متابعة أداء تفصيلية، وتواصل مباشر بين المدرّس والطالب ووليّ الأمر.";
 
 const WINDOWS: RoleWindow[] = [
   {
@@ -36,6 +41,12 @@ const WINDOWS: RoleWindow[] = [
     accent: "bg-primary/10 text-primary ring-primary/20",
     forgot:
       "راجع مدرّسك أو إدارة مؤسّستك لإعادة تعيين كلمة سرّك — يمكنهم ذلك فوراً.",
+    features: [
+      "أداء اختبارات فورية أو ورقية",
+      "تصحيح فوري أو جزئي مع شرح الإجابة",
+      "متابعة تقدّمك وشاراتك",
+      "مراسلة مدرّسك مباشرة",
+    ],
   },
   {
     key: "TEACHER",
@@ -46,6 +57,12 @@ const WINDOWS: RoleWindow[] = [
     icon: "🧑‍🏫",
     accent: "bg-gold/15 text-gold ring-gold/25",
     forgot: "راجع إدارة مؤسّستك (المدير) لإعادة تعيين كلمة سرّك.",
+    features: [
+      "بناء بنك أسئلة بكل الأنواع",
+      "تكوين اختبارات وإسنادها بسهولة (رمز/رابط/QR)",
+      "تصحيح وتحليل أداء طلابك",
+      "رسائل الطلاب وأولياء الأمور",
+    ],
   },
   {
     key: "ADMIN",
@@ -57,6 +74,11 @@ const WINDOWS: RoleWindow[] = [
     accent: "bg-ink/10 text-ink ring-ink/20",
     forgot:
       "مدير المؤسّسة: راجع المدير العام للمنصّة. المدير العام: راجع مسؤول النظام.",
+    features: [
+      "إدارة مؤسّستك: مدرّسون وطلاب ومواد",
+      "تقارير ومتابعة شاملة",
+      "التحكّم بهوية المنصّة والصلاحيات",
+    ],
   },
   {
     key: "PARENT",
@@ -67,6 +89,11 @@ const WINDOWS: RoleWindow[] = [
     icon: <FamilyIcon className="h-8 w-8" />,
     accent: "bg-primary/10 text-primary-dark ring-primary/20",
     forgot: "راجع إدارة مؤسّسة ابنك لإعادة تعيين كلمة سرّك.",
+    features: [
+      "متابعة نتائج ابنك أوّلاً بأوّل",
+      "التواصل المباشر مع المدرّس",
+      "لا حاجة لتثبيت أي تطبيق",
+    ],
   },
 ];
 
@@ -78,6 +105,8 @@ export default function LoginForm({
   nameFontCss: string;
 }) {
   const [role, setRole] = useState<RoleWindow | null>(null);
+  // على الموبايل/التاب: بطاقة واحدة فقط تُظهر تفاصيلها (أكورديون) — على الحاسوب تظهر دائماً.
+  const [expandedKey, setExpandedKey] = useState<RoleKey | null>(null);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -178,8 +207,8 @@ export default function LoginForm({
 
       {/* المحتوى المركزي */}
       <div className="flex w-full flex-1 items-center justify-center">
-        <div className="w-full max-w-md">
-          <div className="mb-9 text-center">
+        <div className={`w-full ${role ? "max-w-md" : "max-w-5xl"}`}>
+          <div className="mx-auto mb-9 max-w-md text-center">
             <div className="relative mx-auto mb-5 flex justify-center">
               <span
                 aria-hidden
@@ -203,46 +232,103 @@ export default function LoginForm({
             <p className="mt-3 text-sm text-ink/55">
               {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
             </p>
+            {!role && (
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink/60">
+                {PLATFORM_INTRO}
+              </p>
+            )}
           </div>
 
           {!role ? (
-            // اختيار النافذة حسب الدور.
+            // اختيار النافذة حسب الدور. على الحاسوب (lg+) صفّ واحد وخواص كل نافذة
+            // ظاهرة دائماً؛ على الموبايل/التاب بطاقات مكدّسة تُطوى (أكورديون: بطاقة
+            // واحدة مفتوحة في كل مرّة) لضيق المساحة.
             <div
               className={
-                isList ? "grid grid-cols-1 gap-3" : "grid grid-cols-2 gap-3"
+                isList
+                  ? "grid grid-cols-1 gap-3"
+                  : "grid grid-cols-1 gap-3 lg:grid-cols-4"
               }
             >
-              {windows.map((w) => (
-                <button
-                  key={w.key}
-                  onClick={() => pick(w)}
-                  className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
-                    isList
-                      ? "flex flex-row items-center gap-4 text-right"
-                      : "flex flex-col items-center gap-3 text-center"
-                  }`}
-                >
-                  <span
-                    className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl ring-1 transition group-hover:scale-105 ${w.accent}`}
-                    aria-hidden
+              {windows.map((w) => {
+                const expanded = isList || expandedKey === w.key;
+                return (
+                  <div
+                    key={w.key}
+                    className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
+                      isList ? "" : "flex flex-col"
+                    }`}
                   >
-                    {w.icon}
-                  </span>
-                  <span
-                    className={
-                      isList ? "flex min-w-0 flex-col" : "flex flex-col items-center"
-                    }
-                  >
-                    <span className="font-display font-bold">{w.title}</span>
-                    <span className="text-xs text-ink/50">{w.subtitle}</span>
-                  </span>
-                  {isList && (
-                    <span className="mr-auto text-primary opacity-0 transition group-hover:opacity-100">
-                      ←
-                    </span>
-                  )}
-                </button>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() => pick(w)}
+                      className={`w-full ${
+                        isList
+                          ? "flex flex-row items-center gap-4 text-right"
+                          : "flex flex-col items-center gap-3 text-center"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl ring-1 transition group-hover:scale-105 ${w.accent}`}
+                        aria-hidden
+                      >
+                        {w.icon}
+                      </span>
+                      <span
+                        className={
+                          isList
+                            ? "flex min-w-0 flex-col"
+                            : "flex flex-col items-center"
+                        }
+                      >
+                        <span className="font-display font-bold">{w.title}</span>
+                        <span className="text-xs text-ink/50">{w.subtitle}</span>
+                      </span>
+                      {isList && (
+                        <span className="mr-auto text-primary opacity-0 transition group-hover:opacity-100">
+                          ←
+                        </span>
+                      )}
+                    </button>
+
+                    {!isList && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedKey((k) => (k === w.key ? null : w.key))
+                        }
+                        className="mt-2 flex items-center justify-center gap-1 text-xs font-medium text-ink/50 hover:text-primary lg:hidden"
+                        aria-expanded={expandedKey === w.key}
+                      >
+                        {expandedKey === w.key ? "إخفاء التفاصيل" : "ماذا أستطيع أن أفعل هنا؟"}
+                        <span
+                          aria-hidden
+                          className={`transition-transform ${
+                            expandedKey === w.key ? "rotate-180" : ""
+                          }`}
+                        >
+                          ▾
+                        </span>
+                      </button>
+                    )}
+
+                    <ul
+                      className={`mt-3 space-y-1 text-xs leading-relaxed text-ink/60 ${
+                        isList ? "" : "text-right"
+                      } ${expanded ? "block" : "hidden"} ${isList ? "" : "lg:block"}`}
+                    >
+                      {w.features.map((f) => (
+                        <li key={f} className="flex items-start gap-1.5">
+                          <span className="mt-0.5 text-primary/70" aria-hidden>
+                            ✓
+                          </span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
               {branding.showResourcesLogin && (
                 <Link
                   href="/resources"
