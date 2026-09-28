@@ -106,8 +106,6 @@ export default function LoginForm({
   nameFontCss: string;
 }) {
   const [role, setRole] = useState<RoleWindow | null>(null);
-  // على الموبايل/التاب: بطاقة واحدة فقط تُظهر تفاصيلها (أكورديون) — على الحاسوب تظهر دائماً.
-  const [expandedKey, setExpandedKey] = useState<RoleKey | null>(null);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -183,7 +181,10 @@ export default function LoginForm({
         className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl"
       />
 
-      <div className="absolute left-4 top-4 flex items-center gap-2">
+      {/* في تدفّق الصفحة الطبيعي (لا absolute) فيحجز مساحته دائماً ولا يتراكب مع ما
+          تحته مهما كبر حجم النصّ أو التفّ لسطرين. dir="ltr" يثبّته على أقصى اليسار
+          بصرف النظر عن rtl الصفحة. */}
+      <div dir="ltr" className="mb-4 flex w-full flex-wrap items-center gap-2">
         <ThemeToggle />
         <TextSizeControl />
       </div>
@@ -265,7 +266,6 @@ export default function LoginForm({
               }
             >
               {windows.map((w) => {
-                const expanded = isList || expandedKey === w.key;
                 return (
                   <div
                     key={w.key}
@@ -307,31 +307,11 @@ export default function LoginForm({
                       )}
                     </button>
 
-                    {!isList && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedKey((k) => (k === w.key ? null : w.key))
-                        }
-                        className="mt-2 flex items-center justify-center gap-1 text-xs font-medium text-ink/50 hover:text-primary lg:hidden"
-                        aria-expanded={expandedKey === w.key}
-                      >
-                        {expandedKey === w.key ? "إخفاء التفاصيل" : "ماذا أستطيع أن أفعل هنا؟"}
-                        <span
-                          aria-hidden
-                          className={`transition-transform ${
-                            expandedKey === w.key ? "rotate-180" : ""
-                          }`}
-                        >
-                          ▾
-                        </span>
-                      </button>
-                    )}
-
+                    {/* الخواص ظاهرة دائماً (لا إخفاء) — على كل الأحجام. */}
                     <ul
                       className={`mt-3 space-y-1 text-xs leading-relaxed text-ink/60 ${
                         isList ? "" : "text-right"
-                      } ${expanded ? "block" : "hidden"} ${isList ? "" : "lg:block"}`}
+                      }`}
                     >
                       {w.features.map((f) => (
                         <li key={f} className="flex items-start gap-1.5">
