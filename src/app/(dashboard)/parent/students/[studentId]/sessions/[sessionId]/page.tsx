@@ -67,7 +67,7 @@ export default async function ChildSessionReviewPage({
     <div className="mb-6">
       <Link
         href={`/parent/students/${params.studentId}`}
-        className="text-sm text-primary hover:underline"
+        className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
       >
         ← النتائج
       </Link>

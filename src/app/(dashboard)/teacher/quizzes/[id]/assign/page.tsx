@@ -110,7 +110,7 @@ export default async function AssignQuizPage({
       <div className="mb-6">
         <Link
           href={`/teacher/quizzes/${quiz.id}/edit`}
-          className="text-sm text-primary hover:underline"
+          className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
         >
           ← تكوين الاختبار
         </Link>

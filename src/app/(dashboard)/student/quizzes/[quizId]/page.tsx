@@ -51,7 +51,7 @@ export default async function TakeQuizPage({
     return (
       <DashboardShell session={session}>
         <div className="mb-6">
-          <Link href="/student/quizzes" className="text-sm text-primary hover:underline">
+          <Link href="/student/quizzes" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
             ← اختباراتي
           </Link>
         </div>
@@ -162,7 +162,7 @@ export default async function TakeQuizPage({
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
-        <Link href="/student/quizzes" className="text-sm text-primary hover:underline">
+        <Link href="/student/quizzes" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← اختباراتي
         </Link>
       </div>

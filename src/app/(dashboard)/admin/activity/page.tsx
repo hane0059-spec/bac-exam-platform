@@ -97,7 +97,7 @@ export default async function ActivityPage() {
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-6">
-        <Link href="/admin" className="text-sm text-primary hover:underline">
+        <Link href="/admin" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← الرئيسية
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">النشاط الحالي</h2>

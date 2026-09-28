@@ -41,7 +41,7 @@ export default async function TeacherSubjectsPage() {
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
-        <Link href="/teacher" className="text-sm text-primary hover:underline">
+        <Link href="/teacher" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← الرئيسية
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">موادّي الدراسية</h2>

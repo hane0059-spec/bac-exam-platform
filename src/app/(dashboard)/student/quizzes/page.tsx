@@ -78,7 +78,7 @@ export default async function StudentQuizzesPage({
     <DashboardShell session={session}>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="font-display text-xl font-bold">اختباراتي</h2>
-        <Link href="/student" className="text-sm text-primary hover:underline">
+        <Link href="/student" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← العودة للوحة
         </Link>
       </div>

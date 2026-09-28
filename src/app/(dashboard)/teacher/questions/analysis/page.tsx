@@ -81,7 +81,7 @@ export default async function QuestionAnalysisPage() {
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
-        <Link href="/teacher/questions" className="text-sm text-primary hover:underline">
+        <Link href="/teacher/questions" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← بنك الأسئلة
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">تحليل الأسئلة</h2>

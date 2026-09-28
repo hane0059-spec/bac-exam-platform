@@ -45,7 +45,7 @@ export default async function ParentDetailPage({
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-6">
-        <Link href="/admin/parents" className="text-sm text-primary hover:underline">
+        <Link href="/admin/parents" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← أولياء الأمور
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">

@@ -91,7 +91,7 @@ export default async function AdminEditStudentPage({
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-6">
-        <Link href="/admin/users" className="text-sm text-primary hover:underline">
+        <Link href="/admin/users" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← المستخدمون
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">

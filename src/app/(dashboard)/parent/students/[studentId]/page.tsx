@@ -52,7 +52,7 @@ export default async function ChildResultsPage({
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
-        <Link href="/parent" className="text-sm text-primary hover:underline">
+        <Link href="/parent" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← أبنائي
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">

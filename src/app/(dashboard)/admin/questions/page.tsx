@@ -107,7 +107,7 @@ export default async function AdminQuestionsPage({
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-4">
-        <Link href="/admin" className="text-sm text-primary hover:underline">
+        <Link href="/admin" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← لوحة المدير
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">

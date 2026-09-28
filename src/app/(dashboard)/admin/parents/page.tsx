@@ -36,7 +36,7 @@ export default async function AdminParentsPage() {
     <DashboardShell session={ctx.session}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/admin" className="text-sm text-primary hover:underline">
+          <Link href="/admin" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
             ← لوحة المدير
           </Link>
           <h2 className="mt-2 font-display text-xl font-bold">أولياء الأمور</h2>

@@ -62,7 +62,7 @@ export default async function CurriculumPage() {
       <div className="mb-6">
         <Link
           href="/teacher/questions"
-          className="text-sm text-primary hover:underline"
+          className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
         >
           ← بنك الأسئلة
         </Link>

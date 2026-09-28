@@ -31,7 +31,7 @@ export default async function AdminFieldsPage() {
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-6">
-        <Link href="/admin" className="text-sm text-primary hover:underline">
+        <Link href="/admin" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← لوحة المدير
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">الحقول المخصّصة</h2>

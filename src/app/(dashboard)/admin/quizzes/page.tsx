@@ -93,7 +93,7 @@ export default async function AdminQuizzesPage({
   return (
     <DashboardShell session={ctx.session}>
       <div className="mb-4">
-        <Link href="/admin" className="text-sm text-primary hover:underline">
+        <Link href="/admin" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← لوحة المدير
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">الاختبارات عبر المؤسّسات</h2>

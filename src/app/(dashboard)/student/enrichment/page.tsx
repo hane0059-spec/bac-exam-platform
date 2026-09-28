@@ -53,7 +53,7 @@ export default async function StudentEnrichmentPage() {
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
-        <Link href="/student" className="text-sm text-primary hover:underline">
+        <Link href="/student" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← لوحتي
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">أسئلة وإثراء</h2>

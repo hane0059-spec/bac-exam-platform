@@ -42,7 +42,7 @@ export default async function AdminImportQuestionsPage() {
         </h2>
         <Link
           href="/admin/questions"
-          className="text-sm text-primary hover:underline"
+          className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
         >
           ← البنك العام
         </Link>
