@@ -480,13 +480,13 @@ export default function QuizRunner({
                     <MathText text={o.content} />
                   </span>
                   {!startedFeedback && (
-                    <span className="flex">
+                    <span className="flex shrink-0 gap-2">
                       <button
                         type="button"
                         onClick={() => moveOrdered(i, -1)}
                         disabled={i === 0}
-                        className="px-1.5 text-ink/40 hover:text-primary disabled:opacity-30"
-                        aria-label="أعلى"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-ink/50 text-xl font-bold text-ink hover:border-primary hover:bg-primary-light hover:text-primary disabled:opacity-30"
+                        aria-label="نقل لأعلى"
                       >
                         ↑
                       </button>
@@ -494,8 +494,8 @@ export default function QuizRunner({
                         type="button"
                         onClick={() => moveOrdered(i, 1)}
                         disabled={i === ordered.length - 1}
-                        className="px-1.5 text-ink/40 hover:text-primary disabled:opacity-30"
-                        aria-label="أسفل"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-ink/50 text-xl font-bold text-ink hover:border-primary hover:bg-primary-light hover:text-primary disabled:opacity-30"
+                        aria-label="نقل لأسفل"
                       >
                         ↓
                       </button>
