@@ -210,8 +210,18 @@ export default function LoginForm({
       {/* المحتوى المركزي */}
       <div className="flex w-full flex-1 items-center justify-center">
         <div className={`w-full ${role ? "max-w-md" : "max-w-5xl"}`}>
-          <div className="mx-auto mb-9 max-w-md text-center">
-            <div className="relative mx-auto mb-5 flex justify-center">
+          <div
+            className={
+              role
+                ? "mx-auto mb-9 max-w-md text-center"
+                : "mb-9 text-center lg:flex lg:items-center lg:gap-10 lg:text-right"
+            }
+          >
+            <div
+              className={`relative mx-auto mb-5 flex justify-center ${
+                role ? "" : "lg:mx-0 lg:mb-0 lg:shrink-0"
+              }`}
+            >
               <span
                 aria-hidden
                 className="absolute top-1/2 left-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 blur-2xl"
@@ -220,25 +230,27 @@ export default function LoginForm({
                 <BrandLogo size={76} hasLogo={branding.hasLogo} />
               </div>
             </div>
-            <h1
-              className="text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl"
-              style={{ fontFamily: nameFontCss }}
-            >
-              {branding.name}
-            </h1>
-            {branding.showTagline && branding.tagline && (
-              <p className="mt-2.5 text-base font-semibold tracking-wide text-gold">
-                {branding.tagline}
+            <div className={role ? "" : "lg:min-w-0 lg:flex-1"}>
+              <h1
+                className="text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl"
+                style={{ fontFamily: nameFontCss }}
+              >
+                {branding.name}
+              </h1>
+              {branding.showTagline && branding.tagline && (
+                <p className="mt-2.5 text-base font-semibold tracking-wide text-gold">
+                  {branding.tagline}
+                </p>
+              )}
+              <p className="mt-3 text-sm text-ink/55">
+                {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
               </p>
-            )}
-            <p className="mt-3 text-sm text-ink/55">
-              {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
-            </p>
-            {!role && (
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink/60">
-                {PLATFORM_INTRO}
-              </p>
-            )}
+              {!role && (
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink/60 lg:mx-0 lg:max-w-2xl">
+                  {PLATFORM_INTRO}
+                </p>
+              )}
+            </div>
           </div>
 
           {!role ? (
