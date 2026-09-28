@@ -64,7 +64,7 @@ export default async function ResourcesPage() {
 
       <div className="mb-8 text-center">
         <h1 className="font-display text-3xl font-bold">أسئلة وإثراء</h1>
-        <p className="mt-2 text-ink/60">
+        <p className="mt-2 text-ink/75">
           إعلانات وصور وملفّات (PDF / Word) للتدرّب — مجاناً وبلا حاجة لحساب.
         </p>
       </div>

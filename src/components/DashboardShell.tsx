@@ -133,7 +133,7 @@ export default async function DashboardShell({
           <h1 className="font-display text-2xl font-bold">
             {welcome(session.gender)}، {session.firstName}
           </h1>
-          <p className="mt-1 text-ink/60">
+          <p className="mt-1 text-ink/75">
             {
               ({
                 STUDENT: "لوحة متابعة اختباراتك ونتائجك",

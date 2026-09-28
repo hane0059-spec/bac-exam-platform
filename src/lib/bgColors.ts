@@ -6,9 +6,10 @@
 export const BG_SATURATION = 55; // % ثابتة لكل الاختيارات — تناسق ولطف بصري.
 export const BG_HUE_MIN = 0;
 export const BG_HUE_MAX = 359;
-// حدّ أدنى للإضاءة يُبقي تبايناً مقروءاً مع نصّ الواجهة الداكن؛ حدٌّ أعلى قريب
-// من الأبيض (يسمح بـ«أزرق أغمق» ونحوه دون الوصول لدرجة تُذهب وضوح القراءة).
-export const BG_LIGHTNESS_MIN = 45;
+// حدّ أدنى للإضاءة يُبقي تبايناً مقروءاً مع نصّ الواجهة الداكن (بما فيه النصوص
+// المخفّفة الشفافية التي تقع مباشرة على الخلفية لا داخل بطاقة بيضاء)؛ حدٌّ أعلى
+// قريب من الأبيض. يسمح بـ«أزرق أغمق» ونحوه دون الوصول لدرجة تُذهب وضوح القراءة.
+export const BG_LIGHTNESS_MIN = 55;
 export const BG_LIGHTNESS_MAX = 96;
 
 export const BG_HUE_DEFAULT = 210; // أزرق
@@ -32,6 +33,20 @@ export function isBgColorValue(v: unknown): v is BgColorValue {
     o.l >= BG_LIGHTNESS_MIN &&
     o.l <= BG_LIGHTNESS_MAX
   );
+}
+
+/**
+ * يُحمِّل قيمة مخزَّنة سابقاً بأمان حتى لو خرجت عن الحدود الحالية (مثلاً بعد
+ * تشديدها لاحقاً لصون التباين) — يُثبِّت الإضاءة ضمن النطاق بدل رفض القيمة
+ * كليّاً والرجوع إلى الافتراضي.
+ */
+export function clampBgColorValue(v: unknown): BgColorValue | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.h !== "number" || typeof o.l !== "number") return null;
+  const h = ((Math.round(o.h) % 360) + 360) % 360;
+  const l = Math.min(BG_LIGHTNESS_MAX, Math.max(BG_LIGHTNESS_MIN, Math.round(o.l)));
+  return { h, l };
 }
 
 /** hsl() جاهزة للمعاينة في الواجهة (سواتش/تدرّج) — بالتشبّع الثابت. */

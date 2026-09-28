@@ -243,11 +243,11 @@ export default function LoginForm({
                   {branding.tagline}
                 </p>
               )}
-              <p className="mt-3 text-sm text-ink/55">
+              <p className="mt-3 text-sm text-ink/75">
                 {role ? role.subtitle : "اختر نافذة الدخول المناسبة لك"}
               </p>
               {!role && (
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink/60 lg:mx-0 lg:max-w-2xl">
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-ink/75 lg:mx-0 lg:max-w-2xl">
                   {PLATFORM_INTRO}
                 </p>
               )}

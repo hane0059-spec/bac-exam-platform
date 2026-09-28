@@ -4,7 +4,7 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { isFontKey, type FontKey } from "@/lib/fonts";
-import { isBgColorValue, type BgColorValue } from "@/lib/bgColors";
+import { isBgColorValue, clampBgColorValue, type BgColorValue } from "@/lib/bgColors";
 
 export { FONT_OPTIONS, FONT_CSS, FONT_KEYS, isFontKey, fontCss } from "@/lib/fonts";
 export type { FontKey, FontKind } from "@/lib/fonts";
@@ -47,7 +47,9 @@ export const getAppBgColor = cache(async (): Promise<BgColorValue | null> => {
     const row = await prisma.appSetting.findUnique({ where: { key: "bg_color" } });
     if (row?.value) {
       const parsed: unknown = JSON.parse(row.value);
-      if (isBgColorValue(parsed)) return parsed;
+      // يُثبِّت قيماً قديمة خارج الحدود الحالية (بعد تشديدها) بدل رفضها كليّاً.
+      const clamped = clampBgColorValue(parsed);
+      if (clamped) return clamped;
     }
   } catch {
     // عند غياب الجدول/الاتصال أو قيمة تالفة: بلا تخصيص.
