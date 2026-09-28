@@ -279,7 +279,9 @@ export default function LoginForm({
                       className={`w-full ${
                         isList
                           ? "flex flex-row items-center gap-4 text-right"
-                          : "flex flex-col items-center gap-3 text-center"
+                          : // موبايل/تاب: الأيقونة في زاوية البطاقة والعنوان بجانبها (صفّ).
+                            // الحاسوب (lg+): عمود ممركز كما كان.
+                            "flex flex-row items-start gap-4 text-right lg:flex-col lg:items-center lg:gap-3 lg:text-center"
                       }`}
                     >
                       <span
@@ -292,7 +294,7 @@ export default function LoginForm({
                         className={
                           isList
                             ? "flex min-w-0 flex-col"
-                            : "flex flex-col items-center"
+                            : "flex min-w-0 flex-col lg:items-center"
                         }
                       >
                         <span className="font-display font-bold">{w.title}</span>
@@ -349,7 +351,7 @@ export default function LoginForm({
                   className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
                     isList
                       ? "flex flex-row items-center gap-4 text-right"
-                      : "flex flex-col items-center gap-3 text-center"
+                      : "flex flex-row items-start gap-4 text-right lg:flex-col lg:items-center lg:gap-3 lg:text-center"
                   }`}
                 >
                   <span
@@ -360,7 +362,9 @@ export default function LoginForm({
                   </span>
                   <span
                     className={
-                      isList ? "flex min-w-0 flex-col" : "flex flex-col items-center"
+                      isList
+                        ? "flex min-w-0 flex-col"
+                        : "flex min-w-0 flex-col lg:items-center"
                     }
                   >
                     <span className="font-display font-bold">أسئلة وإثراء</span>
