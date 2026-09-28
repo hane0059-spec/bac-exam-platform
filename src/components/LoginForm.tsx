@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Linkify from "@/components/Linkify";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
+import TextSizeControl from "@/components/TextSizeControl";
 import PasswordInput from "@/components/PasswordInput";
 import BrandLogo from "@/components/BrandLogo";
 import QrCode from "@/components/QrCode";
@@ -182,8 +183,9 @@ export default function LoginForm({
         className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl"
       />
 
-      <div className="absolute left-4 top-4">
+      <div className="absolute left-4 top-4 flex items-center gap-2">
         <ThemeToggle />
+        <TextSizeControl />
       </div>
 
       {/* بانر الصيانة (أبرز) أو الملاحظة العامّة */}
@@ -257,7 +259,7 @@ export default function LoginForm({
                     key={w.key}
                     className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
                       isList ? "" : "flex flex-col"
-                    }`}
+                    } ${w.key === "ADMIN" ? "order-last lg:order-none" : ""}`}
                   >
                     <button
                       type="button"
