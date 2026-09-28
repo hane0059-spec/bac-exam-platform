@@ -20,9 +20,17 @@ export default async function TeacherResultsPage() {
     orderBy: { updatedAt: "desc" },
     include: {
       subject: { select: { name: true } },
-      sessions: { select: { status: true, percentage: true } },
+      sessions: { select: { id: true, status: true, percentage: true, needsGrading: true } },
     },
   });
+
+  // جلسات فيها إجابة بانتظار مراجعة يدويّة (قصيرة/مقالي/فراغات) — لتحديد أيّ
+  // اختبار يحتاج تصحيحك الآن، إذ القائمة وحدها لا تكشف ذلك دون فتح كل اختبار.
+  const pending = await prisma.studentAnswer.groupBy({
+    by: ["sessionId"],
+    where: { needsReview: true, session: { quiz: { creatorId: session.sub } } },
+  });
+  const pendingSessionIds = new Set(pending.map((p) => p.sessionId));
 
   const rows = quizzes.map((q) => {
     const finished = q.sessions.filter(
@@ -30,6 +38,9 @@ export default async function TeacherResultsPage() {
     );
     const inProgress = q.sessions.filter(
       (s) => s.status === "IN_PROGRESS"
+    ).length;
+    const needsReview = q.sessions.filter(
+      (s) => s.needsGrading || pendingSessionIds.has(s.id)
     ).length;
     const avg =
       finished.length > 0
@@ -44,9 +55,12 @@ export default async function TeacherResultsPage() {
       subjectName: q.subject.name,
       finished: finished.length,
       inProgress,
+      needsReview,
       avg,
     };
   });
+  // الاختبارات التي تحتاج تصحيحاً تظهر أوّلاً.
+  rows.sort((a, b) => Number(b.needsReview > 0) - Number(a.needsReview > 0));
 
   return (
     <DashboardShell session={session}>
@@ -65,7 +79,14 @@ export default async function TeacherResultsPage() {
               className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
             >
               <div>
-                <h3 className="font-display text-lg font-semibold">{r.title}</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-display text-lg font-semibold">{r.title}</h3>
+                  {r.needsReview > 0 && (
+                    <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
+                      ⏳ بانتظار تصحيحك ({r.needsReview})
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-ink/60">
                   {r.subjectName} · أدّى {r.finished}
                   {r.inProgress > 0 && ` · قيد الأداء ${r.inProgress}`}
