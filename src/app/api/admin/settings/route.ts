@@ -6,8 +6,10 @@ import { getAdminContext } from "@/lib/admin";
 import {
   setAppFont,
   setPlatformMode,
+  setAppBgColor,
   FONT_OPTIONS,
   PLATFORM_MODE_OPTIONS,
+  BG_COLOR_OPTIONS,
 } from "@/lib/settings";
 import { setBranding, type Branding } from "@/lib/branding";
 
@@ -46,6 +48,9 @@ const schema = z.object({
   platformMode: z
     .enum(PLATFORM_MODE_OPTIONS.map((m) => m.key) as [string, ...string[]])
     .optional(),
+  bgColor: z
+    .enum(BG_COLOR_OPTIONS.map((c) => c.key) as [string, ...string[]])
+    .optional(),
   branding: brandingSchema.optional(),
 });
 
@@ -74,6 +79,9 @@ export async function POST(req: Request) {
     await setPlatformMode(
       parsed.data.platformMode as Parameters<typeof setPlatformMode>[0]
     );
+  }
+  if (parsed.data.bgColor) {
+    await setAppBgColor(parsed.data.bgColor as Parameters<typeof setAppBgColor>[0]);
   }
   if (parsed.data.branding) {
     await setBranding(parsed.data.branding as Branding);

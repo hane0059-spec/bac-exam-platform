@@ -4,9 +4,12 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { isFontKey, type FontKey } from "@/lib/fonts";
+import { isBgColorKey, type BgColorKey } from "@/lib/bgColors";
 
 export { FONT_OPTIONS, FONT_CSS, FONT_KEYS, isFontKey, fontCss } from "@/lib/fonts";
 export type { FontKey, FontKind } from "@/lib/fonts";
+export { BG_COLOR_OPTIONS, BG_COLOR_RGB, isBgColorKey } from "@/lib/bgColors";
+export type { BgColorKey } from "@/lib/bgColors";
 
 /** خطّ المنصّة الحالي (افتراضي cairo). مُجمَّع خلال الطلب الواحد. */
 export const getAppFont = cache(async (): Promise<FontKey> => {
@@ -24,6 +27,25 @@ export async function setAppFont(value: FontKey): Promise<void> {
     where: { key: "font" },
     update: { value },
     create: { key: "font", value },
+  });
+}
+
+/** لون خلفية المنصّة الحالي (افتراضي "default"). الوضع النهاري فقط. */
+export const getAppBgColor = cache(async (): Promise<BgColorKey> => {
+  try {
+    const row = await prisma.appSetting.findUnique({ where: { key: "bg_color" } });
+    if (isBgColorKey(row?.value)) return row!.value as BgColorKey;
+  } catch {
+    // عند غياب الجدول/الاتصال: الافتراضي.
+  }
+  return "default";
+});
+
+export async function setAppBgColor(value: BgColorKey): Promise<void> {
+  await prisma.appSetting.upsert({
+    where: { key: "bg_color" },
+    update: { value },
+    create: { key: "bg_color", value },
   });
 }
 

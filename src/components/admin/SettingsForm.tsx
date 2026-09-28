@@ -5,21 +5,26 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PLATFORM_MODE_OPTIONS, type PlatformMode } from "@/lib/settings";
 import { FONT_OPTIONS, FONT_CSS, type FontKey } from "@/lib/fonts";
+import { BG_COLOR_OPTIONS, type BgColorKey } from "@/lib/bgColors";
 
 export default function SettingsForm({
   currentFont,
   currentMode,
+  currentBgColor,
 }: {
   currentFont: FontKey;
   currentMode: PlatformMode;
+  currentBgColor: BgColorKey;
 }) {
   const router = useRouter();
   const [font, setFont] = useState<FontKey>(currentFont);
   const [mode, setMode] = useState<PlatformMode>(currentMode);
+  const [bgColor, setBgColor] = useState<BgColorKey>(currentBgColor);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const dirty = font !== currentFont || mode !== currentMode;
+  const dirty =
+    font !== currentFont || mode !== currentMode || bgColor !== currentBgColor;
 
   async function save() {
     setError("");
@@ -28,7 +33,7 @@ export default function SettingsForm({
     const res = await fetch("/api/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ font, platformMode: mode }),
+      body: JSON.stringify({ font, platformMode: mode, bgColor }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -66,6 +71,39 @@ export default function SettingsForm({
                 onChange={() => setMode(m.key)}
               />
               <span className="font-medium">{m.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-line pt-4">
+        <h3 className="mb-1 font-display font-semibold">لون خلفية المنصّة</h3>
+        <p className="text-sm text-ink/60">
+          خلفية الصفحة خلف البطاقات، في الوضع النهاري فقط (الوضع الليلي والطباعة
+          لا يتأثّران).
+        </p>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {BG_COLOR_OPTIONS.map((c) => (
+            <label
+              key={c.key}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition ${
+                bgColor === c.key
+                  ? "border-primary bg-primary-light"
+                  : "border-line hover:bg-ink/5"
+              }`}
+            >
+              <input
+                type="radio"
+                name="bgColor"
+                checked={bgColor === c.key}
+                onChange={() => setBgColor(c.key)}
+              />
+              <span
+                aria-hidden
+                className="h-6 w-6 shrink-0 rounded-full border border-line"
+                style={{ backgroundColor: c.swatch }}
+              />
+              <span className="text-sm font-medium">{c.label}</span>
             </label>
           ))}
         </div>

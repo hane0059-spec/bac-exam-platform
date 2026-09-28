@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
-import { getAppFont, getPlatformMode } from "@/lib/settings";
+import { getAppFont, getPlatformMode, getAppBgColor } from "@/lib/settings";
 import { getBranding } from "@/lib/branding";
 import DashboardShell from "@/components/DashboardShell";
 import SettingsForm from "@/components/admin/SettingsForm";
@@ -16,9 +16,10 @@ export default async function AdminSettingsPage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // إعدادات المنصّة للمدير العام حصراً
 
-  const [font, platformMode, branding] = await Promise.all([
+  const [font, platformMode, bgColor, branding] = await Promise.all([
     getAppFont(),
     getPlatformMode(),
+    getAppBgColor(),
     getBranding(),
   ]);
 
@@ -32,7 +33,11 @@ export default async function AdminSettingsPage() {
       </div>
       <div className="space-y-6">
         <BrandingForm current={branding} />
-        <SettingsForm currentFont={font} currentMode={platformMode} />
+        <SettingsForm
+          currentFont={font}
+          currentMode={platformMode}
+          currentBgColor={bgColor}
+        />
       </div>
     </DashboardShell>
   );
