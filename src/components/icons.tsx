@@ -18,7 +18,8 @@ export type IconName =
   | "layers"
   | "family"
   | "folder"
-  | "gear";
+  | "gear"
+  | "teach";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   const common = {
@@ -154,6 +155,15 @@ export function Icon({ name, className }: { name: IconName; className?: string }
         <svg {...common}>
           <circle cx="12" cy="12" r="3.2" />
           <path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6M17.8 17.8l-1.6-1.6M7.8 7.8 6.2 6.2" />
+        </svg>
+      );
+    case "teach":
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="4" width="17" height="12" rx="1.6" />
+          <path d="M7 20h10" />
+          <path d="M12 16v4" />
+          <path d="M7.5 12.3 10 9.7l2 1.8 3.5-3.6" />
         </svg>
       );
   }

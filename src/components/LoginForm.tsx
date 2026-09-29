@@ -11,6 +11,7 @@ import PasswordInput from "@/components/PasswordInput";
 import BrandLogo from "@/components/BrandLogo";
 import QrCode from "@/components/QrCode";
 import FamilyIcon from "@/components/icons/FamilyIcon";
+import { Icon } from "@/components/icons";
 import { QUOTE_SIZE_CLASS, type Branding } from "@/lib/brandingShared";
 
 type RoleKey = "STUDENT" | "TEACHER" | "ADMIN" | "PARENT";
@@ -23,6 +24,7 @@ interface RoleWindow {
   placeholder: string;
   icon: React.ReactNode;
   accent: string; // لون دائرة الأيقونة (متناسق مع العلامة، آمن للوضع الليلي)
+  barClass: string; // شريط علوي ملوّن لبطاقة النافذة (تمييز بصري قبل التمرير)
   forgot: string; // إرشاد عند نسيان كلمة السر (لا إرسال — إعادة تعيين بإشراف)
   features: string[]; // ماذا تقدّم هذه النافذة (تُعرَض دائماً على الحاسوب، وقابلة للطيّ على الموبايل)
 }
@@ -38,8 +40,9 @@ const WINDOWS: RoleWindow[] = [
     subtitle: "للطالبات والطلاب",
     hint: "رمز الطالب أو الاسم الكامل أو البريد",
     placeholder: "S-1002 أو الاسم الكامل",
-    icon: "🎓",
+    icon: <Icon name="cap" className="h-8 w-8" />,
     accent: "bg-primary/10 text-primary ring-primary/20",
+    barClass: "bg-primary",
     forgot:
       "راجع مدرّسك أو إدارة مؤسّستك لإعادة تعيين كلمة سرّك — يمكنهم ذلك فوراً.",
     features: [
@@ -55,8 +58,9 @@ const WINDOWS: RoleWindow[] = [
     subtitle: "للمدرّسات والمدرّسين",
     hint: "البريد أو رمز المدرّس أو الاسم",
     placeholder: "name@example.com أو T-1002",
-    icon: "🧑‍🏫",
+    icon: <Icon name="teach" className="h-8 w-8" />,
     accent: "bg-gold/15 text-gold ring-gold/25",
+    barClass: "bg-gold",
     forgot: "راجع إدارة مؤسّستك (المدير) لإعادة تعيين كلمة سرّك.",
     features: [
       "بناء بنك أسئلة بكل الأنواع",
@@ -71,8 +75,9 @@ const WINDOWS: RoleWindow[] = [
     subtitle: "مدير المؤسّسة والمدير العام",
     hint: "البريد الإلكتروني",
     placeholder: "admin@example.com",
-    icon: "🛡️",
+    icon: <Icon name="shield" className="h-8 w-8" />,
     accent: "bg-ink/10 text-ink ring-ink/20",
+    barClass: "bg-ink/70",
     forgot:
       "مدير المؤسّسة: راجع المدير العام للمنصّة. المدير العام: راجع مسؤول النظام.",
     features: [
@@ -89,6 +94,7 @@ const WINDOWS: RoleWindow[] = [
     placeholder: "name@example.com أو الاسم الكامل",
     icon: <FamilyIcon className="h-8 w-8" />,
     accent: "bg-primary/10 text-primary-dark ring-primary/20",
+    barClass: "bg-primary-dark",
     forgot: "راجع إدارة مؤسّسة ابنك لإعادة تعيين كلمة سرّك.",
     features: [
       "متابعة نتائج ابنك أوّلاً بأوّل",
@@ -171,6 +177,16 @@ export default function LoginForm({
 
   return (
     <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 py-10">
+      {/* نسيج نقطي خفيف جدّاً بلون محايد يتبع الثيم (لا يتأثّر بتخصيص لون
+          الخلفية ولا بالوضع الليلي لأنّه يعتمد على --ink نفسه). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-20 opacity-[0.05]"
+        style={{
+          backgroundImage: "radial-gradient(rgb(var(--ink)) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      />
       {/* توهّج خلفيّ ناعم أعلى الصفحة لإضفاء حيويّة */}
       <div
         aria-hidden
@@ -179,6 +195,10 @@ export default function LoginForm({
       <div
         aria-hidden
         className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-16 right-0 -z-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
       />
 
       {/* في تدفّق الصفحة الطبيعي (لا absolute) فيحجز مساحته دائماً ولا يتراكب مع ما
@@ -233,7 +253,7 @@ export default function LoginForm({
             </div>
             <div className={role ? "" : "lg:min-w-0 lg:flex-1"}>
               <h1
-                className="text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl"
+                className="bg-gradient-to-l from-primary to-gold bg-clip-text text-4xl font-bold leading-tight tracking-tight text-transparent sm:text-5xl"
                 style={{ fontFamily: nameFontCss }}
               >
                 {branding.name}
@@ -269,10 +289,14 @@ export default function LoginForm({
                 return (
                   <div
                     key={w.key}
-                    className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
+                    className={`card group relative overflow-hidden p-5 pt-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
                       isList ? "" : "flex flex-col"
                     } ${w.key === "ADMIN" ? "order-last lg:order-none" : ""}`}
                   >
+                    <span
+                      aria-hidden
+                      className={`absolute inset-x-0 top-0 h-1.5 ${w.barClass}`}
+                    />
                     <button
                       type="button"
                       onClick={() => pick(w)}
@@ -328,17 +352,18 @@ export default function LoginForm({
               {branding.showResourcesLogin && (
                 <Link
                   href="/resources"
-                  className={`card group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
+                  className={`card group relative overflow-hidden p-5 pt-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg ${
                     isList
                       ? "flex flex-row items-center gap-4 text-right"
                       : "flex flex-row items-start gap-4 text-right lg:flex-col lg:items-center lg:gap-3 lg:text-center"
                   }`}
                 >
+                  <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-gold" />
                   <span
                     className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl ring-1 ring-gold/25 bg-gold/15 text-gold transition group-hover:scale-105"
                     aria-hidden
                   >
-                    📄
+                    <Icon name="star" className="h-8 w-8" />
                   </span>
                   <span
                     className={
