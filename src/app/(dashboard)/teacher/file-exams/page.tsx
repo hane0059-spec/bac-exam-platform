@@ -92,7 +92,7 @@ export default async function FileExamsPage({
               <Link
                 key={q.id}
                 href={`/teacher/file-exams/${q.id}`}
-                className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+                className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
               >
                 <div>
                   <div className="mb-1 flex flex-wrap items-center gap-2">

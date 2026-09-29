@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import DashboardShell from "@/components/DashboardShell";
 import StatBar from "@/components/StatBar";
+import IconBadge from "@/components/IconBadge";
 import { listStudentQuizzes } from "@/lib/exam";
 import { enrichmentTeacherIdsForStudent } from "@/lib/enrichment";
 
@@ -59,8 +60,9 @@ export default async function StudentDashboard() {
       <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/student/quizzes"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
+          <IconBadge icon="book" />
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">اختباراتي</h3>
             {pending > 0 && (
@@ -75,8 +77,9 @@ export default async function StudentDashboard() {
         </Link>
         <Link
           href="/student/progress"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
+          <IconBadge icon="chart" />
           <h3 className="mb-2 font-display text-lg font-semibold">تقدّمي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
             نقاط قوّتك وضعفك حسب الدروس، لتعرف ما يحتاج مراجعةً.
@@ -84,8 +87,9 @@ export default async function StudentDashboard() {
         </Link>
         <Link
           href="/student/subjects"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
+          <IconBadge icon="cap" />
           <h3 className="mb-2 font-display text-lg font-semibold">مواد دراستي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
             المواد المسجَّل فيها ومدرّسوها.
@@ -94,8 +98,9 @@ export default async function StudentDashboard() {
         {hasEnrichment && (
           <Link
             href="/student/enrichment"
-            className="card p-4 transition hover:border-primary/40 sm:p-5"
+            className="card-link p-4 sm:p-5"
           >
+            <IconBadge icon="star" tone="gold" />
             <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
             <p className="text-sm leading-relaxed text-ink/60">
               ملفّات وصور وإعلانات ينشرها لك مدرّسوك.

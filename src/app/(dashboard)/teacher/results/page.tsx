@@ -76,7 +76,7 @@ export default async function TeacherResultsPage() {
             <Link
               key={r.id}
               href={`/teacher/quizzes/${r.id}/results`}
-              className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+              className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">

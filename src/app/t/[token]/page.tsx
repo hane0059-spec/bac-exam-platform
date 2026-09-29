@@ -107,7 +107,7 @@ export default async function TeacherQuizzesPublicPage({
                 <Link
                   key={q.id}
                   href={`/join/${q.accessCode}`}
-                  className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+                  className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
                 >
                   <div className="min-w-0">
                     <p className="font-display font-semibold">{q.title}</p>

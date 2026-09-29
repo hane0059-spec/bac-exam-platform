@@ -87,7 +87,7 @@ export default async function TeacherDashboard() {
       <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/teacher/subjects"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="cap" />
           <h3 className="mb-2 font-display text-lg font-semibold">موادّي</h3>
@@ -97,7 +97,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/questions"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="book" />
           <h3 className="mb-2 font-display text-lg font-semibold">بنك الأسئلة</h3>
@@ -107,7 +107,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/keyboard"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="calculator" />
           <h3 className="mb-2 font-display text-lg font-semibold">
@@ -119,7 +119,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/quizzes"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="layers" />
           <h3 className="mb-2 font-display text-lg font-semibold">
@@ -132,7 +132,7 @@ export default async function TeacherDashboard() {
         {canEnrichment && (
           <Link
             href="/teacher/enrichment"
-            className="card p-4 transition hover:border-primary/40 sm:p-5"
+            className="card-link p-4 sm:p-5"
           >
             <IconBadge icon="star" tone="gold" />
             <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
@@ -144,7 +144,7 @@ export default async function TeacherDashboard() {
         {canFileExams && (
           <Link
             href="/teacher/file-exams"
-            className="card p-4 transition hover:border-primary/40 sm:p-5"
+            className="card-link p-4 sm:p-5"
           >
             <IconBadge icon="upload" tone="gold" />
             <h3 className="mb-2 font-display text-lg font-semibold">
@@ -157,7 +157,7 @@ export default async function TeacherDashboard() {
         )}
         <Link
           href="/teacher/students"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="users" />
           <h3 className="mb-2 font-display text-lg font-semibold">طلابي</h3>
@@ -167,7 +167,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/results"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="chart" />
           <div className="mb-2 flex items-center justify-between">
@@ -186,7 +186,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/reports"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="flag" tone={openReports > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
@@ -203,7 +203,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/appeals"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="alert" tone={openAppeals > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
@@ -222,7 +222,7 @@ export default async function TeacherDashboard() {
         </Link>
         <Link
           href="/teacher/parent-messages"
-          className="card p-4 transition hover:border-primary/40 sm:p-5"
+          className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="mail" tone={openParentMsgs > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">

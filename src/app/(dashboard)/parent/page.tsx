@@ -47,18 +47,25 @@ export default async function ParentDashboard() {
             <Link
               key={c.id}
               href={`/parent/students/${c.id}`}
-              className="card flex flex-col p-5 transition hover:border-primary/40"
+              className="card-link flex items-center gap-4 p-5"
             >
-              <h3 className="font-display text-lg font-semibold">{c.name}</h3>
-              <p className="mt-1 flex flex-wrap gap-2 text-sm text-ink/60">
-                {c.gradeName && <span>{c.gradeName}</span>}
-                {c.studentCode && (
-                  <span className="text-ink/40" dir="ltr">
-                    {c.studentCode}
-                  </span>
-                )}
-              </p>
-              <span className="mt-3 text-sm text-primary">عرض النتائج ←</span>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-light text-lg font-bold text-primary">
+                {c.name.trim().charAt(0)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-lg font-semibold">{c.name}</h3>
+                <p className="mt-1 flex flex-wrap gap-2 text-sm text-ink/60">
+                  {c.gradeName && <span>{c.gradeName}</span>}
+                  {c.studentCode && (
+                    <span className="text-ink/40" dir="ltr">
+                      {c.studentCode}
+                    </span>
+                  )}
+                </p>
+                <span className="mt-2 inline-block text-sm text-primary">
+                  عرض النتائج ←
+                </span>
+              </div>
             </Link>
           ))}
         </div>

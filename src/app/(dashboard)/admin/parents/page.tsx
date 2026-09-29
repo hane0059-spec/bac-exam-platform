@@ -56,7 +56,7 @@ export default async function AdminParentsPage() {
             <Link
               key={p.id}
               href={`/admin/parents/${p.id}`}
-              className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+              className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
             >
               <div>
                 <div className="flex items-center gap-2">

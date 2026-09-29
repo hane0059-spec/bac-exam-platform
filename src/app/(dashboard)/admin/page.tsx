@@ -5,6 +5,7 @@ import { getAdminContext } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import StatBar from "@/components/StatBar";
+import IconBadge from "@/components/IconBadge";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 import { isSoloMode } from "@/lib/settings";
 
@@ -49,8 +50,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/activity"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="clock" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               النشاط الحالي
             </h3>
@@ -62,8 +64,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/overview"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="chart" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               نظرة عامة وإشراف
             </h3>
@@ -75,8 +78,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && !solo && (
           <Link
             href="/admin/schools"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="shield" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               المدارس والمعاهد
             </h3>
@@ -88,8 +92,9 @@ export default async function AdminDashboard() {
         {!solo && (
           <Link
             href="/admin/external"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="upload" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               استيراد طلاب خارجيين
             </h3>
@@ -100,8 +105,9 @@ export default async function AdminDashboard() {
         )}
         <Link
           href="/admin/users"
-          className="card p-5 transition hover:border-primary/40"
+          className="card-link p-5"
         >
+          <IconBadge icon="users" />
           <h3 className="mb-2 font-display text-lg font-semibold">المستخدمون</h3>
           <p className="text-sm leading-relaxed text-ink/60">
             {solo
@@ -112,8 +118,9 @@ export default async function AdminDashboard() {
         {!solo && (
           <Link
             href="/admin/parents"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="family" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               أولياء الأمور
             </h3>
@@ -125,8 +132,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/academics"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="cap" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               المواد والصفوف
             </h3>
@@ -138,8 +146,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && !solo && (
           <Link
             href="/admin/fields"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="layers" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               الحقول المخصّصة
             </h3>
@@ -151,8 +160,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/questions"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="book" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               البنك العام للأسئلة
             </h3>
@@ -164,8 +174,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/quizzes"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="check" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               الاختبارات عبر المؤسّسات
             </h3>
@@ -177,8 +188,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/storage"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="folder" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               التخزين والمرفقات
             </h3>
@@ -189,8 +201,9 @@ export default async function AdminDashboard() {
         )}
         <Link
           href="/admin/retention"
-          className="card p-5 transition hover:border-primary/40"
+          className="card-link p-5"
         >
+          <IconBadge icon="alert" tone="gold" />
           <h3 className="mb-2 font-display text-lg font-semibold">
             تفريغ مرفقات المغادرين
           </h3>
@@ -201,8 +214,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/resources"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="star" tone="gold" />
             <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
             <p className="text-sm leading-relaxed text-ink/60">
               ملفّات PDF عامّة (بلا تسجيل دخول) للتدرّب حسب الصفّ.
@@ -212,8 +226,9 @@ export default async function AdminDashboard() {
         {ctx.isSuper && (
           <Link
             href="/admin/settings"
-            className="card p-5 transition hover:border-primary/40"
+            className="card-link p-5"
           >
+            <IconBadge icon="gear" />
             <h3 className="mb-2 font-display text-lg font-semibold">الإعدادات</h3>
             <p className="text-sm leading-relaxed text-ink/60">
               اختيار خطّ المنصّة المطبَّق على كل الواجهات.

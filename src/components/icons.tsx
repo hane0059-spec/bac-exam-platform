@@ -16,7 +16,9 @@ export type IconName =
   | "calculator"
   | "upload"
   | "layers"
-  | "family";
+  | "family"
+  | "folder"
+  | "gear";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   const common = {
@@ -106,7 +108,7 @@ export function Icon({ name, className }: { name: IconName; className?: string }
       return (
         <svg {...common}>
           <path d="M12 4 19 6.5v5.5c0 4-3 6.7-7 8-4-1.3-7-4-7-8V6.5L12 4Z" />
-          <path d="M9 12l2 2 4-4.2" />
+          <path d="M12 4v13.7" opacity={0.55} />
         </svg>
       );
     case "calculator":
@@ -139,6 +141,19 @@ export function Icon({ name, className }: { name: IconName; className?: string }
           <path d="M3 19c.5-3 2.5-4.5 5-4.5s4.5 1.5 5 4.5" />
           <circle cx="17.5" cy="10.5" r="2" />
           <path d="M14.8 15c1.8.4 3 1.7 3.4 3.8" />
+        </svg>
+      );
+    case "folder":
+      return (
+        <svg {...common}>
+          <path d="M4 6.5c0-.6.4-1 1-1h4.5l1.5 2H19c.6 0 1 .4 1 1v9.5c0 .6-.4 1-1 1H5c-.6 0-1-.4-1-1V6.5Z" />
+        </svg>
+      );
+    case "gear":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="3.2" />
+          <path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6M17.8 17.8l-1.6-1.6M7.8 7.8 6.2 6.2" />
         </svg>
       );
   }

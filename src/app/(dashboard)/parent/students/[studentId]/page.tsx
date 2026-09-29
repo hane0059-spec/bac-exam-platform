@@ -77,7 +77,7 @@ export default async function ChildResultsPage({
               <Link
                 key={s.id}
                 href={`/parent/students/${params.studentId}/sessions/${s.id}`}
-                className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+                className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
               >
                 <div>
                   <span className="font-medium">{s.quiz.title}</span>

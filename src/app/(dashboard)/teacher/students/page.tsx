@@ -168,7 +168,7 @@ export default async function TeacherStudentsPage({
               <Link
                 key={s.id}
                 href={`/teacher/students/${s.id}`}
-                className="card flex flex-wrap items-center justify-between gap-3 p-4 transition hover:border-primary/40"
+                className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
               >
                 {inner}
                 <span className="text-sm text-primary">إسناد اختبار ←</span>
