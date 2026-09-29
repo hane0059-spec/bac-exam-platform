@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { teacherCanFileExams, teacherCanEnrichment } from "@/lib/teacher";
 import DashboardShell from "@/components/DashboardShell";
 import StatBar from "@/components/StatBar";
+import IconBadge from "@/components/IconBadge";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 
 export const dynamic = "force-dynamic";
@@ -61,17 +62,19 @@ export default async function TeacherDashboard() {
     <DashboardShell session={session}>
       <StatBar
         stats={[
-          { label: "طلابي", value: studentCount },
-          { label: "اختبارات منشورة", value: quizCount, tone: "primary" },
+          { label: "طلابي", value: studentCount, icon: "users" },
+          { label: "اختبارات منشورة", value: quizCount, tone: "primary", icon: "check" },
           {
             label: "بانتظار التصحيح",
             value: needsGrading,
             tone: needsGrading > 0 ? "gold" : "muted",
+            icon: "clock",
           },
           {
             label: "اعتراضات مفتوحة",
             value: openAppeals,
             tone: openAppeals > 0 ? "gold" : "muted",
+            icon: "alert",
           },
         ]}
       />
@@ -86,6 +89,7 @@ export default async function TeacherDashboard() {
           href="/teacher/subjects"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="cap" />
           <h3 className="mb-2 font-display text-lg font-semibold">موادّي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
             اختر المواد التي تدرّسها وعدّلها في أي وقت.
@@ -95,6 +99,7 @@ export default async function TeacherDashboard() {
           href="/teacher/questions"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="book" />
           <h3 className="mb-2 font-display text-lg font-semibold">بنك الأسئلة</h3>
           <p className="text-sm leading-relaxed text-ink/60">
             إنشاء أسئلتك الخاصة وتصفيتها حسب المادة.
@@ -104,6 +109,7 @@ export default async function TeacherDashboard() {
           href="/teacher/keyboard"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="calculator" />
           <h3 className="mb-2 font-display text-lg font-semibold">
             لوحة المعادلات
           </h3>
@@ -115,6 +121,7 @@ export default async function TeacherDashboard() {
           href="/teacher/quizzes"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="layers" />
           <h3 className="mb-2 font-display text-lg font-semibold">
             تكوين الاختبارات
           </h3>
@@ -127,6 +134,7 @@ export default async function TeacherDashboard() {
             href="/teacher/enrichment"
             className="card p-4 transition hover:border-primary/40 sm:p-5"
           >
+            <IconBadge icon="star" tone="gold" />
             <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
             <p className="text-sm leading-relaxed text-ink/60">
               انشر ملفّات وصوراً وإعلانات يراها طلابك المسجّلون عندك فقط.
@@ -138,6 +146,7 @@ export default async function TeacherDashboard() {
             href="/teacher/file-exams"
             className="card p-4 transition hover:border-primary/40 sm:p-5"
           >
+            <IconBadge icon="upload" tone="gold" />
             <h3 className="mb-2 font-display text-lg font-semibold">
               الاختبارات الورقية
             </h3>
@@ -150,6 +159,7 @@ export default async function TeacherDashboard() {
           href="/teacher/students"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="users" />
           <h3 className="mb-2 font-display text-lg font-semibold">طلابي</h3>
           <p className="text-sm leading-relaxed text-ink/60">
             إنشاء حسابات الطلاب وتسجيلهم في موادّك وإدارتهم.
@@ -159,6 +169,7 @@ export default async function TeacherDashboard() {
           href="/teacher/results"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="chart" />
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">
               المتابعة والنتائج
@@ -177,6 +188,7 @@ export default async function TeacherDashboard() {
           href="/teacher/reports"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="flag" tone={openReports > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">بلاغات الأسئلة</h3>
             {openReports > 0 && (
@@ -193,6 +205,7 @@ export default async function TeacherDashboard() {
           href="/teacher/appeals"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="alert" tone={openAppeals > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">
               اعتراضات التصحيح
@@ -211,6 +224,7 @@ export default async function TeacherDashboard() {
           href="/teacher/parent-messages"
           className="card p-4 transition hover:border-primary/40 sm:p-5"
         >
+          <IconBadge icon="mail" tone={openParentMsgs > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold">الرسائل الواردة</h3>
             {openParentMsgs > 0 && (

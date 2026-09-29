@@ -31,15 +31,15 @@ export default async function AdminDashboard() {
         stats={
           solo
             ? [
-                { label: "الطلاب", value: students, tone: "primary" },
-                { label: "مدرّسون مستقلّون", value: teachers },
-                { label: "اختبارات", value: quizzes, tone: "muted" },
+                { label: "الطلاب", value: students, tone: "primary", icon: "users" },
+                { label: "مدرّسون مستقلّون", value: teachers, icon: "cap" },
+                { label: "اختبارات", value: quizzes, tone: "muted", icon: "book" },
               ]
             : [
-                { label: "الطلاب", value: students, tone: "primary" },
-                { label: "المدرّسون", value: teachers },
-                { label: "أولياء الأمور", value: parents },
-                { label: "اختبارات", value: quizzes, tone: "muted" },
+                { label: "الطلاب", value: students, tone: "primary", icon: "users" },
+                { label: "المدرّسون", value: teachers, icon: "cap" },
+                { label: "أولياء الأمور", value: parents, icon: "family" },
+                { label: "اختبارات", value: quizzes, tone: "muted", icon: "book" },
               ]
         }
       />

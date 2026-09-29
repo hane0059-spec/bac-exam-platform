@@ -31,8 +31,8 @@ export default async function ParentDashboard() {
     <DashboardShell session={session}>
       <StatBar
         stats={[
-          { label: "أبنائي", value: children.length, tone: "primary" },
-          { label: "اختبارات مكتملة", value: completed },
+          { label: "أبنائي", value: children.length, tone: "primary", icon: "family" },
+          { label: "اختبارات مكتملة", value: completed, icon: "check" },
         ]}
       />
       <h2 className="mb-4 font-display text-xl font-bold">أبنائي</h2>

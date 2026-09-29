@@ -129,21 +129,38 @@ export default async function DashboardShell({
       </header>
 
       <main className="mx-auto max-w-5xl px-3 py-5 sm:px-4 sm:py-8">
-        <div className="mb-5 print:hidden sm:mb-8">
-          <h1 className="font-display text-2xl font-bold">
-            {welcome(session.gender)}، {session.firstName}
-          </h1>
-          <p className="mt-1 text-ink/75">
-            {
-              ({
-                STUDENT: "لوحة متابعة اختباراتك ونتائجك",
-                TEACHER: "لوحة إدارة اختباراتك وطلابك",
-                ADMIN: "لوحة إدارة مستخدمي المؤسّسة",
-                PARENT: "لوحة متابعة نتائج أبنائك",
-              } as Record<string, string>)[session.role] ??
-                "لوحة التحكّم"
-            }
-          </p>
+        <div className="mb-5 flex items-center justify-between gap-4 overflow-hidden rounded-2xl bg-gradient-to-l from-primary to-primary-dark px-5 py-6 text-white shadow-card print:hidden sm:mb-8 sm:px-8 sm:py-7">
+          <div>
+            <h1 className="font-display text-xl font-bold sm:text-2xl">
+              {welcome(session.gender)}، {session.firstName}
+            </h1>
+            <p className="mt-1.5 text-sm text-white/85 sm:mt-2 sm:text-base">
+              {
+                ({
+                  STUDENT: "لوحة متابعة اختباراتك ونتائجك",
+                  TEACHER: "لوحة إدارة اختباراتك وطلابك",
+                  ADMIN: "لوحة إدارة مستخدمي المؤسّسة",
+                  PARENT: "لوحة متابعة نتائج أبنائك",
+                } as Record<string, string>)[session.role] ??
+                  "لوحة التحكّم"
+              }
+            </p>
+          </div>
+          <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 sm:flex lg:h-20 lg:w-20">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-8 w-8 text-white lg:h-9 lg:w-9"
+            >
+              <path d="M12 5 21 9.5 12 14 3 9.5 12 5Z" />
+              <path d="M7 11.5v4c0 1.2 2.2 2.3 5 2.3s5-1.1 5-2.3v-4" />
+              <path d="M21 9.5v5" />
+            </svg>
+          </div>
         </div>
         {children}
       </main>

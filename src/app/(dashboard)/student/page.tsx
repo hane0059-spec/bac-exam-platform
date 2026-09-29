@@ -40,13 +40,19 @@ export default async function StudentDashboard() {
     <DashboardShell session={session}>
       <StatBar
         stats={[
-          { label: "اختبارات مُسنَدة", value: active.length },
-          { label: "أنهيتها", value: finished.length, tone: "primary" },
-          { label: "بانتظارك", value: pending, tone: pending > 0 ? "gold" : "muted" },
+          { label: "اختبارات مُسنَدة", value: active.length, icon: "book" },
+          { label: "أنهيتها", value: finished.length, tone: "primary", icon: "check" },
+          {
+            label: "بانتظارك",
+            value: pending,
+            tone: pending > 0 ? "gold" : "muted",
+            icon: "clock",
+          },
           {
             label: "معدّلك",
             value: avg != null ? `${avg}%` : "—",
             tone: avg != null ? "primary" : "muted",
+            icon: "chart",
           },
         ]}
       />
