@@ -178,8 +178,10 @@ export default async function StudentQuizzesPage({
                         : "ابدأ الاختبار"}
                     </Link>
                   )}
-                  {/* الورقي: نتيجته قابلة لإعادة العرض دائماً. */}
-                  {q.isFileBased && q.hasFinished && (
+                  {/* الورقي: نتيجته قابلة لإعادة العرض دائماً. العادي: فقط إن
+                      استُنفدت محاولاته — إذ لا يزال بإمكانه بدء محاولة جديدة
+                      من الزرّ أعلاه بدل استعراض القديمة عند بقاء محاولات. */}
+                  {q.hasFinished && (q.isFileBased || !q.canStart) && (
                     <Link
                       href={`/student/quizzes/${q.quizId}`}
                       className="block text-center text-sm text-primary hover:underline"

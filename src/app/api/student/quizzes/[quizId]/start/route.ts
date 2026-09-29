@@ -105,6 +105,16 @@ export async function POST(
   });
   const maxAllowed = settings.maxAttempts + assignment.extraAttempts;
   if (finishedCount >= maxAllowed) {
+    // لا محاولات متبقّية: أعِد نتيجة آخر محاولة منتهية بدل خطأ مجرّد، ليتمكّن
+    // الطالب من مراجعة اختباره دائماً (تخطّي شاشة السؤال مباشرةً للنتيجة).
+    const last = await prisma.examSession.findFirst({
+      where: { studentId, quizId, status: { in: ["COMPLETED", "TIMED_OUT"] } },
+      orderBy: { completedAt: "desc" },
+      select: { id: true },
+    });
+    if (last) {
+      return NextResponse.json({ sessionId: last.id, finished: true });
+    }
     return NextResponse.json(
       { error: "استنفدت عدد المحاولات المسموح بها" },
       { status: 403 }
