@@ -3,6 +3,7 @@
 // نموذج الدخول — كامل المحتوى المرئيّ تتحكّم به هوية المنصّة (Branding)
 // التي يضبطها المدير العام من /admin/settings.
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Linkify from "@/components/Linkify";
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -133,6 +134,17 @@ export default function LoginForm({
   };
   const windows = WINDOWS.filter((w) => visible[w.key]);
   const isList = branding.windowsLayout === "list";
+
+  // تحديد نافذة مباشرةً عبر ?role= (رابط قادم من الصفحة الرئيسية العامّة).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const wanted = searchParams.get("role");
+    if (!wanted) return;
+    const w = windows.find((x) => x.key === wanted);
+    if (w) pick(w);
+    // مرّة واحدة عند التحميل فقط.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hasContact = branding.contactEmail || branding.contactPhone;
   const hasFooterInfo = hasContact || branding.about;

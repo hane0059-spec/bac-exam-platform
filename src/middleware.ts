@@ -38,11 +38,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // الجذر: توجيه حسب الحالة.
+  // الجذر: المسجَّل دخوله يُحوَّل للوحته؛ وغير المسجَّل يرى الصفحة الرئيسية العامّة.
   if (pathname === "/") {
-    return NextResponse.redirect(
-      new URL(session ? dashboardPath(session.role) : "/login", req.url)
-    );
+    if (session) {
+      return NextResponse.redirect(
+        new URL(dashboardPath(session.role), req.url)
+      );
+    }
+    return NextResponse.next();
   }
 
   // المسارات المحمية حسب الدور (مطابقة على حدّ المقطع لا مجرّد البادئة،
