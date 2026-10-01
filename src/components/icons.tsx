@@ -22,7 +22,11 @@ export type IconName =
   | "teach"
   | "share"
   | "phone"
-  | "info";
+  | "info"
+  | "home"
+  | "user"
+  | "menu"
+  | "close";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   const common = {
@@ -189,6 +193,33 @@ export function Icon({ name, className }: { name: IconName; className?: string }
         <svg {...common}>
           <circle cx="12" cy="12" r="8.2" />
           <path d="M12 11v5.2M12 8v.01" />
+        </svg>
+      );
+    case "home":
+      return (
+        <svg {...common}>
+          <path d="M4 11.5 12 4l8 7.5" />
+          <path d="M6 10v9h12v-9" />
+          <path d="M10 19v-5h4v5" />
+        </svg>
+      );
+    case "user":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="8.3" r="3.3" />
+          <path d="M5.5 19c.8-3.8 3.4-5.7 6.5-5.7s5.7 1.9 6.5 5.7" />
+        </svg>
+      );
+    case "menu":
+      return (
+        <svg {...common}>
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      );
+    case "close":
+      return (
+        <svg {...common}>
+          <path d="M6 6l12 12M18 6 6 18" />
         </svg>
       );
   }

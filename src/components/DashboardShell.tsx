@@ -5,11 +5,13 @@ import { roleLabel, welcome } from "@/lib/gender";
 import { dashboardPath, type SessionData } from "@/lib/auth";
 import { unreadCount } from "@/lib/notifications";
 import { getBranding } from "@/lib/branding";
+import { enrichmentTeacherIdsForStudent } from "@/lib/enrichment";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
 import ThemeToggle from "./ThemeToggle";
 import BrandLogo from "./BrandLogo";
+import StudentShell from "./student/StudentShell";
 
 export default async function DashboardShell({
   session,
@@ -20,7 +22,7 @@ export default async function DashboardShell({
 }) {
   const fullName = `${session.firstName} ${session.lastName}`;
   const label = roleLabel(session.role, session.gender);
-  const [unread, branding, studentCode] = await Promise.all([
+  const [unread, branding, studentCode, enrichmentTeacherIds] = await Promise.all([
     unreadCount(session.sub).catch(() => 0),
     getBranding(),
     // رمز الطالب بجانب اسمه في كل صفحاته — يحتاجه كثيراً ليعطيه لمدرّسه (إسناد/تواصل).
@@ -33,6 +35,9 @@ export default async function DashboardShell({
           .then((p) => p?.studentCode ?? null)
           .catch(() => null)
       : Promise.resolve(null),
+    session.role === "STUDENT"
+      ? enrichmentTeacherIdsForStudent(session.sub).catch(() => [])
+      : Promise.resolve([]),
   ]);
   // إعلان عامّ يُعرض أعلى كل لوحة: الصيانة أبرز، وإلا الملاحظة.
   const banner = branding.maintenance
@@ -40,6 +45,25 @@ export default async function DashboardShell({
     : branding.notice
       ? { text: branding.notice, warn: branding.noticeType === "warning" }
       : null;
+
+  if (session.role === "STUDENT") {
+    return (
+      <StudentShell
+        fullName={fullName}
+        studentCode={studentCode}
+        roleLabel={label}
+        welcomeGreeting={`${welcome(session.gender)}، ${session.firstName}`}
+        subtitle="لوحة متابعة اختباراتك ونتائجك"
+        brandName={branding.name}
+        hasLogo={branding.hasLogo}
+        unread={unread}
+        banner={banner}
+        enrichmentEnabled={enrichmentTeacherIds.length > 0}
+      >
+        {children}
+      </StudentShell>
+    );
+  }
 
   return (
     <div className="min-h-screen">
