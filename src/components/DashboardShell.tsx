@@ -5,6 +5,7 @@ import { roleLabel, welcome } from "@/lib/gender";
 import { dashboardPath, type SessionData } from "@/lib/auth";
 import { unreadCount } from "@/lib/notifications";
 import { getBranding } from "@/lib/branding";
+import { prisma } from "@/lib/prisma";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
 import ThemeToggle from "./ThemeToggle";
@@ -19,9 +20,19 @@ export default async function DashboardShell({
 }) {
   const fullName = `${session.firstName} ${session.lastName}`;
   const label = roleLabel(session.role, session.gender);
-  const [unread, branding] = await Promise.all([
+  const [unread, branding, studentCode] = await Promise.all([
     unreadCount(session.sub).catch(() => 0),
     getBranding(),
+    // رمز الطالب بجانب اسمه في كل صفحاته — يحتاجه كثيراً ليعطيه لمدرّسه (إسناد/تواصل).
+    session.role === "STUDENT"
+      ? prisma.studentProfile
+          .findUnique({
+            where: { userId: session.sub },
+            select: { studentCode: true },
+          })
+          .then((p) => p?.studentCode ?? null)
+          .catch(() => null)
+      : Promise.resolve(null),
   ]);
   // إعلان عامّ يُعرض أعلى كل لوحة: الصيانة أبرز، وإلا الملاحظة.
   const banner = branding.maintenance
@@ -55,6 +66,14 @@ export default async function DashboardShell({
               <p className="text-xs text-ink/60 sm:text-sm">{label}</p>
               <p className="font-display text-base font-bold leading-tight sm:text-lg">
                 {fullName}
+                {studentCode && (
+                  <bdi
+                    dir="ltr"
+                    className="mr-1.5 text-xs font-normal text-ink/50 sm:text-sm"
+                  >
+                    ({studentCode})
+                  </bdi>
+                )}
               </p>
             </div>
           </Link>
@@ -145,6 +164,11 @@ export default async function DashboardShell({
                   "لوحة التحكّم"
               }
             </p>
+            {studentCode && (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-xs sm:text-sm">
+                رمزك: <bdi dir="ltr" className="font-bold">{studentCode}</bdi>
+              </p>
+            )}
           </div>
           <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 sm:flex lg:h-20 lg:w-20">
             <svg
