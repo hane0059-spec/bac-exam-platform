@@ -392,6 +392,7 @@ export interface StudentQuizListItem {
   bestPercentage: number | null;
   archived: boolean; // أرشفها الطالب بطلبه (عرضيّ)
   hasFinished: boolean; // أنهى محاولةً (يمكنه عرض النتيجة/الأرشفة)
+  lastFinishedSessionId: string | null; // لعرض آخر نتيجة دون بدء محاولة جديدة
 }
 
 export async function listStudentQuizzes(
@@ -413,7 +414,7 @@ export async function listStudentQuizzes(
   const quizIds = assignments.map((a) => a.quizId);
   const sessions = await prisma.examSession.findMany({
     where: { studentId, quizId: { in: quizIds } },
-    select: { quizId: true, status: true, percentage: true },
+    select: { id: true, quizId: true, status: true, percentage: true, completedAt: true },
   });
 
   return assignments.map((a) => {
@@ -426,6 +427,12 @@ export async function listStudentQuizzes(
     const open = isWithinWindow(a.quiz.availableFrom, a.quiz.availableUntil);
     const bestPercentage = finished.length
       ? Math.max(...finished.map((s) => Number(s.percentage)))
+      : null;
+    const lastFinished = finished.length
+      ? [...finished].sort(
+          (x, y) =>
+            (y.completedAt?.getTime() ?? 0) - (x.completedAt?.getTime() ?? 0)
+        )[0]
       : null;
 
     const effectiveMax = settings.maxAttempts + a.extraAttempts;
@@ -456,6 +463,7 @@ export async function listStudentQuizzes(
       bestPercentage,
       archived: a.studentArchivedAt != null,
       hasFinished: finished.length > 0,
+      lastFinishedSessionId: lastFinished?.id ?? null,
     };
   });
 }

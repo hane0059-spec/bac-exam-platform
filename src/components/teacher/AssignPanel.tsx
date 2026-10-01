@@ -19,14 +19,124 @@ export interface AssignStudent {
   effectiveMax: number; // حدّ المحاولات + الإضافية
 }
 
+function StudentRow({
+  s,
+  selected,
+  onToggleSelect,
+  onAssign,
+  onUnassign,
+  onAttempts,
+  busy,
+  published,
+}: {
+  s: AssignStudent;
+  selected: boolean;
+  onToggleSelect: () => void;
+  onAssign: () => void;
+  onUnassign: () => void;
+  onAttempts: (action: "grant" | "reset") => void;
+  busy: boolean;
+  published: boolean;
+}) {
+  return (
+    <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
+      <div className="flex items-center gap-3">
+        {!s.assigned && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            disabled={!published}
+            className="accent-primary"
+            aria-label={`اختيار ${s.name}`}
+          />
+        )}
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{s.name}</span>
+            <span className="text-xs text-ink/40">
+              {s.genderLabel} • {s.studentCode}
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-2 text-xs">
+            {s.assigned ? (
+              <span className="rounded-full bg-primary text-white px-2 py-0.5">
+                مُسنَد
+              </span>
+            ) : (
+              <span className="rounded-full bg-ink/10 px-2 py-0.5 text-ink/50">
+                غير مُسنَد
+              </span>
+            )}
+            {s.dueDate && (
+              <span className="text-ink/50">
+                الاستحقاق: <bdi dir="ltr"><LocalTime value={s.dueDate} /></bdi>
+              </span>
+            )}
+            {s.statusLabel && (
+              <span className="text-primary-dark">{s.statusLabel}</span>
+            )}
+            {s.assigned && (
+              <span className="text-ink/50">
+                المحاولات: {s.attemptsUsed} / {s.effectiveMax}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      {s.assigned ? (
+        <div className="flex flex-wrap items-center gap-3">
+          {s.attemptsUsed > 0 && (
+            <>
+              <button
+                onClick={() => onAttempts("grant")}
+                disabled={busy}
+                className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white disabled:opacity-50"
+              >
+                منح محاولة
+              </button>
+              <ConfirmButton
+                onConfirm={() => onAttempts("reset")}
+                label="تصفير"
+                confirmLabel="نعم، صفّر المحاولات"
+                message="تصفير محاولات الطالب؟ ستُحذف نتيجته ومراجعته السابقة لهذا الاختبار."
+                disabled={busy}
+                className="text-sm text-gold hover:underline disabled:opacity-50"
+              />
+            </>
+          )}
+          <button
+            onClick={onUnassign}
+            disabled={busy}
+            className="text-sm text-red-500 hover:underline disabled:opacity-50"
+          >
+            إلغاء الإسناد
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onAssign}
+          disabled={busy || !published}
+          className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white disabled:opacity-50"
+        >
+          إسناد
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AssignPanel({
   quizId,
   published,
   students,
+  otherStudents,
 }: {
   quizId: string;
   published: boolean;
   students: AssignStudent[];
+  // طلاب المدرّس في مواد أخرى (خارج مادة هذا الاختبار) — للتصفّح عند عدم تذكّر الرمز.
+  otherStudents: AssignStudent[];
 }) {
   const router = useRouter();
   const [due, setDue] = useState("");
@@ -39,6 +149,10 @@ export default function AssignPanel({
     notFound: string[];
     otherSchool: string[];
   } | null>(null);
+
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherQuery, setOtherQuery] = useState("");
+  const [selectedOther, setSelectedOther] = useState<Set<string>>(new Set());
 
   async function assignByCode() {
     setError("");
@@ -61,9 +175,25 @@ export default function AssignPanel({
 
   const dueIso = () => (due ? new Date(due).toISOString() : null);
   const unassigned = students.filter((s) => !s.assigned);
+  const otherUnassigned = otherStudents.filter((s) => !s.assigned);
+  const otherFiltered = otherQuery.trim()
+    ? otherStudents.filter(
+        (s) =>
+          s.name.includes(otherQuery.trim()) ||
+          s.studentCode.includes(otherQuery.trim())
+      )
+    : otherStudents;
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleSelectOther(id: string) {
+    setSelectedOther((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -74,6 +204,34 @@ export default function AssignPanel({
     const ids = unassigned.map((s) => s.id).filter((id) => selected.has(id));
     await assign(ids);
     setSelected(new Set());
+  }
+  async function assignSelectedOther() {
+    const codes = otherUnassigned
+      .filter((s) => selectedOther.has(s.id))
+      .map((s) => s.studentCode);
+    await assignByCodes(codes);
+    setSelectedOther(new Set());
+  }
+
+  // «طلاب آخرون»: خارج مادة الاختبار، فمسار الإسناد بالمعرّف (يشترط تسجيلاً في
+  // مادة الاختبار) يرفضهم — نستعمل نفس مسار «الإسناد بالرمز» (يكتفي بعزل
+  // المؤسّسة) بدل تكرار منطقه في مسار جديد. بلا موعد استحقاق (غير مدعوم هناك).
+  async function assignByCodes(codesArr: string[]) {
+    if (codesArr.length === 0) return;
+    setError("");
+    setBusy(true);
+    const res = await fetch(`/api/teacher/quizzes/${quizId}/assign-by-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codes: codesArr.join(" ") }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّر الإسناد.");
+      return;
+    }
+    router.refresh();
   }
 
   async function assign(ids: string[]) {
@@ -209,95 +367,82 @@ export default function AssignPanel({
       ) : (
         <div className="space-y-2">
           {students.map((s) => (
-            <div
+            <StudentRow
               key={s.id}
-              className="card flex flex-wrap items-center justify-between gap-3 p-4"
-            >
-              <div className="flex items-center gap-3">
-                {!s.assigned && (
-                  <input
-                    type="checkbox"
-                    checked={selected.has(s.id)}
-                    onChange={() => toggleSelect(s.id)}
-                    disabled={!published}
-                    className="accent-primary"
-                    aria-label={`اختيار ${s.name}`}
-                  />
-                )}
-                <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{s.name}</span>
-                  <span className="text-xs text-ink/40">
-                    {s.genderLabel} • {s.studentCode}
-                  </span>
-                </div>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                  {s.assigned ? (
-                    <span className="rounded-full bg-primary text-white px-2 py-0.5">
-                      مُسنَد
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-ink/10 px-2 py-0.5 text-ink/50">
-                      غير مُسنَد
-                    </span>
-                  )}
-                  {s.dueDate && (
-                    <span className="text-ink/50">
-                      الاستحقاق:{" "}
-                      <bdi dir="ltr"><LocalTime value={s.dueDate} /></bdi>
-                    </span>
-                  )}
-                  {s.statusLabel && (
-                    <span className="text-primary-dark">{s.statusLabel}</span>
-                  )}
-                  {s.assigned && (
-                    <span className="text-ink/50">
-                      المحاولات: {s.attemptsUsed} / {s.effectiveMax}
-                    </span>
-                  )}
-                </div>
-                </div>
-              </div>
-              {s.assigned ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  {s.attemptsUsed > 0 && (
-                    <>
-                      <button
-                        onClick={() => attempts(s.id, "grant")}
-                        disabled={busy}
-                        className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white disabled:opacity-50"
-                      >
-                        منح محاولة
-                      </button>
-                      <ConfirmButton
-                        onConfirm={() => attempts(s.id, "reset")}
-                        label="تصفير"
-                        confirmLabel="نعم، صفّر المحاولات"
-                        message="تصفير محاولات الطالب؟ ستُحذف نتيجته ومراجعته السابقة لهذا الاختبار."
-                        disabled={busy}
-                        className="text-sm text-gold hover:underline disabled:opacity-50"
-                      />
-                    </>
-                  )}
-                  <button
-                    onClick={() => unassign(s.id)}
-                    disabled={busy}
-                    className="text-sm text-red-500 hover:underline disabled:opacity-50"
-                  >
-                    إلغاء الإسناد
-                  </button>
-                </div>
-              ) : (
+              s={s}
+              selected={selected.has(s.id)}
+              onToggleSelect={() => toggleSelect(s.id)}
+              onAssign={() => assign([s.id])}
+              onUnassign={() => unassign(s.id)}
+              onAttempts={(action) => attempts(s.id, action)}
+              busy={busy}
+              published={published}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* طلاب آخرون في مدرستك (مواد أخرى) — للتصفّح عند عدم تذكّر رمز الطالب،
+          بدل الاقتصار على البحث بالرمز وحده. */}
+      {otherStudents.length > 0 && (
+        <div className="card p-4">
+          <button
+            type="button"
+            onClick={() => setOtherOpen((v) => !v)}
+            className="flex w-full items-center justify-between text-right"
+          >
+            <span className="font-medium">
+              طلاب آخرون في مدرستك ({otherStudents.length})
+            </span>
+            <span className="text-sm text-primary">
+              {otherOpen ? "إخفاء ▲" : "تصفّح ▼"}
+            </span>
+          </button>
+          {otherOpen && (
+            <div className="mt-3 space-y-3">
+              <p className="text-xs text-ink/50">
+                طلابك في مواد أخرى غير مادة هذا الاختبار — يمكنك إسناده لهم أيضاً
+                (موعد الاستحقاق أعلاه لا يُطبَّق على هذه القائمة).
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <input
+                  type="text"
+                  value={otherQuery}
+                  onChange={(e) => setOtherQuery(e.target.value)}
+                  placeholder="ابحث بالاسم أو الرمز…"
+                  className="field flex-1"
+                />
                 <button
-                  onClick={() => assign([s.id])}
-                  disabled={busy || !published}
-                  className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark hover:bg-primary hover:text-white disabled:opacity-50"
+                  onClick={assignSelectedOther}
+                  disabled={busy || !published || selectedOther.size === 0}
+                  className="rounded-xl border border-primary px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary-light disabled:opacity-50"
                 >
-                  إسناد
+                  إسناد المحدّدين ({selectedOther.size})
                 </button>
+              </div>
+              {otherFiltered.length === 0 ? (
+                <p className="py-4 text-center text-sm text-ink/50">
+                  لا نتائج مطابقة.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {otherFiltered.map((s) => (
+                    <StudentRow
+                      key={s.id}
+                      s={s}
+                      selected={selectedOther.has(s.id)}
+                      onToggleSelect={() => toggleSelectOther(s.id)}
+                      onAssign={() => assignByCodes([s.studentCode])}
+                      onUnassign={() => unassign(s.id)}
+                      onAttempts={(action) => attempts(s.id, action)}
+                      busy={busy}
+                      published={published}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>

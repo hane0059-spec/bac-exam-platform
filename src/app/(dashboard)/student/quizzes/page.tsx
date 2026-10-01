@@ -178,12 +178,16 @@ export default async function StudentQuizzesPage({
                         : "ابدأ الاختبار"}
                     </Link>
                   )}
-                  {/* الورقي: نتيجته قابلة لإعادة العرض دائماً. العادي: فقط إن
-                      استُنفدت محاولاته — إذ لا يزال بإمكانه بدء محاولة جديدة
-                      من الزرّ أعلاه بدل استعراض القديمة عند بقاء محاولات. */}
-                  {q.hasFinished && (q.isFileBased || !q.canStart) && (
+                  {/* تظهر دائماً عند وجود محاولة منتهية — حتى مع بقاء محاولات،
+                      لتفادي المرور بشاشة «ابدأ الاختبار» المخيفة (تحذير المؤقّت)
+                      لمجرّد مراجعة نتيجة أو ردّ رسالة سابقَين. */}
+                  {q.hasFinished && (
                     <Link
-                      href={`/student/quizzes/${q.quizId}`}
+                      href={
+                        q.isFileBased
+                          ? `/student/quizzes/${q.quizId}`
+                          : `/student/quizzes/${q.quizId}?view=result`
+                      }
                       className="block text-center text-sm text-primary hover:underline"
                     >
                       عرض النتيجة

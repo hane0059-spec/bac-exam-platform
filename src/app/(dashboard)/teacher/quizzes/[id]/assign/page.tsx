@@ -11,6 +11,7 @@ import AssignPanel, {
   type AssignStudent,
 } from "@/components/teacher/AssignPanel";
 import ExternalImport from "@/components/admin/ExternalImport";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -43,14 +44,39 @@ export default async function AssignQuizPage({
   });
 
   const studentIds = enrollments.map((e) => e.studentId);
+
+  // طلاب آخرون في نطاق المدرّس (مواد أخرى) — لمن لا يتذكّر رمز الطالب فيصفّح
+  // بدل البحث. مستبعَد منهم طلاب القائمة الأولى (نفس مادة الاختبار) تفادياً للتكرار.
+  const scopeOr: Prisma.UserWhereInput[] = [
+    { createdById: session.sub },
+    { studentEnrollments: { some: { teacherId: session.sub, isActive: true } } },
+  ];
+  const otherStudentsRaw = await prisma.user.findMany({
+    where: {
+      role: "STUDENT",
+      OR: scopeOr,
+      id: { notIn: studentIds },
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      gender: true,
+      studentProfile: { select: { studentCode: true } },
+    },
+    orderBy: [{ firstName: "asc" }],
+  });
+  const otherIds = otherStudentsRaw.map((s) => s.id);
+
+  const allIds = [...studentIds, ...otherIds];
   await sweepExpiredSessions({ quizId: quiz.id });
   const [assignments, sessions] = await Promise.all([
     prisma.quizAssignment.findMany({
-      where: { quizId: quiz.id, studentId: { in: studentIds } },
+      where: { quizId: quiz.id, studentId: { in: allIds } },
       select: { studentId: true, dueDate: true, extraAttempts: true },
     }),
     prisma.examSession.findMany({
-      where: { quizId: quiz.id, studentId: { in: studentIds } },
+      where: { quizId: quiz.id, studentId: { in: allIds } },
       select: { studentId: true, status: true, percentage: true },
     }),
   ]);
@@ -100,6 +126,18 @@ export default async function AssignQuizPage({
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
 
+  const otherStudents: AssignStudent[] = otherStudentsRaw.map((st) => ({
+    id: st.id,
+    name: `${st.firstName} ${st.lastName}`,
+    studentCode: st.studentProfile?.studentCode ?? "—",
+    genderLabel: roleLabel("STUDENT", st.gender),
+    assigned: assignedSet.has(st.id),
+    dueDate: dueByStudent.get(st.id)?.toISOString() ?? null,
+    statusLabel: statusLabel(st.id),
+    attemptsUsed: finishedCount(st.id),
+    effectiveMax: maxAttempts + (extraByStudent.get(st.id) ?? 0),
+  }));
+
   const gradeLevels = await prisma.gradeLevel.findMany({
     select: { id: true, name: true },
     orderBy: { orderNum: "asc" },
@@ -122,6 +160,7 @@ export default async function AssignQuizPage({
         quizId={quiz.id}
         published={quiz.status === "PUBLISHED"}
         students={students}
+        otherStudents={otherStudents}
       />
 
       <div className="mt-8">

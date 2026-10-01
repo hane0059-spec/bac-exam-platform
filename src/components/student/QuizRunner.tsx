@@ -105,6 +105,7 @@ export default function QuizRunner({
   questionCount,
   timeLimitSec,
   gender,
+  viewSessionId,
 }: {
   quizId: string;
   title: string;
@@ -112,8 +113,11 @@ export default function QuizRunner({
   questionCount: number;
   timeLimitSec: number | null;
   gender: Gender;
+  // عرض نتيجة منتهية مباشرةً (رابط "عرض النتيجة") بلا المرور بشاشة «ابدأ
+  // الاختبار» — لمراجعة نتيجة/ردّ رسالة دون إيحاء ببدء محاولة جديدة.
+  viewSessionId?: string;
 }) {
-  const [phase, setPhase] = useState<Phase>("intro");
+  const [phase, setPhase] = useState<Phase>(viewSessionId ? "loading" : "intro");
   const [error, setError] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
   const [question, setQuestion] = useState<Question | null>(null);
@@ -166,6 +170,12 @@ export default function QuizRunner({
     }
     setResult((await res.json()) as ResultData);
     setPhase("finished");
+  }, []);
+
+  // عرض نتيجة سابقة مباشرةً عند الطلب الصريح (?view=result) — مرّة واحدة فقط.
+  useEffect(() => {
+    if (viewSessionId) void loadResult(viewSessionId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const start = useCallback(async () => {

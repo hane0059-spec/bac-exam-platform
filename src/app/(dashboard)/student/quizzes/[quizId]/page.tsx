@@ -19,8 +19,10 @@ export const dynamic = "force-dynamic";
 
 export default async function TakeQuizPage({
   params,
+  searchParams,
 }: {
   params: { quizId: string };
+  searchParams: { view?: string };
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -48,6 +50,23 @@ export default async function TakeQuizPage({
 
   if (!quiz.isFileBased) {
     const settings = parseSettings(quiz.settings);
+
+    // عرض آخر نتيجة منتهية مباشرةً (بلا شاشة «ابدأ الاختبار» المخيفة) — يُطلَب
+    // صراحةً بـ?view=result، لمراجعة نتيجة/ردّ رسالة دون إيحاء ببدء محاولة.
+    let viewSessionId: string | undefined;
+    if (searchParams.view === "result") {
+      const lastFinished = await prisma.examSession.findFirst({
+        where: {
+          studentId,
+          quizId: quiz.id,
+          status: { in: ["COMPLETED", "TIMED_OUT"] },
+        },
+        orderBy: { completedAt: "desc" },
+        select: { id: true },
+      });
+      viewSessionId = lastFinished?.id;
+    }
+
     return (
       <DashboardShell session={session}>
         <div className="mb-6">
@@ -62,6 +81,7 @@ export default async function TakeQuizPage({
           questionCount={quiz.nodes.length}
           timeLimitSec={settings.timeLimitSec}
           gender={session.gender}
+          viewSessionId={viewSessionId}
         />
       </DashboardShell>
     );
