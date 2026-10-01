@@ -6,6 +6,9 @@ import { getAdminContext } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import ResourcesManager from "@/components/admin/ResourcesManager";
+import TeacherEnrichmentReview, {
+  type ReviewRow,
+} from "@/components/admin/TeacherEnrichmentReview";
 
 export const dynamic = "force-dynamic";
 
@@ -14,25 +17,82 @@ export default async function AdminResourcesPage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin");
 
-  const gradeLevels = await prisma.gradeLevel.findMany({
-    orderBy: { orderNum: "asc" },
-    include: {
-      enrichmentFiles: {
-        where: { teacherId: null },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          title: true,
-          sizeBytes: true,
-          createdAt: true,
-          downloadCount: true,
-          kind: true,
-          body: true,
-          mimeType: true,
+  const [gradeLevels, pendingRaw, publishedRaw] = await Promise.all([
+    prisma.gradeLevel.findMany({
+      orderBy: { orderNum: "asc" },
+      include: {
+        enrichmentFiles: {
+          where: { teacherId: null },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            sizeBytes: true,
+            createdAt: true,
+            downloadCount: true,
+            kind: true,
+            body: true,
+            mimeType: true,
+          },
         },
       },
-    },
-  });
+    }),
+    // محتوى مدرّسين بانتظار اعتماد المدير لنشره على الصفحة العامّة.
+    prisma.enrichmentFile.findMany({
+      where: { teacherId: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        sizeBytes: true,
+        kind: true,
+        body: true,
+        mimeType: true,
+        gradeLevel: { select: { name: true } },
+        teacher: { select: { firstName: true, lastName: true } },
+      },
+    }),
+    // عناصر اعتُمدت سابقاً وصارت عامّة (teacherId=null) مع الاحتفاظ بمصدرها.
+    prisma.enrichmentFile.findMany({
+      where: { teacherId: null, sourceTeacherId: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        sizeBytes: true,
+        kind: true,
+        body: true,
+        mimeType: true,
+        gradeLevel: { select: { name: true } },
+        sourceTeacher: { select: { firstName: true, lastName: true } },
+      },
+    }),
+  ]);
+
+  const pending: ReviewRow[] = pendingRaw
+    .filter((f) => f.teacher)
+    .map((f) => ({
+      id: f.id,
+      title: f.title,
+      sizeBytes: f.sizeBytes,
+      kind: f.kind,
+      body: f.body,
+      mimeType: f.mimeType,
+      gradeName: f.gradeLevel.name,
+      teacherName: `${f.teacher!.firstName} ${f.teacher!.lastName}`,
+    }));
+  const published: ReviewRow[] = publishedRaw
+    .filter((f) => f.sourceTeacher)
+    .map((f) => ({
+      id: f.id,
+      title: f.title,
+      sizeBytes: f.sizeBytes,
+      kind: f.kind,
+      body: f.body,
+      mimeType: f.mimeType,
+      gradeName: f.gradeLevel.name,
+      teacherName: `${f.sourceTeacher!.firstName} ${f.sourceTeacher!.lastName}`,
+    }));
 
   return (
     <DashboardShell session={ctx.session}>
@@ -58,6 +118,15 @@ export default async function AdminResourcesPage() {
           .
         </p>
       </div>
+
+      {(pending.length > 0 || published.length > 0) && (
+        <div className="mb-8">
+          <h3 className="mb-3 font-display text-lg font-bold">منشورات المدرّسين</h3>
+          <TeacherEnrichmentReview pending={pending} published={published} />
+        </div>
+      )}
+
+      <h3 className="mb-3 font-display text-lg font-bold">محتواك العامّ</h3>
       <ResourcesManager
         gradeLevels={gradeLevels.map((g) => ({
           id: g.id,

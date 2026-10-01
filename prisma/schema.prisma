@@ -200,6 +200,7 @@ model User {
   parentMessagesAbout ParentMessage[]     @relation("ParentMessagesAbout")
   enrichmentFiles     EnrichmentFile[]
   teacherEnrichment   EnrichmentFile[]    @relation("TeacherEnrichment")
+  publishedEnrichment EnrichmentFile[]    @relation("EnrichmentSourceTeacher")
 
   quizTemplates QuizTemplate[]
 
@@ -447,11 +448,16 @@ model EnrichmentFile {
   // null = محتوى المدير العام العامّ؛ وإلا محتوى خاصّ بهذا المدرّس (لطلابه المسجّلين فقط).
   teacherId     String?    @map("teacher_id")
   teacher       User?      @relation("TeacherEnrichment", fields: [teacherId], references: [id], onDelete: Cascade)
+  // المدرّس الذي نشر هذا العنصر أصلاً قبل أن يعتمده المدير العام للصفحة العامّة (teacherId صار null حينها).
+  // يبقى null لمحتوى المدير العام الأصلي؛ يُضبَط فقط عند "نشر على العامة" ليُتيح العرض للمدرّس والتراجع لاحقاً.
+  sourceTeacherId String?  @map("source_teacher_id")
+  sourceTeacher   User?    @relation("EnrichmentSourceTeacher", fields: [sourceTeacherId], references: [id], onDelete: SetNull)
   downloadCount Int        @default(0) @map("download_count")
   createdAt     DateTime   @default(now()) @map("created_at")
 
   @@index([gradeLevelId])
   @@index([teacherId])
+  @@index([sourceTeacherId])
   @@map("enrichment_files")
 }
 
