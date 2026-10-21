@@ -104,3 +104,50 @@ export async function DELETE(
   });
   return NextResponse.json({ ok: true });
 }
+
+const groupSchema = z.object({
+  subjectId: z.string().min(1),
+  groupName: z.string().trim().max(60, "اسم المجموعة طويل"),
+});
+
+/** PATCH: ضبط/مسح مجموعة الطالب داخل مادة (تنظيم عرضيّ لقائمة المدرّس). */
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getTeacherSession();
+  if (!session) {
+    return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "إدارة الطلاب غير مفعّلة لحسابك — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
+  }
+  if (!(await ownedStudent(session.sub, params.id))) {
+    return NextResponse.json({ error: "الطالب غير موجود" }, { status: 404 });
+  }
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: "طلب غير صالح" }, { status: 400 });
+  }
+  const parsed = groupSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "بيانات غير صالحة" },
+      { status: 400 }
+    );
+  }
+  const { subjectId, groupName } = parsed.data;
+  const r = await prisma.studentEnrollment.updateMany({
+    where: { studentId: params.id, teacherId: session.sub, subjectId },
+    data: { groupName: groupName || null },
+  });
+  if (r.count === 0) {
+    return NextResponse.json({ error: "الطالب غير مسجَّل في هذه المادة" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
+}

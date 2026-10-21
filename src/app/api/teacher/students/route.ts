@@ -168,7 +168,12 @@ export async function POST(req: Request) {
           },
           studentEnrollments: {
             create: [
-              { teacherId: session.sub, subjectId: d.subjectId, academicYear },
+              {
+                teacherId: session.sub,
+                subjectId: d.subjectId,
+                academicYear,
+                groupName: d.groupName || null,
+              },
             ],
           },
         },

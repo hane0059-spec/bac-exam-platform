@@ -54,6 +54,7 @@ export default function ExternalImport({
 }) {
   const showQuizSelect = Array.isArray(quizzes);
   const [subjectId, setSubjectId] = useState(subjects?.[0]?.id ?? "");
+  const [groupName, setGroupName] = useState("");
   const [quizId, setQuizId] = useState("");
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -72,7 +73,10 @@ export default function ExternalImport({
     const fd = new FormData();
     fd.append("file", file);
     if (showQuizSelect) fd.append("quizId", quizId);
-    if (subjects) fd.append("subjectId", subjectId);
+    if (subjects) {
+      fd.append("subjectId", subjectId);
+      fd.append("groupName", groupName);
+    }
     fd.append("defaultGradeId", gradeId);
     const res = await fetch(endpoint, {
       method: "POST",
@@ -146,6 +150,20 @@ export default function ExternalImport({
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+            {subjects && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  المجموعة (اختياري)
+                </label>
+                <input
+                  className="field"
+                  maxLength={60}
+                  placeholder="مثل: مجموعة أ"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                />
               </div>
             )}
             <div>

@@ -25,7 +25,12 @@ export async function runExternalImport(opts: {
   /** مؤسّسة المنشئ (يرثها الطلاب الجدد). */
   schoolId?: string | null;
   /** تسجيل كل طالب جديد في مادة المدرّس (لا يشمل المُعاد استخدامهم). */
-  enroll?: { teacherId: string; subjectId: string; academicYear: string };
+  enroll?: {
+    teacherId: string;
+    subjectId: string;
+    academicYear: string;
+    groupName?: string | null;
+  };
   /** أقصى عدد حسابات جديدة (حدّ اشتراك المدرّس المستقلّ). */
   maxNew?: number;
 }): Promise<{ ok: true; result: ImportResult } | { ok: false; error: string }> {
@@ -120,6 +125,7 @@ export async function runExternalImport(opts: {
                         teacherId: enroll.teacherId,
                         subjectId: enroll.subjectId,
                         academicYear: enroll.academicYear,
+                        groupName: enroll.groupName || null,
                       },
                     ],
                   },

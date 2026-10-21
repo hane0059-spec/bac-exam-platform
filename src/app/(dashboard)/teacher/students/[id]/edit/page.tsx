@@ -31,7 +31,7 @@ export default async function EditStudentPage({
       studentProfile: true,
       studentEnrollments: {
         where: { teacherId: session.sub, isActive: true },
-        select: { subjectId: true },
+        select: { subjectId: true, groupName: true },
       },
     },
   });
@@ -99,6 +99,9 @@ export default async function EditStudentPage({
           studentId={student.id}
           subjects={subjects}
           enrolledIds={student.studentEnrollments.map((e) => e.subjectId)}
+          groups={Object.fromEntries(
+            student.studentEnrollments.map((e) => [e.subjectId, e.groupName ?? ""])
+          )}
         />
         <PasswordReset studentId={student.id} />
         <DeleteStudentButton

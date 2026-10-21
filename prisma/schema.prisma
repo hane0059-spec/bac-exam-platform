@@ -518,6 +518,8 @@ model StudentEnrollment {
   academicYear String   @map("academic_year")
   enrolledAt   DateTime @default(now()) @map("enrolled_at")
   isActive     Boolean  @default(true) @map("is_active")
+  // مجموعة يحدّدها المدرّس لتقسيم طلاب المادة (مثل «مجموعة أ»)؛ تنظيم عرضيّ فقط.
+  groupName    String?  @map("group_name")
 
   @@index([studentId, teacherId])
   @@index([teacherId, subjectId])

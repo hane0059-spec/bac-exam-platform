@@ -120,6 +120,7 @@ export const studentCreateSchema = z.object({
     .max(2100)
     .default(new Date().getFullYear()),
   subjectId: z.string().min(1, "المادة مطلوبة"),
+  groupName: z.string().trim().max(60, "اسم المجموعة طويل").optional(),
   creatorNotes: z.string().trim().max(5000).optional(),
 });
 

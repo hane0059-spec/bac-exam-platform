@@ -74,6 +74,7 @@ export default function StudentForm({
     new Date().getFullYear()
   );
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "");
+  const [groupName, setGroupName] = useState("");
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
   const [creatorNotes, setCreatorNotes] = useState(initial?.creatorNotes ?? "");
 
@@ -113,7 +114,7 @@ export default function StudentForm({
             password,
             enrollmentYear: Number(enrollmentYear),
             customData,
-            ...(showSubject ? { subjectId } : {}),
+            ...(showSubject ? { subjectId, groupName } : {}),
           }
         : { ...common, isActive };
     const res = await fetch(url, {
@@ -276,6 +277,20 @@ export default function StudentForm({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+          {showSubject && (
+            <div>
+              <label className="mb-1 block text-sm font-medium">
+                المجموعة (اختياري)
+              </label>
+              <input
+                className="field"
+                maxLength={60}
+                placeholder="مثل: مجموعة أ"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+              />
             </div>
           )}
         </div>

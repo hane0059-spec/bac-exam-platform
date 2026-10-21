@@ -116,36 +116,55 @@ export default async function TeacherStudentsPage({
 
   // تقسيم حسب الصفّ ثم المادة (الطالب المسجَّل في أكثر من مادة يظهر تحت كلٍّ منها).
   const NO_SUBJECT = "بلا مادة مسجَّل فيها";
+  const NO_GROUP = "بلا مجموعة";
   const gradeMap = new Map<
     string,
-    { order: number; subjects: Map<string, Row[]> }
+    { order: number; subjects: Map<string, Map<string, Row[]>> }
   >();
   for (const s of students) {
     const gName = s.studentProfile?.gradeLevel?.name ?? "بلا صفّ";
     const gOrder = s.studentProfile?.gradeLevel?.orderNum ?? 9999;
     const g = gradeMap.get(gName) ?? { order: gOrder, subjects: new Map() };
     gradeMap.set(gName, g);
-    const subs = s.studentEnrollments.length
-      ? s.studentEnrollments.map((e) => e.subject.name)
-      : [NO_SUBJECT];
-    for (const sub of subs) {
-      const list = g.subjects.get(sub) ?? [];
+    const placements = s.studentEnrollments.length
+      ? s.studentEnrollments.map((e) => ({
+          sub: e.subject.name,
+          grp: e.groupName?.trim() || NO_GROUP,
+        }))
+      : [{ sub: NO_SUBJECT, grp: NO_GROUP }];
+    for (const { sub, grp } of placements) {
+      const byGroup = g.subjects.get(sub) ?? new Map<string, Row[]>();
+      g.subjects.set(sub, byGroup);
+      const list = byGroup.get(grp) ?? [];
       list.push(s);
-      g.subjects.set(sub, list);
+      byGroup.set(grp, list);
     }
   }
   const groups = [...gradeMap.entries()]
     .sort((a, b) => a[1].order - b[1].order)
     .map(([gradeName, g]) => ({
       gradeName,
-      total: new Set([...g.subjects.values()].flat().map((x) => x.id)).size,
+      total: new Set(
+        [...g.subjects.values()].flatMap((m) => [...m.values()].flat()).map((x) => x.id)
+      ).size,
       subjects: [...g.subjects.entries()]
         .sort((a, b) => a[0].localeCompare(b[0], "ar"))
-        .map(([name, list]) => ({
+        .map(([name, byGroup]) => ({
           name,
-          students: [...list].sort((a, b) =>
-            `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "ar")
-          ),
+          count: new Set([...byGroup.values()].flat().map((x) => x.id)).size,
+          groups: [...byGroup.entries()]
+            .sort((a, b) =>
+              a[0] === NO_GROUP ? 1 : b[0] === NO_GROUP ? -1 : a[0].localeCompare(b[0], "ar")
+            )
+            .map(([groupName, list]) => ({
+              name: groupName,
+              students: [...list].sort((a, b) =>
+                `${a.firstName} ${a.lastName}`.localeCompare(
+                  `${b.firstName} ${b.lastName}`,
+                  "ar"
+                )
+              ),
+            })),
         })),
     }));
 
@@ -234,11 +253,29 @@ export default async function TeacherStudentsPage({
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-medium">
                       <span>{sub.name}</span>
                       <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
-                        {sub.students.length}
+                        {sub.count}
                       </span>
                     </summary>
                     <div className="space-y-2 border-t border-line p-3">
-                      {sub.students.map((s) => renderCard(s))}
+                      {sub.groups.length === 1 && sub.groups[0].name === NO_GROUP
+                        ? sub.groups[0].students.map((s) => renderCard(s))
+                        : sub.groups.map((grp) => (
+                            <details
+                              key={grp.name}
+                              open={sub.groups.length === 1}
+                              className="rounded-xl border border-line"
+                            >
+                              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
+                                <span>{grp.name}</span>
+                                <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs text-gold">
+                                  {grp.students.length}
+                                </span>
+                              </summary>
+                              <div className="space-y-2 border-t border-line p-2">
+                                {grp.students.map((s) => renderCard(s))}
+                              </div>
+                            </details>
+                          ))}
                     </div>
                   </details>
                 ))}

@@ -13,15 +13,36 @@ export default function EnrollmentManager({
   studentId,
   subjects,
   enrolledIds,
+  groups = {},
 }: {
   studentId: string;
   subjects: Subject[];
   enrolledIds: string[];
+  /** مجموعة الطالب الحالية لكل مادة (subjectId → اسم). */
+  groups?: Record<string, string>;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const enrolled = new Set(enrolledIds);
+  const [draft, setDraft] = useState<Record<string, string>>(groups);
+
+  async function saveGroup(subjectId: string) {
+    setError("");
+    setBusy(`g-${subjectId}`);
+    const res = await fetch(`/api/teacher/students/${studentId}/enrollments`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subjectId, groupName: draft[subjectId] ?? "" }),
+    });
+    setBusy("");
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setError(d.error ?? "تعذّر حفظ المجموعة.");
+      return;
+    }
+    router.refresh();
+  }
 
   async function toggle(subjectId: string, isEnrolled: boolean) {
     setError("");
@@ -53,9 +74,32 @@ export default function EnrollmentManager({
           return (
             <div
               key={s.id}
-              className="flex items-center justify-between rounded-xl border border-line p-3"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line p-3"
             >
               <span>{s.name}</span>
+              {isEnrolled && (
+                <span className="flex items-center gap-1.5">
+                  <input
+                    className="field !w-40 !py-1 text-sm"
+                    maxLength={60}
+                    placeholder="المجموعة (اختياري)"
+                    value={draft[s.id] ?? ""}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, [s.id]: e.target.value }))
+                    }
+                  />
+                  <button
+                    onClick={() => saveGroup(s.id)}
+                    disabled={
+                      busy === `g-${s.id}` ||
+                      (draft[s.id] ?? "") === (groups[s.id] ?? "")
+                    }
+                    className="rounded-lg bg-primary-light px-3 py-1 text-sm text-primary-dark transition hover:bg-primary hover:text-white disabled:opacity-40"
+                  >
+                    حفظ
+                  </button>
+                </span>
+              )}
               <button
                 onClick={() => toggle(s.id, isEnrolled)}
                 disabled={busy === s.id}

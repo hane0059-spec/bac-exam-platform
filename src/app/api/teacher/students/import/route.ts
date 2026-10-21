@@ -34,6 +34,7 @@ export async function POST(req: Request) {
   const file = form.get("file");
   const defaultGradeId = String(form.get("defaultGradeId") ?? "");
   const subjectId = String(form.get("subjectId") ?? "");
+  const groupName = String(form.get("groupName") ?? "").trim().slice(0, 60);
   if (!(file instanceof Blob) || !defaultGradeId || !subjectId) {
     return NextResponse.json(
       { error: "الملف والمادة والصفّ الافتراضي مطلوبة" },
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
       teacherId: session.sub,
       subjectId,
       academicYear: await academicYearFor(session.sub, subjectId),
+      groupName: groupName || null,
     },
     maxNew,
   });
