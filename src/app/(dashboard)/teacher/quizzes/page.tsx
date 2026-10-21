@@ -40,7 +40,12 @@ export default async function TeacherQuizzesPage({
       where: { creatorId: session.sub },
       orderBy: { updatedAt: "desc" },
       include: {
-        subject: { select: { name: true } },
+        subject: {
+          select: {
+            name: true,
+            gradeLevel: { select: { name: true, orderNum: true } },
+          },
+        },
         _count: { select: { nodes: true, sessions: true, assignments: true } },
       },
     }),
@@ -64,6 +69,89 @@ export default async function TeacherQuizzesPage({
     q.isFileBased
       ? `/teacher/file-exams/${q.id}`
       : `/teacher/quizzes/${q.id}/edit`;
+
+  type QuizRow = (typeof quizzes)[number];
+  function renderQuiz(q: QuizRow) {
+            const st = STATUS[q.status as keyof typeof STATUS];
+            const purged =
+              q.settings && typeof q.settings === "object"
+                ? (q.settings as Record<string, unknown>).purged === true
+                : false;
+            const done = doneIds.has(q.id);
+            // عُقد الأسئلة = إجمالي العُقد - (بداية + نهاية) عند وجودها.
+            const questionNodes = Math.max(0, q._count.nodes - 2);
+            return (
+              <Link
+                key={q.id}
+                href={hrefOf(q)}
+                className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
+              >
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${st.cls}`}
+                    >
+                      {st.text}
+                    </span>
+                    {done && q.status === "PUBLISHED" && (
+                      <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                        مكتمل التصحيح
+                      </span>
+                    )}
+                    {purged && (
+                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                        محتوى محذوف
+                      </span>
+                    )}
+                    {q.isFileBased && (
+                      <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold">
+                        ورقي
+                      </span>
+                    )}
+                    <h3 className="font-display text-lg font-semibold">
+                      {q.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-ink/60">
+                    {q.subject.name}
+                    {!q.isFileBased && ` • ${questionNodes} سؤال`}
+                    {q._count.assignments > 0 &&
+                      ` • مُسنَد لـ ${q._count.assignments}`}
+                    {q._count.sessions > 0 && ` • ${q._count.sessions} محاولة`}
+                  </p>
+                </div>
+                <span className="text-sm text-primary">
+                  {q.isFileBased ? "إدارة ←" : "تحرير ←"}
+                </span>
+              </Link>
+            );
+  }
+
+  // تقسيم حسب الصفّ ثم المادة داخل التبويب الحالي.
+  const gradeMap = new Map<
+    string,
+    { order: number; subjects: Map<string, QuizRow[]> }
+  >();
+  for (const q of shown) {
+    const gName = q.subject.gradeLevel?.name ?? "بلا صفّ";
+    const g = gradeMap.get(gName) ?? {
+      order: q.subject.gradeLevel?.orderNum ?? 9999,
+      subjects: new Map<string, QuizRow[]>(),
+    };
+    gradeMap.set(gName, g);
+    const list = g.subjects.get(q.subject.name) ?? [];
+    list.push(q);
+    g.subjects.set(q.subject.name, list);
+  }
+  const groups = [...gradeMap.entries()]
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([gradeName, g]) => ({
+      gradeName,
+      total: [...g.subjects.values()].reduce((n, l) => n + l.length, 0),
+      subjects: [...g.subjects.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0], "ar"))
+        .map(([name, list]) => ({ name, quizzes: list })),
+    }));
 
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 text-sm transition ${
@@ -129,62 +217,36 @@ export default async function TeacherQuizzesPage({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {shown.map((q) => {
-            const st = STATUS[q.status as keyof typeof STATUS];
-            const purged =
-              q.settings && typeof q.settings === "object"
-                ? (q.settings as Record<string, unknown>).purged === true
-                : false;
-            const done = doneIds.has(q.id);
-            // عُقد الأسئلة = إجمالي العُقد - (بداية + نهاية) عند وجودها.
-            const questionNodes = Math.max(0, q._count.nodes - 2);
-            return (
-              <Link
-                key={q.id}
-                href={hrefOf(q)}
-                className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
-              >
-                <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${st.cls}`}
-                    >
-                      {st.text}
-                    </span>
-                    {done && q.status === "PUBLISHED" && (
-                      <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
-                        مكتمل التصحيح
-                      </span>
-                    )}
-                    {purged && (
-                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                        محتوى محذوف
-                      </span>
-                    )}
-                    {q.isFileBased && (
-                      <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold">
-                        ورقي
-                      </span>
-                    )}
-                    <h3 className="font-display text-lg font-semibold">
-                      {q.title}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-ink/60">
-                    {q.subject.name}
-                    {!q.isFileBased && ` • ${questionNodes} سؤال`}
-                    {q._count.assignments > 0 &&
-                      ` • مُسنَد لـ ${q._count.assignments}`}
-                    {q._count.sessions > 0 && ` • ${q._count.sessions} محاولة`}
-                  </p>
-                </div>
-                <span className="text-sm text-primary">
-                  {q.isFileBased ? "إدارة ←" : "تحرير ←"}
+        <div className="space-y-6">
+          {groups.map((g) => (
+            <section key={g.gradeName}>
+              <h3 className="mb-2 font-display text-lg font-bold">
+                {g.gradeName}
+                <span className="mr-2 text-sm font-normal text-ink/50">
+                  ({g.total} اختباراً)
                 </span>
-              </Link>
-            );
-          })}
+              </h3>
+              <div className="space-y-2">
+                {g.subjects.map((sub) => (
+                  <details
+                    key={sub.name}
+                    open={g.subjects.length === 1}
+                    className="card group p-0"
+                  >
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-medium">
+                      <span>{sub.name}</span>
+                      <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                        {sub.quizzes.length}
+                      </span>
+                    </summary>
+                    <div className="space-y-2 border-t border-line p-3">
+                      {sub.quizzes.map((q) => renderQuiz(q))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </DashboardShell>
