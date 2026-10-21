@@ -8,6 +8,8 @@ import { roleLabel } from "@/lib/gender";
 import { teacherCanManageStudents } from "@/lib/teacher";
 import DashboardShell from "@/components/DashboardShell";
 import UserSearchBox from "@/components/admin/UserSearchBox";
+import ResetAndPrintButton from "@/components/teacher/ResetAndPrintButton";
+import { getBranding } from "@/lib/branding";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +56,7 @@ export default async function TeacherStudentsPage({
     ? { role: "STUDENT", AND: [{ OR: scopeOr }, { OR: searchConditions(q) }] }
     : { role: "STUDENT", createdById: session.sub };
 
-  const [students, canManage, profile, createdCount] = await Promise.all([
+  const [students, canManage, profile, createdCount, branding] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: q ? [{ firstName: "asc" }] : { createdAt: "desc" },
@@ -73,6 +75,7 @@ export default async function TeacherStudentsPage({
       select: { isIndependent: true, studentLimit: true },
     }),
     prisma.user.count({ where: { role: "STUDENT", createdById: session.sub } }),
+    getBranding(),
   ]);
   // مدرّس مستقلّ: حصّة الطلاب حسب الاشتراك.
   const quota =
@@ -117,6 +120,7 @@ export default async function TeacherStudentsPage({
   // تقسيم حسب الصفّ ثم المادة (الطالب المسجَّل في أكثر من مادة يظهر تحت كلٍّ منها).
   const NO_SUBJECT = "بلا مادة مسجَّل فيها";
   const NO_GROUP = "بلا مجموعة";
+  const subjectIds = new Map<string, string>();
   const gradeMap = new Map<
     string,
     { order: number; subjects: Map<string, Map<string, Row[]>> }
@@ -132,6 +136,7 @@ export default async function TeacherStudentsPage({
           grp: e.groupName?.trim() || NO_GROUP,
         }))
       : [{ sub: NO_SUBJECT, grp: NO_GROUP }];
+    for (const e of s.studentEnrollments) subjectIds.set(e.subject.name, e.subject.id);
     for (const { sub, grp } of placements) {
       const byGroup = g.subjects.get(sub) ?? new Map<string, Row[]>();
       g.subjects.set(sub, byGroup);
@@ -151,6 +156,7 @@ export default async function TeacherStudentsPage({
         .sort((a, b) => a[0].localeCompare(b[0], "ar"))
         .map(([name, byGroup]) => ({
           name,
+          subjectId: subjectIds.get(name) ?? null,
           count: new Set([...byGroup.values()].flat().map((x) => x.id)).size,
           groups: [...byGroup.entries()]
             .sort((a, b) =>
@@ -257,9 +263,22 @@ export default async function TeacherStudentsPage({
                       </span>
                     </summary>
                     <div className="space-y-2 border-t border-line p-3">
-                      {sub.groups.length === 1 && sub.groups[0].name === NO_GROUP
-                        ? sub.groups[0].students.map((s) => renderCard(s))
-                        : sub.groups.map((grp) => (
+                      {sub.groups.length === 1 && sub.groups[0].name === NO_GROUP ? (
+                        <>
+                          {canManage && sub.subjectId && (
+                            <ResetAndPrintButton
+                              subjectId={sub.subjectId}
+                              subjectName={sub.name}
+                              groupName=""
+                              count={sub.groups[0].students.length}
+                              brandName={branding.name}
+                              teacherName={`${session.firstName} ${session.lastName}`}
+                            />
+                          )}
+                          {sub.groups[0].students.map((s) => renderCard(s))}
+                        </>
+                      ) : (
+                        sub.groups.map((grp) => (
                             <details
                               key={grp.name}
                               open={sub.groups.length === 1}
@@ -272,10 +291,21 @@ export default async function TeacherStudentsPage({
                                 </span>
                               </summary>
                               <div className="space-y-2 border-t border-line p-2">
+                                {canManage && sub.subjectId && (
+                                  <ResetAndPrintButton
+                                    subjectId={sub.subjectId}
+                                    subjectName={sub.name}
+                                    groupName={grp.name === NO_GROUP ? "" : grp.name}
+                                    count={grp.students.length}
+                                    brandName={branding.name}
+                                    teacherName={`${session.firstName} ${session.lastName}`}
+                                  />
+                                )}
                                 {grp.students.map((s) => renderCard(s))}
                               </div>
                             </details>
-                          ))}
+                          ))
+                      )}
                     </div>
                   </details>
                 ))}

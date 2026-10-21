@@ -3,6 +3,7 @@
 // المدير: استيراد طلاب خارجيين من CSV/xlsx وإسناد اختبار منشور لهم.
 import { useState } from "react";
 import { buildCredentialCardsHtml } from "@/lib/credentialCards";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 
 const HEADERS = [
   "الاسم الأول",
@@ -113,16 +114,7 @@ export default function ExternalImport({
         contextLine: subj ? `المادة: ${subj}` : undefined,
       }
     );
-    const frame = document.createElement("iframe");
-    frame.style.cssText =
-      "position:fixed;width:0;height:0;border:0;right:0;bottom:0;visibility:hidden";
-    frame.onload = () => {
-      frame.contentWindow?.focus();
-      frame.contentWindow?.print();
-      setTimeout(() => frame.remove(), 60000);
-    };
-    frame.srcdoc = html;
-    document.body.appendChild(frame);
+    printHtmlInHiddenFrame(html);
   }
 
   async function exportCredentials(rows: Created[]) {
