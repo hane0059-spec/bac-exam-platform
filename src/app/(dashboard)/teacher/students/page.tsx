@@ -60,10 +60,10 @@ export default async function TeacherStudentsPage({
       orderBy: q ? [{ firstName: "asc" }] : { createdAt: "desc" },
       take: q ? 50 : undefined,
       include: {
-        studentProfile: { include: { gradeLevel: { select: { name: true } } } },
+        studentProfile: { include: { gradeLevel: { select: { name: true, orderNum: true } } } },
         studentEnrollments: {
           where: { teacherId: session.sub, isActive: true },
-          include: { subject: { select: { name: true } } },
+          include: { subject: { select: { id: true, name: true } } },
         },
       },
     }),
@@ -80,6 +80,74 @@ export default async function TeacherStudentsPage({
       ? { used: createdCount, limit: profile.studentLimit }
       : null;
   const quotaFull = quota != null && quota.used >= quota.limit;
+
+  type Row = (typeof students)[number];
+  function renderCard(s: Row) {
+    return (
+      <Link
+        key={s.id}
+        href={`/teacher/students/${s.id}`}
+        className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
+      >
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">
+              {s.firstName} {s.lastName}
+            </span>
+            <span className="text-xs text-ink/40">
+              {roleLabel("STUDENT", s.gender)} • {s.studentProfile?.studentCode}
+            </span>
+            {!s.isActive && (
+              <span className="rounded-full bg-ink/10 px-2 py-0.5 text-xs text-ink/50">
+                موقوف
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-ink/60">
+            {s.studentProfile?.gradeLevel?.name}
+            {s.studentEnrollments.length > 0 &&
+              ` • ${s.studentEnrollments.map((e) => e.subject.name).join("، ")}`}
+          </p>
+        </div>
+        <span className="text-sm text-primary">إسناد اختبار ←</span>
+      </Link>
+    );
+  }
+
+  // تقسيم حسب الصفّ ثم المادة (الطالب المسجَّل في أكثر من مادة يظهر تحت كلٍّ منها).
+  const NO_SUBJECT = "بلا مادة مسجَّل فيها";
+  const gradeMap = new Map<
+    string,
+    { order: number; subjects: Map<string, Row[]> }
+  >();
+  for (const s of students) {
+    const gName = s.studentProfile?.gradeLevel?.name ?? "بلا صفّ";
+    const gOrder = s.studentProfile?.gradeLevel?.orderNum ?? 9999;
+    const g = gradeMap.get(gName) ?? { order: gOrder, subjects: new Map() };
+    gradeMap.set(gName, g);
+    const subs = s.studentEnrollments.length
+      ? s.studentEnrollments.map((e) => e.subject.name)
+      : [NO_SUBJECT];
+    for (const sub of subs) {
+      const list = g.subjects.get(sub) ?? [];
+      list.push(s);
+      g.subjects.set(sub, list);
+    }
+  }
+  const groups = [...gradeMap.entries()]
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([gradeName, g]) => ({
+      gradeName,
+      total: new Set([...g.subjects.values()].flat().map((x) => x.id)).size,
+      subjects: [...g.subjects.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0], "ar"))
+        .map(([name, list]) => ({
+          name,
+          students: [...list].sort((a, b) =>
+            `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "ar")
+          ),
+        })),
+    }));
 
   return (
     <DashboardShell session={session}>
@@ -144,45 +212,39 @@ export default async function TeacherStudentsPage({
             ? "لا طلاب بعد. أنشئ حساب طالبك الأول وسجّله في مادتك."
             : "لا طلاب من إنشائك."}
         </div>
+      ) : q ? (
+        <div className="space-y-3">{students.map((s) => renderCard(s))}</div>
       ) : (
-        <div className="space-y-3">
-          {students.map((s) => {
-            const inner = (
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">
-                    {s.firstName} {s.lastName}
-                  </span>
-                  <span className="text-xs text-ink/40">
-                    {roleLabel("STUDENT", s.gender)} •{" "}
-                    {s.studentProfile?.studentCode}
-                  </span>
-                  {!s.isActive && (
-                    <span className="rounded-full bg-ink/10 px-2 py-0.5 text-xs text-ink/50">
-                      موقوف
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-ink/60">
-                  {s.studentProfile?.gradeLevel?.name}
-                  {s.studentEnrollments.length > 0 &&
-                    ` • ${s.studentEnrollments
-                      .map((e) => e.subject.name)
-                      .join("، ")}`}
-                </p>
+        <div className="space-y-6">
+          {groups.map((g) => (
+            <section key={g.gradeName}>
+              <h3 className="mb-2 font-display text-lg font-bold">
+                {g.gradeName}
+                <span className="mr-2 text-sm font-normal text-ink/50">
+                  ({g.total} طالباً)
+                </span>
+              </h3>
+              <div className="space-y-2">
+                {g.subjects.map((sub) => (
+                  <details
+                    key={sub.name}
+                    open={g.subjects.length === 1}
+                    className="card group p-0"
+                  >
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-medium">
+                      <span>{sub.name}</span>
+                      <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                        {sub.students.length}
+                      </span>
+                    </summary>
+                    <div className="space-y-2 border-t border-line p-3">
+                      {sub.students.map((s) => renderCard(s))}
+                    </div>
+                  </details>
+                ))}
               </div>
-            );
-            return (
-              <Link
-                key={s.id}
-                href={`/teacher/students/${s.id}`}
-                className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
-              >
-                {inner}
-                <span className="text-sm text-primary">إسناد اختبار ←</span>
-              </Link>
-            );
-          })}
+            </section>
+          ))}
         </div>
       )}
     </DashboardShell>
