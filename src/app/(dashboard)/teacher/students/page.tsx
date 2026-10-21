@@ -106,10 +106,19 @@ export default async function TeacherStudentsPage({
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-ink/60">
-            {s.studentProfile?.gradeLevel?.name}
-            {s.studentEnrollments.length > 0 &&
-              ` • ${s.studentEnrollments.map((e) => e.subject.name).join("، ")}`}
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-ink/60">
+            <span>{s.studentProfile?.gradeLevel?.name}</span>
+            {s.studentEnrollments.map((e) => (
+              <span key={e.id} className="flex items-center gap-1.5">
+                <span>•</span>
+                <span>{e.subject.name}</span>
+                {e.groupName?.trim() && (
+                  <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
+                    {e.groupName.trim()}
+                  </span>
+                )}
+              </span>
+            ))}
           </p>
         </div>
         <span className="text-sm text-primary">إسناد اختبار ←</span>
