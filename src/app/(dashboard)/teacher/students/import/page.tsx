@@ -8,6 +8,7 @@ import { teacherCanManageStudents } from "@/lib/teacher";
 import { remainingStudentQuota } from "@/lib/teacherStudents";
 import DashboardShell from "@/components/DashboardShell";
 import ExternalImport from "@/components/admin/ExternalImport";
+import { getBranding } from "@/lib/branding";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function TeacherImportStudentsPage() {
   if (session.role !== "TEACHER") redirect("/");
   if (!(await teacherCanManageStudents(session.sub))) redirect("/teacher/students");
 
-  const [subjects, grades, remaining] = await Promise.all([
+  const [subjects, grades, remaining, branding] = await Promise.all([
     prisma.subject.findMany({
       where: { teacherSubjects: { some: { teacherId: session.sub } } },
       select: { id: true, name: true },
@@ -28,6 +29,7 @@ export default async function TeacherImportStudentsPage() {
       orderBy: { orderNum: "asc" },
     }),
     remainingStudentQuota(session.sub),
+    getBranding(),
   ]);
 
   return (
@@ -60,6 +62,10 @@ export default async function TeacherImportStudentsPage() {
           grades={grades}
           subjects={subjects}
           endpoint="/api/teacher/students/import"
+          printInfo={{
+            brandName: branding.name,
+            teacherName: `${session.firstName} ${session.lastName}`,
+          }}
         />
       )}
     </DashboardShell>

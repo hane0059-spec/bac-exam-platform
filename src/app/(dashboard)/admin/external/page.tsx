@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import ExternalImport from "@/components/admin/ExternalImport";
 import { isSoloMode } from "@/lib/settings";
+import { getBranding } from "@/lib/branding";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function AdminExternalPage() {
   if (session.role !== "ADMIN") redirect("/");
   if (await isSoloMode()) redirect("/admin"); // غير متاح في الوضع المبسّط
 
-  const [quizzesRaw, grades] = await Promise.all([
+  const [quizzesRaw, grades, branding] = await Promise.all([
     prisma.quiz.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { updatedAt: "desc" },
@@ -29,6 +30,7 @@ export default async function AdminExternalPage() {
       select: { id: true, name: true },
       orderBy: { orderNum: "asc" },
     }),
+    getBranding(),
   ]);
 
   const quizzes = quizzesRaw.map((q) => ({
@@ -53,7 +55,11 @@ export default async function AdminExternalPage() {
           الاختبار التسلسلي.
         </p>
       </div>
-      <ExternalImport quizzes={quizzes} grades={grades} />
+      <ExternalImport
+        quizzes={quizzes}
+        grades={grades}
+        printInfo={{ brandName: branding.name }}
+      />
     </DashboardShell>
   );
 }

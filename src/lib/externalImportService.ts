@@ -11,7 +11,13 @@ import {
 } from "@/lib/externalImport";
 
 export interface ImportResult {
-  created: { name: string; studentCode: string; password: string; email: string }[];
+  created: {
+    name: string;
+    studentCode: string;
+    password: string;
+    email: string;
+    group: string;
+  }[];
   reused: { name: string; identifier: string }[];
   errors: { row: number; reason: string }[];
 }
@@ -156,6 +162,7 @@ export async function runExternalImport(opts: {
           studentCode,
           password,
           email: email ?? "",
+          group: r.groupName || enroll?.groupName || "",
         });
         done = true;
       } catch (e) {

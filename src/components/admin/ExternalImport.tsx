@@ -2,6 +2,7 @@
 // src/components/admin/ExternalImport.tsx
 // المدير: استيراد طلاب خارجيين من CSV/xlsx وإسناد اختبار منشور لهم.
 import { useState } from "react";
+import { buildCredentialCardsHtml } from "@/lib/credentialCards";
 
 const HEADERS = [
   "الاسم الأول",
@@ -33,6 +34,7 @@ interface Created {
   studentCode: string;
   password: string;
   email: string;
+  group?: string;
 }
 interface Result {
   quizTitle: string;
@@ -46,12 +48,15 @@ export default function ExternalImport({
   grades,
   subjects,
   endpoint = "/api/admin/external-import",
+  printInfo,
 }: {
   quizzes?: Quiz[];
   grades: Grade[];
   /** للمدرّس: مادة يُسجَّل فيها الطلاب المستوردون (إجبارية عند تمريرها). */
   subjects?: { id: string; name: string }[];
   endpoint?: string;
+  /** لطباعة بطاقات الدخول: اسم المنصّة واسم المدرّس (اختياري). */
+  printInfo?: { brandName: string; teacherName?: string };
 }) {
   const showQuizSelect = Array.isArray(quizzes);
   const [subjectId, setSubjectId] = useState(subjects?.[0]?.id ?? "");
@@ -90,6 +95,34 @@ export default function ExternalImport({
       return;
     }
     setResult(data as Result);
+  }
+
+  function printCards(rows: Created[]) {
+    const subj = subjects?.find((s) => s.id === subjectId)?.name;
+    const html = buildCredentialCardsHtml(
+      rows.map((r) => ({
+        name: r.name,
+        studentCode: r.studentCode,
+        password: r.password,
+        group: r.group || undefined,
+      })),
+      {
+        brandName: printInfo?.brandName ?? "إتقان",
+        teacherName: printInfo?.teacherName,
+        loginUrl: `${window.location.origin}/login?role=STUDENT`,
+        contextLine: subj ? `المادة: ${subj}` : undefined,
+      }
+    );
+    const frame = document.createElement("iframe");
+    frame.style.cssText =
+      "position:fixed;width:0;height:0;border:0;right:0;bottom:0;visibility:hidden";
+    frame.onload = () => {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      setTimeout(() => frame.remove(), 60000);
+    };
+    frame.srcdoc = html;
+    document.body.appendChild(frame);
   }
 
   async function exportCredentials(rows: Created[]) {
@@ -246,12 +279,20 @@ export default function ExternalImport({
             <div className="card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h4 className="font-medium">حسابات أُنشئت (بيانات الدخول)</h4>
-                <button
-                  onClick={() => exportCredentials(result.created)}
-                  className="text-sm text-primary hover:underline"
-                >
-                  تنزيل بيانات الدخول (Excel)
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => printCards(result.created)}
+                    className="btn-primary px-3 py-1.5 text-sm"
+                  >
+                    طباعة بطاقات الدخول
+                  </button>
+                  <button
+                    onClick={() => exportCredentials(result.created)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    تنزيل بيانات الدخول (Excel)
+                  </button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
