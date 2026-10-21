@@ -5,7 +5,8 @@ import { Readable } from "stream";
 
 // ترتيب الأعمدة في القالب (0-أساس):
 // 0 الاسم الأول | 1 الاسم الأخير | 2 اسم الأب | 3 اسم الأم | 4 الجنس |
-// 5 الصفّ | 6 البريد | 7 هاتف الطالب | 8 هاتف ولي الأمر | 9 العنوان | 10 كلمة السرّ
+// 5 الصفّ | 6 البريد | 7 هاتف الطالب | 8 هاتف ولي الأمر | 9 العنوان | 10 كلمة السرّ |
+// 11 المجموعة (اختياري، يستعملها استيراد المدرّس فقط؛ مُلحَق آخراً فتبقى ملفّات القالب القديمة صالحة)
 export const TEMPLATE_HEADERS = [
   "الاسم الأول",
   "الاسم الأخير",
@@ -18,6 +19,7 @@ export const TEMPLATE_HEADERS = [
   "هاتف ولي الأمر",
   "العنوان",
   "كلمة السرّ",
+  "المجموعة",
 ];
 
 const COLS = TEMPLATE_HEADERS.length;
@@ -133,6 +135,7 @@ export interface ParsedRow {
   parentPhone: string;
   address: string;
   password: string;
+  groupName: string;
 }
 
 /** يحوّل صفّاً خاماً إلى بيانات صالحة أو رسالة خطأ. */
@@ -151,6 +154,7 @@ export function validateRow(
     parentPhone,
     address,
     password,
+    groupName,
   ] = cells;
 
   if (!firstName) return { ok: false, reason: "الاسم الأول مفقود" };
@@ -173,6 +177,7 @@ export function validateRow(
       parentPhone,
       address,
       password,
+      groupName: (groupName ?? "").slice(0, 60),
     },
   };
 }

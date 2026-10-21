@@ -125,7 +125,7 @@ export async function runExternalImport(opts: {
                         teacherId: enroll.teacherId,
                         subjectId: enroll.subjectId,
                         academicYear: enroll.academicYear,
-                        groupName: enroll.groupName || null,
+                        groupName: r.groupName || enroll.groupName || null,
                       },
                     ],
                   },

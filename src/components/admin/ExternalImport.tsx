@@ -15,6 +15,7 @@ const HEADERS = [
   "هاتف ولي الأمر",
   "العنوان",
   "كلمة السرّ",
+  "المجموعة",
 ];
 
 interface Quiz {
@@ -155,7 +156,7 @@ export default function ExternalImport({
             {subjects && (
               <div>
                 <label className="mb-1 block text-sm font-medium">
-                  المجموعة (اختياري)
+                  المجموعة الافتراضية (لمن لا مجموعة له في الملف)
                 </label>
                 <input
                   className="field"
@@ -201,7 +202,8 @@ export default function ExternalImport({
             <p dir="rtl">{HEADERS.join(" | ")}</p>
             <p className="mt-1">
               الإجباري: الاسم الأول، الأخير، اسم الأب، الجنس (ذكر/أنثى). الباقي
-              اختياري. كلمة السرّ تُولَّد تلقائياً إن تُركت فارغة.
+              اختياري. كلمة السرّ تُولَّد تلقائياً إن تُركت فارغة.{subjects &&
+                " عمود «المجموعة» (الأخير) يضع كل طالب في مجموعته؛ وإن تُرك فارغاً تُطبَّق المجموعة المكتوبة أعلاه."}
             </p>
             <div className="mt-2">
               <a
