@@ -22,8 +22,14 @@ export async function runExternalImport(opts: {
   defaultGradeId: string;
   createdById: string;
   quiz: { id: string; creatorId: string } | null;
+  /** مؤسّسة المنشئ (يرثها الطلاب الجدد). */
+  schoolId?: string | null;
+  /** تسجيل كل طالب جديد في مادة المدرّس (لا يشمل المُعاد استخدامهم). */
+  enroll?: { teacherId: string; subjectId: string; academicYear: string };
+  /** أقصى عدد حسابات جديدة (حدّ اشتراك المدرّس المستقلّ). */
+  maxNew?: number;
 }): Promise<{ ok: true; result: ImportResult } | { ok: false; error: string }> {
-  const { buffer, filename, defaultGradeId, createdById, quiz } = opts;
+  const { buffer, filename, defaultGradeId, createdById, quiz, schoolId, enroll, maxNew } = opts;
 
   if (!filename.toLowerCase().endsWith(".xlsx")) {
     return { ok: false, error: "يُقبل ملف Excel (xlsx) فقط" };
@@ -84,6 +90,11 @@ export async function runExternalImport(opts: {
       }
     }
 
+    if (maxNew != null && result.created.length >= maxNew) {
+      result.errors.push({ row: rowNum, reason: "تجاوز حدّ الطلاب في اشتراكك" });
+      continue;
+    }
+
     const password = r.password || randomPassword();
     const passwordHash = await bcrypt.hash(password, 10);
     let done = false;
@@ -100,6 +111,20 @@ export async function runExternalImport(opts: {
             lastName: r.lastName,
             phone: r.studentPhone || null,
             createdById,
+            ...(schoolId ? { schoolId } : {}),
+            ...(enroll
+              ? {
+                  studentEnrollments: {
+                    create: [
+                      {
+                        teacherId: enroll.teacherId,
+                        subjectId: enroll.subjectId,
+                        academicYear: enroll.academicYear,
+                      },
+                    ],
+                  },
+                }
+              : {}),
             studentProfile: {
               create: {
                 studentCode,

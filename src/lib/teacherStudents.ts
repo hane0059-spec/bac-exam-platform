@@ -60,6 +60,24 @@ export async function academicYearFor(
   return `${y}-${y + 1}`;
 }
 
+/**
+ * المتبقّي من حدّ طلاب المدرّس المستقلّ (undefined = بلا حدّ).
+ * يُفرَض على الخادم في كل مسار ينشئ طلاباً للمدرّس.
+ */
+export async function remainingStudentQuota(
+  teacherId: string
+): Promise<number | undefined> {
+  const profile = await prisma.teacherProfile.findUnique({
+    where: { userId: teacherId },
+    select: { isIndependent: true, studentLimit: true },
+  });
+  if (!profile?.isIndependent || profile.studentLimit == null) return undefined;
+  const current = await prisma.user.count({
+    where: { role: "STUDENT", createdById: teacherId },
+  });
+  return Math.max(0, profile.studentLimit - current);
+}
+
 /** رمز طالب تسلسلي فريد: التالي بعد الأكبر الحالي (S-1002 ...). */
 export async function nextStudentCode(): Promise<string> {
   const codes = await prisma.studentProfile.findMany({

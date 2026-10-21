@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { roleLabel } from "@/lib/gender";
+import { teacherCanManageStudents } from "@/lib/teacher";
 import { parseSettings, sweepExpiredSessions } from "@/lib/exam";
 import DashboardShell from "@/components/DashboardShell";
 import AssignPanel, {
@@ -138,10 +139,13 @@ export default async function AssignQuizPage({
     effectiveMax: maxAttempts + (extraByStudent.get(st.id) ?? 0),
   }));
 
-  const gradeLevels = await prisma.gradeLevel.findMany({
-    select: { id: true, name: true },
-    orderBy: { orderNum: "asc" },
-  });
+  const [gradeLevels, canManage] = await Promise.all([
+    prisma.gradeLevel.findMany({
+      select: { id: true, name: true },
+      orderBy: { orderNum: "asc" },
+    }),
+    teacherCanManageStudents(session.sub),
+  ]);
 
   return (
     <DashboardShell session={session}>
@@ -163,19 +167,21 @@ export default async function AssignQuizPage({
         otherStudents={otherStudents}
       />
 
-      <div className="mt-8">
-        <h3 className="mb-2 font-display text-lg font-bold">
-          إسناد خارجي (من ملف)
-        </h3>
-        <p className="mb-3 text-sm text-ink/60">
-          استورد قائمة طلاب من ملف (CSV/Excel) وأسنِد لهم هذا الاختبار مباشرةً —
-          تُنشأ حساباتهم وتُوزَّع بياناتهم. يتطلّب أن يكون الاختبار منشوراً.
-        </p>
-        <ExternalImport
-          grades={gradeLevels}
-          endpoint={`/api/teacher/quizzes/${quiz.id}/external-import`}
-        />
-      </div>
+      {canManage && (
+        <div className="mt-8">
+          <h3 className="mb-2 font-display text-lg font-bold">
+            إسناد خارجي (من ملف)
+          </h3>
+          <p className="mb-3 text-sm text-ink/60">
+            استورد قائمة طلاب من ملف (CSV/Excel) وأسنِد لهم هذا الاختبار مباشرةً —
+            تُنشأ حساباتهم وتُوزَّع بياناتهم. يتطلّب أن يكون الاختبار منشوراً.
+          </p>
+          <ExternalImport
+            grades={gradeLevels}
+            endpoint={`/api/teacher/quizzes/${quiz.id}/external-import`}
+          />
+        </div>
+      )}
     </DashboardShell>
   );
 }

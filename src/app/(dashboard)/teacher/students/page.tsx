@@ -103,9 +103,17 @@ export default async function TeacherStudentsPage({
               بلغتَ حدّ الاشتراك
             </span>
           ) : (
-            <Link href="/teacher/students/new" className="btn-primary">
-              + طالب جديد
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/teacher/students/import"
+                className="rounded-xl border border-line px-4 py-2 text-sm font-medium transition hover:bg-ink/5"
+              >
+                استيراد من ملف
+              </Link>
+              <Link href="/teacher/students/new" className="btn-primary">
+                + طالب جديد
+              </Link>
+            </div>
           ))}
       </div>
 

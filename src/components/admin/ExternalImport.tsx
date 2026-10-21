@@ -43,13 +43,17 @@ interface Result {
 export default function ExternalImport({
   quizzes,
   grades,
+  subjects,
   endpoint = "/api/admin/external-import",
 }: {
   quizzes?: Quiz[];
   grades: Grade[];
+  /** للمدرّس: مادة يُسجَّل فيها الطلاب المستوردون (إجبارية عند تمريرها). */
+  subjects?: { id: string; name: string }[];
   endpoint?: string;
 }) {
   const showQuizSelect = Array.isArray(quizzes);
+  const [subjectId, setSubjectId] = useState(subjects?.[0]?.id ?? "");
   const [quizId, setQuizId] = useState("");
   const [gradeId, setGradeId] = useState(grades[0]?.id ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -68,6 +72,7 @@ export default function ExternalImport({
     const fd = new FormData();
     fd.append("file", file);
     if (showQuizSelect) fd.append("quizId", quizId);
+    if (subjects) fd.append("subjectId", subjectId);
     fd.append("defaultGradeId", gradeId);
     const res = await fetch(endpoint, {
       method: "POST",
@@ -120,6 +125,24 @@ export default function ExternalImport({
                   {quizzes!.map((q) => (
                     <option key={q.id} value={q.id}>
                       {q.title} — {q.teacherName} ({q.subjectName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {subjects && (
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  تسجيلهم في مادة
+                </label>
+                <select
+                  className="field"
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                >
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
                     </option>
                   ))}
                 </select>

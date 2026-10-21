@@ -1,7 +1,9 @@
 // src/app/api/teacher/quizzes/[id]/external-import/route.ts
 // POST: إسناد خارجي بملف لاختبار المدرّس المنشور (يُنشئ حسابات ويُسندها).
 import { NextResponse } from "next/server";
-import { getTeacherSession } from "@/lib/teacher";
+import { prisma } from "@/lib/prisma";
+import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
+import { remainingStudentQuota } from "@/lib/teacherStudents";
 import { ownedQuiz } from "@/lib/teacherQuiz";
 import { runExternalImport } from "@/lib/externalImportService";
 
@@ -15,6 +17,12 @@ export async function POST(
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
+  }
+  if (!(await teacherCanManageStudents(session.sub))) {
+    return NextResponse.json(
+      { error: "إدارة الطلاب غير مفعّلة لحسابك — اطلبها من إدارة المؤسّسة." },
+      { status: 403 }
+    );
   }
   const quiz = await ownedQuiz(session.sub, params.id);
   if (!quiz) {
@@ -42,6 +50,18 @@ export async function POST(
     );
   }
 
+  const maxNew = await remainingStudentQuota(session.sub);
+  if (maxNew === 0) {
+    return NextResponse.json(
+      { error: "بلغتَ حدّ الطلاب المسموح في اشتراكك." },
+      { status: 403 }
+    );
+  }
+  const teacher = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { schoolId: true },
+  });
+
   const buffer = Buffer.from(await file.arrayBuffer());
   const filename = (file as File).name ?? "upload.csv";
   const res = await runExternalImport({
@@ -50,6 +70,8 @@ export async function POST(
     defaultGradeId,
     createdById: session.sub,
     quiz: { id: quiz.id, creatorId: session.sub },
+    schoolId: teacher?.schoolId ?? null,
+    maxNew,
   });
   if (!res.ok) {
     return NextResponse.json({ error: res.error }, { status: 400 });

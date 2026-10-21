@@ -360,7 +360,7 @@ export default function QuestionImporter({
               tone={summary.rejectedCount > 0 ? "gold" : "muted"}
             />
             <Stat
-              label="مجموع العلامات"
+              label="مجموع الدرجات"
               value={summary.totalPoints}
               tone="gold"
             />
@@ -409,7 +409,7 @@ export default function QuestionImporter({
                     className="rounded-lg border border-line p-2 text-xs"
                   >
                     <span className="ml-2 rounded bg-ink/5 px-1.5 py-0.5 text-ink/60">
-                      {s.typeLabel} · {s.points} ن
+                      {s.typeLabel} · {s.points} درجة
                     </span>
                     <span className="text-ink/80">{s.content}…</span>
                   </li>

@@ -363,7 +363,7 @@ export default function QuestionForm({
     <div className="space-y-5">
       {locked && (
         <div className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
-          هذا السؤال مُستخدَم في إجابات طلاب — يمكن تعديل النصّ والشرح والعلامة
+          هذا السؤال مُستخدَم في إجابات طلاب — يمكن تعديل النصّ والشرح والدرجة
           فقط، دون تغيير النوع أو الخيارات.
         </div>
       )}
@@ -984,7 +984,7 @@ export default function QuestionForm({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">العلامة</label>
+          <label className="mb-1 block text-sm font-medium">الدرجة</label>
           <input
             type="number"
             min={0.25}

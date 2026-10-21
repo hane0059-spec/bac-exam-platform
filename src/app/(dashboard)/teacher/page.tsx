@@ -126,7 +126,7 @@ export default async function TeacherDashboard() {
             تكوين الاختبارات
           </h3>
           <p className="text-sm leading-relaxed text-ink/60">
-            بناء الاختبارات من بنك أسئلتك وضبط العلامات والنشر.
+            بناء الاختبارات من بنك أسئلتك وضبط الدرجات والنشر.
           </p>
         </Link>
         {canEnrichment && (

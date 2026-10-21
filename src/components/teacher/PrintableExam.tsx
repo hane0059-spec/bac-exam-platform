@@ -196,7 +196,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
               <p className="font-medium leading-snug">
                 {q.index}. <MathText text={q.content} />
               </p>
-              <span className="shrink-0 text-xs text-ink/50">({q.points} ن)</span>
+              <span className="shrink-0 text-xs text-ink/50">({q.points} درجة)</span>
             </div>
             <p className="mb-1 text-[11px] text-ink/35">{TYPE_LABEL[q.type] ?? q.type}</p>
 
