@@ -11,6 +11,8 @@ import StudentForm, {
 import PasswordReset from "@/components/teacher/PasswordReset";
 import EnrollmentManager from "@/components/teacher/EnrollmentManager";
 import DeleteStudentButton from "@/components/teacher/DeleteStudentButton";
+import ResetCardButton from "@/components/teacher/ResetCardButton";
+import { getBranding } from "@/lib/branding";
 import { teacherCanManageStudents } from "@/lib/teacher";
 
 export const dynamic = "force-dynamic";
@@ -102,6 +104,12 @@ export default async function EditStudentPage({
           groups={Object.fromEntries(
             student.studentEnrollments.map((e) => [e.subjectId, e.groupName ?? ""])
           )}
+        />
+        <ResetCardButton
+          studentId={student.id}
+          studentName={`${student.firstName} ${student.lastName}`}
+          brandName={(await getBranding()).name}
+          teacherName={`${session.firstName} ${session.lastName}`}
         />
         <PasswordReset studentId={student.id} />
         <DeleteStudentButton
