@@ -59,7 +59,12 @@ export default async function TeacherQuizzesPublicPage({
             description: true,
             accessCode: true,
             settings: true,
-            subject: { select: { name: true } },
+            subject: {
+              select: {
+                name: true,
+                gradeLevel: { select: { name: true, orderNum: true } },
+              },
+            },
           },
         })
       ).filter(
@@ -71,6 +76,52 @@ export default async function TeacherQuizzesPublicPage({
           ),
       )
     : [];
+
+  // تقسيم حسب الصفّ ثم المادة.
+  type QuizRow = (typeof quizzes)[number];
+  const gradeMap = new Map<
+    string,
+    { order: number; subjects: Map<string, QuizRow[]> }
+  >();
+  for (const q of quizzes) {
+    const gName = q.subject.gradeLevel?.name ?? "اختبارات أخرى";
+    const g = gradeMap.get(gName) ?? {
+      order: q.subject.gradeLevel?.orderNum ?? 9999,
+      subjects: new Map<string, QuizRow[]>(),
+    };
+    gradeMap.set(gName, g);
+    const list = g.subjects.get(q.subject.name) ?? [];
+    list.push(q);
+    g.subjects.set(q.subject.name, list);
+  }
+  const groups = [...gradeMap.entries()]
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([gradeName, g]) => ({
+      gradeName,
+      subjects: [...g.subjects.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0], "ar"))
+        .map(([name, list]) => ({ name, quizzes: list })),
+    }));
+  // قليل الاختبارات: كل الأقسام مفتوحة؛ وإلا يُفتح القسم الوحيد في الصفّ فقط.
+  const openAll = quizzes.length <= 8;
+
+  const renderQuiz = (q: QuizRow) => (
+    <Link
+      key={q.id}
+      href={`/join/${q.accessCode}`}
+      className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
+    >
+      <div className="min-w-0">
+        <p className="font-display font-semibold">{q.title}</p>
+        {q.description && (
+          <p className="mt-1 line-clamp-2 text-sm text-ink/50">{q.description}</p>
+        )}
+      </div>
+      <span className="btn-primary shrink-0 px-4 py-1.5 text-sm">
+        ادخل الاختبار ←
+      </span>
+    </Link>
+  );
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-4 py-8">
@@ -102,24 +153,30 @@ export default async function TeacherQuizzesPublicPage({
               لا اختبارات متاحة حالياً. عُد لاحقاً.
             </div>
           ) : (
-            <div className="space-y-3">
-              {quizzes.map((q) => (
-                <Link
-                  key={q.id}
-                  href={`/join/${q.accessCode}`}
-                  className="card-link flex flex-wrap items-center justify-between gap-3 p-4"
-                >
-                  <div className="min-w-0">
-                    <p className="font-display font-semibold">{q.title}</p>
-                    <p className="mt-0.5 text-sm text-ink/60">{q.subject.name}</p>
-                    {q.description && (
-                      <p className="mt-1 line-clamp-2 text-sm text-ink/50">{q.description}</p>
-                    )}
+            <div className="space-y-6">
+              {groups.map((g) => (
+                <section key={g.gradeName}>
+                  <h2 className="mb-2 font-display text-lg font-bold">{g.gradeName}</h2>
+                  <div className="space-y-2">
+                    {g.subjects.map((sub) => (
+                      <details
+                        key={sub.name}
+                        open={openAll || g.subjects.length === 1}
+                        className="card p-0"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-medium">
+                          <span>{sub.name}</span>
+                          <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                            {sub.quizzes.length}
+                          </span>
+                        </summary>
+                        <div className="space-y-2 border-t border-line p-3">
+                          {sub.quizzes.map((q) => renderQuiz(q))}
+                        </div>
+                      </details>
+                    ))}
                   </div>
-                  <span className="btn-primary shrink-0 px-4 py-1.5 text-sm">
-                    ادخل الاختبار ←
-                  </span>
-                </Link>
+                </section>
               ))}
             </div>
           )}
