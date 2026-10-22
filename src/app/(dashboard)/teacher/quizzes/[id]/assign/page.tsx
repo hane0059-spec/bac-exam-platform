@@ -123,6 +123,7 @@ export default async function AssignQuizPage({
         statusLabel: statusLabel(st.id),
         attemptsUsed: finishedCount(st.id),
         effectiveMax: maxAttempts + (extraByStudent.get(st.id) ?? 0),
+        groupName: e.groupName?.trim() ?? "",
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ar"));
