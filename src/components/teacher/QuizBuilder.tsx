@@ -966,7 +966,7 @@ function QRow({ q, onAdd }: { q: BankQuestion; onAdd: () => void }) {
   return (
     <li className="flex items-center gap-2 rounded-xl border border-line p-3">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm">
+        <p dir="auto" className="truncate text-sm">
           <MathText text={q.content} />
         </p>
         <span className="text-xs text-ink/40">

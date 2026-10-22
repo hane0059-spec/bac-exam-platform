@@ -174,7 +174,7 @@ export default async function TeacherPublicBankPage({
                 <span className="text-ink/50">• {DIFF_LABEL[qq.difficulty]}</span>
                 <span className="text-ink/50">• {Number(qq.points)} درجة</span>
               </div>
-              <p className="leading-relaxed">
+              <p dir="auto" className="leading-relaxed">
                 <MathText text={qq.content} />
               </p>
               {qq.tags.length > 0 && (

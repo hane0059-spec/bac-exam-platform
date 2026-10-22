@@ -500,6 +500,7 @@ export default function QuestionForm({
                 />
                 <div className="flex-1">
                   <MathTextInput customKeyboard={customKeyboard}
+                    dir="auto"
                     value={o.content}
                     onChange={(v) => setOptionText(i, v)}
                     disabled={locked}
@@ -656,6 +657,7 @@ export default function QuestionForm({
                 <input
                   type="text"
                   className="field flex-1"
+                  dir="auto"
                   value={a}
                   onChange={(e) =>
                     setAcceptedAnswers((prev) =>
@@ -731,6 +733,7 @@ export default function QuestionForm({
                   <input
                     type="text"
                     className="field flex-1"
+                    dir="auto"
                     value={fillBlanks[i] ?? ""}
                     disabled={locked}
                     onChange={(e) =>
@@ -778,6 +781,7 @@ export default function QuestionForm({
                 <input
                   type="text"
                   className="field flex-1"
+                  dir="auto"
                   value={p.left}
                   disabled={locked}
                   onChange={(e) =>
@@ -791,6 +795,7 @@ export default function QuestionForm({
                 <input
                   type="text"
                   className="field flex-1"
+                  dir="auto"
                   value={p.right}
                   disabled={locked}
                   onChange={(e) =>
@@ -880,6 +885,7 @@ export default function QuestionForm({
                   <input
                     type="text"
                     className="field flex-1"
+                    dir="auto"
                     value={b}
                     disabled={locked}
                     onChange={(e) =>

@@ -44,7 +44,7 @@ export default function SessionReviewView({
             }`}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="font-medium leading-relaxed">
+              <p dir="auto" className="font-medium leading-relaxed">
                 {it.index}. <MathText text={it.content} />
               </p>
               {it.isCancelled ? (

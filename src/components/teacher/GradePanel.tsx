@@ -100,7 +100,7 @@ export default function GradePanel({
           return (
             <div key={it.nodeId} className="rounded-xl border border-line p-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-medium">
+                <p dir="auto" className="font-medium">
                   {it.index}. <MathText text={it.content} />
                 </p>
                 <span

@@ -23,7 +23,7 @@ const MATH_RE = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
 
 export default function MathText({ text }: { text: string | null | undefined }) {
   if (!text) return null;
-  if (!text.includes("$")) return <>{text}</>; // مسار سريع: لا معادلات.
+  if (!text.includes("$")) return <bdi dir="auto">{text}</bdi>; // مسار سريع: لا معادلات.
 
   const nodes: ReactNode[] = [];
   let last = 0;
@@ -45,5 +45,5 @@ export default function MathText({ text }: { text: string | null | undefined }) 
     last = MATH_RE.lastIndex;
   }
   if (last < text.length) nodes.push(text.slice(last));
-  return <>{nodes}</>;
+  return <bdi dir="auto">{nodes}</bdi>;
 }

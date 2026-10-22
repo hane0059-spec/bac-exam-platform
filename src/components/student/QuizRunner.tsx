@@ -405,7 +405,7 @@ export default function QuizRunner({
 
         <div className="card p-4 sm:p-6">
           {!isFill && (
-            <p className="mb-4 text-base font-medium leading-relaxed sm:mb-5 sm:text-lg">
+            <p dir="auto" className="mb-4 text-base font-medium leading-relaxed sm:mb-5 sm:text-lg">
               <MathText text={question.content} />
             </p>
           )}
@@ -441,6 +441,7 @@ export default function QuizRunner({
                         })
                       }
                       placeholder={`التسمية ${i + 1}`}
+                      dir="auto"
                       className="field flex-1"
                       aria-label={`التسمية ${i + 1}`}
                     />
@@ -449,7 +450,7 @@ export default function QuizRunner({
               </div>
             </div>
           ) : isFill ? (
-            <div className="text-lg leading-loose">
+            <div dir="auto" className="text-lg leading-loose">
               {splitFillTemplate(question.content).map((part, i, arr) => (
                 <span key={i}>
                   <span className="font-medium">{part}</span>
@@ -466,6 +467,7 @@ export default function QuizRunner({
                         })
                       }
                       placeholder={`${i + 1}`}
+                      dir="auto"
                       className="mx-1 inline-block w-20 rounded-lg border border-line bg-surface px-2 py-1 text-center text-sm align-middle focus:border-primary focus:outline-none sm:w-32 sm:text-base"
                       aria-label={`الفراغ ${i + 1}`}
                     />
@@ -481,6 +483,7 @@ export default function QuizRunner({
               {ordered.map((o, i) => (
                 <div
                   key={o.id}
+                  dir="auto"
                   className="flex items-center gap-2 rounded-xl border border-line p-3"
                 >
                   <span className="w-6 text-center text-sm font-bold text-primary">
@@ -522,6 +525,7 @@ export default function QuizRunner({
               {question.matchLefts?.map((left, i) => (
                 <div
                   key={left.id}
+                  dir="auto"
                   className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-3"
                 >
                   <span className="min-w-[6rem] flex-1 font-medium">
@@ -529,6 +533,7 @@ export default function QuizRunner({
                   </span>
                   <span className="text-ink/40">←</span>
                   <select
+                    dir="auto"
                     value={matches[i] ?? ""}
                     disabled={startedFeedback}
                     onChange={(e) =>
@@ -557,6 +562,7 @@ export default function QuizRunner({
                 disabled={startedFeedback}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="اكتب إجابتك المقالية هنا…"
+                dir="auto"
                 className="field min-h-[140px]"
               />
             ) : question.type === "CALCULATION" || question.mathInput ? (
@@ -575,6 +581,7 @@ export default function QuizRunner({
                 disabled={startedFeedback}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="اكتب إجابتك هنا…"
+                dir="auto"
                 className="field"
               />
             )
@@ -583,6 +590,7 @@ export default function QuizRunner({
               {question.options.map((o) => (
                 <label
                   key={o.id}
+                  dir="auto"
                   className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
                     selected === o.id
                       ? "border-primary bg-primary-light"
@@ -811,7 +819,7 @@ function FeedbackCard({
         </p>
       )}
       {reveal.explanation && (
-        <p className="mt-2 text-sm leading-relaxed text-ink/70">
+        <p dir="auto" className="mt-2 text-sm leading-relaxed text-ink/70">
           <MathText text={reveal.explanation} />
         </p>
       )}
@@ -926,7 +934,7 @@ function ResultView({
             }`}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p className="font-medium leading-relaxed">
+              <p dir="auto" className="font-medium leading-relaxed">
                 {it.index}. <MathText text={it.content} />
               </p>
               {it.isCancelled ? (
@@ -987,7 +995,7 @@ function ResultView({
             )}
 
             {it.explanation && (
-              <p className="mt-2 text-sm leading-relaxed text-ink/60">
+              <p dir="auto" className="mt-2 text-sm leading-relaxed text-ink/60">
                 <MathText text={it.explanation} />
               </p>
             )}

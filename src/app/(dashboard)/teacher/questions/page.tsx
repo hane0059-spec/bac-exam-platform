@@ -193,7 +193,7 @@ export default async function TeacherQuestionsPage({
                   </span>
                 )}
               </div>
-              <p className="leading-relaxed">
+              <p dir="auto" className="leading-relaxed">
                 <MathText text={q.content} />
               </p>
               {q.tags.length > 0 && (

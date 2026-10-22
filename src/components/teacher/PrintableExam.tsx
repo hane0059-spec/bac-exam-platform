@@ -193,7 +193,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
           >
             {/* رأس السؤال */}
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium leading-snug">
+              <p dir="auto" className="font-medium leading-snug">
                 {q.index}. <MathText text={q.content} />
               </p>
               <span className="shrink-0 text-xs text-ink/50">({q.points} درجة)</span>

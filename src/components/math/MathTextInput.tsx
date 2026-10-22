@@ -17,7 +17,7 @@ export default function MathTextInput({
   onChange,
   multiline = false,
   placeholder,
-  dir,
+  dir = "auto",
   subjectName,
   className = "field",
   disabled = false,
@@ -27,7 +27,7 @@ export default function MathTextInput({
   onChange: (v: string) => void;
   multiline?: boolean;
   placeholder?: string;
-  dir?: "ltr" | "rtl";
+  dir?: "ltr" | "rtl" | "auto";
   subjectName?: string;
   className?: string;
   disabled?: boolean;

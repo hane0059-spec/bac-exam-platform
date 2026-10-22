@@ -126,7 +126,7 @@ export default async function QuestionAnalysisPage() {
                   • {q.correct}/{q.total} إجابة صحيحة
                 </span>
               </div>
-              <p className="leading-relaxed">
+              <p dir="auto" className="leading-relaxed">
                 <MathText text={q.content} />
               </p>
               <div className="mt-3">
