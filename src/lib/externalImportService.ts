@@ -116,6 +116,7 @@ export async function runExternalImport(opts: {
           data: {
             email,
             passwordHash,
+            mustChangePassword: true,
             role: "STUDENT",
             gender: r.gender,
             firstName: r.firstName,

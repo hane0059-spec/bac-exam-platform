@@ -42,7 +42,7 @@ export async function POST(
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   await prisma.user.update({
     where: { id: params.id },
-    data: { passwordHash },
+    data: { passwordHash, mustChangePassword: true },
   });
   // إشعار الطالب بتغيير كلمة سرّه.
   try {

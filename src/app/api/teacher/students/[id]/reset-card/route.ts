@@ -44,7 +44,10 @@ export async function POST(
 
   const password = randomPassword();
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.update({ where: { id: student.id }, data: { passwordHash } });
+  await prisma.user.update({
+    where: { id: student.id },
+    data: { passwordHash, mustChangePassword: true },
+  });
   try {
     await createNotification({
       userId: student.id,

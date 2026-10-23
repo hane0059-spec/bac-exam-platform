@@ -6,6 +6,7 @@ import { dashboardPath, type SessionData } from "@/lib/auth";
 import { unreadCount } from "@/lib/notifications";
 import { getBranding } from "@/lib/branding";
 import { enrichmentTeacherIdsForStudent } from "@/lib/enrichment";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "./LogoutButton";
 import TextSizeControl from "./TextSizeControl";
@@ -16,13 +17,16 @@ import StudentShell from "./student/StudentShell";
 export default async function DashboardShell({
   session,
   children,
+  allowForcedPasswordChange = false,
 }: {
   session: SessionData;
   children: React.ReactNode;
+  /** صفحة «حسابي» فقط: تُعرَض للطالب ذي الكلمة المؤقّتة بدل تحويله إليها. */
+  allowForcedPasswordChange?: boolean;
 }) {
   const fullName = `${session.firstName} ${session.lastName}`;
   const label = roleLabel(session.role, session.gender);
-  const [unread, branding, studentCode, enrichmentTeacherIds] = await Promise.all([
+  const [unread, branding, studentCode, enrichmentTeacherIds, mustChange] = await Promise.all([
     unreadCount(session.sub).catch(() => 0),
     getBranding(),
     // رمز الطالب بجانب اسمه في كل صفحاته — يحتاجه كثيراً ليعطيه لمدرّسه (إسناد/تواصل).
@@ -38,7 +42,15 @@ export default async function DashboardShell({
     session.role === "STUDENT"
       ? enrichmentTeacherIdsForStudent(session.sub).catch(() => [])
       : Promise.resolve([]),
+    session.role === "STUDENT"
+      ? prisma.user
+          .findUnique({ where: { id: session.sub }, select: { mustChangePassword: true } })
+          .then((u) => u?.mustChangePassword === true)
+          .catch(() => false)
+      : Promise.resolve(false),
   ]);
+  // كلمة سرّ مؤقّتة: لا دخول للّوحة قبل تغييرها.
+  if (mustChange && !allowForcedPasswordChange) redirect("/account");
   // إعلان عامّ يُعرض أعلى كل لوحة: الصيانة أبرز، وإلا الملاحظة.
   const banner = branding.maintenance
     ? { text: `🛠️ ${branding.maintenanceMessage}`, warn: true }

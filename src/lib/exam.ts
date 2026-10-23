@@ -29,9 +29,11 @@ export async function getStudentSession(): Promise<SessionData | null> {
   if (!session || session.role !== "STUDENT") return null;
   const u = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { isActive: true, lastSeenAt: true },
+    select: { isActive: true, lastSeenAt: true, mustChangePassword: true },
   });
   if (!u?.isActive) return null;
+  // كلمة سرّ مؤقّتة: لا وصول لأي واجهة طالب قبل تغييرها (يُوجَّه لصفحة «حسابي»).
+  if (u.mustChangePassword) return null;
   touchLastSeen(session.sub, u.lastSeenAt);
   return session;
 }

@@ -146,6 +146,7 @@ export async function POST(req: Request) {
         data: {
           email,
           passwordHash,
+          mustChangePassword: true,
           role: "STUDENT",
           gender: d.gender,
           firstName: d.firstName,

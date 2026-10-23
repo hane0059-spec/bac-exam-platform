@@ -100,7 +100,10 @@ export async function POST(req: Request) {
     const hashes = await Promise.all(chunk.map((c) => bcrypt.hash(c.password, 10)));
     chunk.forEach((c, j) => {
       updates.push(
-        prisma.user.update({ where: { id: c.s.id }, data: { passwordHash: hashes[j] } })
+        prisma.user.update({
+          where: { id: c.s.id },
+          data: { passwordHash: hashes[j], mustChangePassword: true },
+        })
       );
       reset.push({
         name: `${c.s.firstName} ${c.s.lastName}`,

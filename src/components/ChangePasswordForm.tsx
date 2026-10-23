@@ -4,7 +4,14 @@
 import { useState } from "react";
 import PasswordInput from "@/components/PasswordInput";
 
-export default function ChangePasswordForm() {
+export default function ChangePasswordForm({
+  forced = false,
+  nextPath,
+}: {
+  /** كلمة سرّ مؤقّتة: تنبيه بارز + توجيه للوحة بعد النجاح. */
+  forced?: boolean;
+  nextPath?: string;
+}) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -37,11 +44,20 @@ export default function ChangePasswordForm() {
     setNext("");
     setConfirm("");
     setDone(true);
+    if (forced && nextPath) {
+      window.location.href = nextPath;
+    }
   }
 
   return (
     <div className="card max-w-md space-y-3 p-6">
       <h3 className="font-display font-semibold">تغيير كلمة السرّ</h3>
+      {forced && (
+        <p className="rounded-xl bg-gold/15 p-3 text-sm leading-relaxed text-gold">
+          كلمة سرّك الحالية مؤقّتة (من بطاقة الدخول). اختر كلمة سرّ جديدة تعرفها
+          أنت وحدك قبل متابعة استخدام المنصّة.
+        </p>
+      )}
       <div>
         <label className="mb-1 block text-sm text-ink/60">كلمة السر الحالية</label>
         <PasswordInput value={current} onChange={setCurrent} autoComplete="current-password" />

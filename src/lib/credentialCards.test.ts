@@ -49,5 +49,7 @@ describe("credentialCards", () => {
     expect(html).toContain("PW9");
     expect(html).toContain("www.itqanexam.com");
     expect(html).not.toContain(">https://");
+    expect(html).toContain("كلمة السرّ مؤقّتة");
+    expect(html).toContain("ستُطلب منك كلمة سرّ جديدة عند أول دخول");
   });
 });

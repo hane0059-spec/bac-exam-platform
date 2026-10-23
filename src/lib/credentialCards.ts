@@ -63,7 +63,7 @@ function cardHtml(c: CredentialCard, qrSvg: string, o: CardsOptions, host: strin
 </div>
 <div class="qr">${qrSvg}<small>امسح للدخول</small></div>
 </div>
-<div class="note">غيّر كلمة السرّ بعد أول دخول${o.teacherName ? ` — المدرّس: ${escapeHtml(o.teacherName)}` : ""}</div>
+<div class="note"><b>كلمة السرّ مؤقّتة:</b> ستُطلب منك كلمة سرّ جديدة عند أول دخول${o.teacherName ? ` — المدرّس: ${escapeHtml(o.teacherName)}` : ""}</div>
 </div>`;
 }
 

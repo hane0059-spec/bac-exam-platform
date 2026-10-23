@@ -163,6 +163,8 @@ model User {
   phone        String?
   avatarUrl    String?   @map("avatar_url")
   isActive     Boolean   @default(true) @map("is_active")
+  // كلمة السرّ مؤقّتة (أنشأها/أعادها مدرّس أو مدير): يُجبَر الطالب على تغييرها عند أول دخول.
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   isSuperAdmin Boolean   @default(false) @map("is_super_admin") // مدير عام (صلاحية كاملة)
   schoolId     String?   @map("school_id") // المؤسّسة (null = على مستوى المنصّة)
   school       School?   @relation(fields: [schoolId], references: [id])
