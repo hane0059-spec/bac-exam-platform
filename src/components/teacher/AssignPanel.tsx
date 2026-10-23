@@ -151,6 +151,8 @@ export default function AssignPanel({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // فلتر المجموعة: "" = كل الطلاب، NO_GROUP = بلا مجموعة، وإلا اسم المجموعة.
   const [groupFilter, setGroupFilter] = useState<string>("");
+  // بحث بالاسم/الرمز يُضيّق صفوف القائمة فقط (لا يغيّر مجموعة الإسناد الجماعي).
+  const [query, setQuery] = useState("");
   const [codes, setCodes] = useState("");
   const [codeResult, setCodeResult] = useState<{
     assigned: string[];
@@ -199,6 +201,14 @@ export default function AssignPanel({
   const groupLabel =
     groupFilter === NO_GROUP ? "بلا مجموعة" : groupFilter ? `«${groupFilter}»` : "";
   const unassigned = visible.filter((s) => !s.assigned);
+  const q = query.trim().toLowerCase();
+  const shownRows = q
+    ? visible.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.studentCode.toLowerCase().includes(q)
+      )
+    : visible;
   const otherUnassigned = otherStudents.filter((s) => !s.assigned);
   const otherFiltered = otherQuery.trim()
     ? otherStudents.filter(
@@ -348,42 +358,48 @@ export default function AssignPanel({
         </button>
       </div>
 
-      <div className="card space-y-2 p-4">
-        <label className="block text-sm font-medium">
-          إسناد بالرمز (الصق رموز الطلاب — من أي مادة أو صفّ في مدرستك)
-        </label>
-        <textarea
-          dir="ltr"
-          className="field min-h-[70px]"
-          value={codes}
-          onChange={(e) => setCodes(e.target.value)}
-          placeholder="S-1002  S-1003  S-1010 …"
-        />
-        <button
-          onClick={assignByCode}
-          disabled={busy || !published || !codes.trim()}
-          className="btn-primary"
-        >
-          إسناد بالرمز
-        </button>
-        {codeResult && (
-          <div className="text-sm">
-            <p className="text-primary-dark">
-              أُسنِد: {codeResult.assigned.length}
-            </p>
-            {codeResult.notFound.length > 0 && (
-              <p className="text-red-600">
-                رموز غير موجودة: {codeResult.notFound.join("، ")}
-              </p>
-            )}
-            {codeResult.otherSchool.length > 0 && (
-              <p className="text-gold">
-                خارج مدرستك: {codeResult.otherSchool.join("، ")}
-              </p>
-            )}
+      <details className="card group p-0">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
+          <span>إسناد بالرمز (لصق رموز طلاب من أي مادة أو صفّ)</span>
+          <span className="text-primary">▼</span>
+        </summary>
+        <div className="space-y-2 border-t border-line p-4">
+          <div className="flex flex-wrap items-start gap-2">
+            <textarea
+              dir="ltr"
+              rows={2}
+              className="field min-w-0 flex-1"
+              value={codes}
+              onChange={(e) => setCodes(e.target.value)}
+              placeholder="S-1002  S-1003  S-1010 …"
+            />
+            <button
+              onClick={assignByCode}
+              disabled={busy || !published || !codes.trim()}
+              className="btn-primary"
+            >
+              إسناد بالرمز
+            </button>
           </div>
-        )}
-      </div>
+          {codeResult && (
+            <div className="text-sm">
+              <p className="text-primary-dark">
+                أُسنِد: {codeResult.assigned.length}
+              </p>
+              {codeResult.notFound.length > 0 && (
+                <p className="text-red-600">
+                  رموز غير موجودة: {codeResult.notFound.join("، ")}
+                </p>
+              )}
+              {codeResult.otherSchool.length > 0 && (
+                <p className="text-gold">
+                  خارج مدرستك: {codeResult.otherSchool.join("، ")}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </details>
 
       {error && (
         <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
@@ -418,13 +434,28 @@ export default function AssignPanel({
         </div>
       )}
 
+      {students.length > 0 && (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="ابحث عن طالب بالاسم أو الرمز…"
+          className="field"
+          aria-label="بحث عن طالب"
+        />
+      )}
+
       {students.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">
           لا طلاب مسجّلون معك في مادة هذا الاختبار.
         </div>
+      ) : shownRows.length === 0 ? (
+        <div className="card p-6 text-center text-sm text-ink/60">
+          لا طالب مطابق لـ«{query.trim()}»{groupFilter ? " ضمن هذه المجموعة" : ""}.
+        </div>
       ) : (
         <div className="space-y-2">
-          {visible.map((s) => (
+          {shownRows.map((s) => (
             <StudentRow
               key={s.id}
               s={s}
