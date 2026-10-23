@@ -2,6 +2,7 @@
 // عرض مراجعة جلسة (خادمي): الدرجة + استعراض الأسئلة والإجابات.
 import type { SessionReview } from "@/lib/exam";
 import MathText from "@/components/MathText";
+import { isLatinQuestion, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
 
 export default function SessionReviewView({
   review,
@@ -81,8 +82,9 @@ export default function SessionReviewView({
                         : "text-ink/70"
                     }`}
                   >
-                    {o.label !== o.content && `${o.label}. `}
-                    <MathText text={o.content} />
+                    {o.label !== o.content &&
+                      `${displayOptionLabel(o.label, it.options.indexOf(o), isLatinQuestion(it))}. `}
+                    <MathText text={displayOptionContent(o.content, it.type, isLatinQuestion(it))} />
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابة الطالب"}
                   </li>

@@ -11,6 +11,7 @@ import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import PrintButton from "@/components/student/PrintButton";
 import { CERTIFICATE_THRESHOLD } from "@/lib/certificate";
 import MathText from "@/components/MathText";
+import { isLatinQuestion, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
 import MathAnswerInput from "@/components/math/MathAnswerInput";
 
 type Gender = "MALE" | "FEMALE";
@@ -607,10 +608,12 @@ export default function QuizRunner({
                     className="accent-primary"
                   />
                   {o.label !== o.content && (
-                    <span className="font-medium text-ink/80">{o.label}.</span>
+                    <span className="font-medium text-ink/80">
+                      {displayOptionLabel(o.label, question.options.indexOf(o), isLatinQuestion(question))}.
+                    </span>
                   )}
                   <span>
-                    <MathText text={o.content} />
+                    <MathText text={displayOptionContent(o.content, question.type, isLatinQuestion(question))} />
                   </span>
                 </label>
               ))}
@@ -971,8 +974,9 @@ function ResultView({
                         : "text-ink/70"
                     }`}
                   >
-                    {o.label !== o.content && `${o.label}. `}
-                    <MathText text={o.content} />
+                    {o.label !== o.content &&
+                      `${displayOptionLabel(o.label, it.options.indexOf(o), isLatinQuestion(it))}. `}
+                    <MathText text={displayOptionContent(o.content, it.type, isLatinQuestion(it))} />
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابتك"}
                   </li>

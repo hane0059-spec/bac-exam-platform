@@ -3,6 +3,12 @@
 // عرض قابل للطباعة: ورقة أسئلة + سلّم تصحيح، مع خيارات مدمجة لتوفير الورق.
 import { useState } from "react";
 import MathText from "@/components/MathText";
+import {
+  isLatinExam,
+  isLatinQuestion,
+  displayOptionLabel,
+  displayOptionContent,
+} from "@/lib/textDir";
 
 const TYPE_LABEL: Record<string, string> = {
   MULTIPLE_CHOICE: "اختيار من متعدد",
@@ -14,6 +20,18 @@ const TYPE_LABEL: Record<string, string> = {
   DIAGRAM_LABEL: "توسيم رسم",
   CALCULATION: "حساب",
   ORDER: "ترتيب",
+};
+
+const TYPE_LABEL_EN: Record<string, string> = {
+  MULTIPLE_CHOICE: "Multiple choice",
+  TRUE_FALSE: "True / False",
+  SHORT_ANSWER: "Short answer",
+  ESSAY: "Essay",
+  MATCHING: "Matching",
+  FILL_BLANK: "Fill in the blank",
+  DIAGRAM_LABEL: "Label the diagram",
+  CALCULATION: "Calculation",
+  ORDER: "Put in order",
 };
 
 export interface PrintOption {
@@ -45,9 +63,11 @@ type View = "questions" | "key";
 function OptionsBlock({
   q,
   showKey,
+  latin,
 }: {
   q: PrintQuestion;
   showKey: boolean;
+  latin: boolean;
 }) {
   if (q.options.length === 0) return null;
 
@@ -73,7 +93,7 @@ function OptionsBlock({
               >
                 {correct ? "✓" : ""}
               </span>
-              <MathText text={o.content} />
+              <MathText text={displayOptionContent(o.content, q.type, latin)} />
             </span>
           );
         })}
@@ -95,7 +115,7 @@ function OptionsBlock({
         ))}
         {showKey && q.acceptedAnswers[0] && (
           <p className="mt-1 w-full rounded bg-primary-light px-2 py-0.5 text-xs font-medium text-primary-dark">
-            الترتيب الصحيح: {q.acceptedAnswers[0]}
+            {latin ? "Correct order:" : "الترتيب الصحيح:"} {q.acceptedAnswers[0]}
           </p>
         )}
       </div>
@@ -117,7 +137,9 @@ function OptionsBlock({
             }`}
           >
             <span className="shrink-0 font-medium">
-              {o.label && o.label !== o.content ? `${o.label}.` : `${String.fromCharCode(0x0627 + i)}.`}
+              {o.label && o.label !== o.content
+                ? `${displayOptionLabel(o.label, i, latin)}.`
+                : `${latin ? String.fromCharCode(65 + i) : String.fromCharCode(0x0627 + i)}.`}
             </span>
             <span className="leading-snug">
               <MathText text={o.content} />
@@ -132,6 +154,8 @@ function OptionsBlock({
 
 export default function PrintableExam({ data }: { data: PrintExamData }) {
   const [view, setView] = useState<View>("questions");
+  // ورقة إنكليزية (أغلبية الأسئلة): ترويسة وتسميات إنكليزية واتجاه LTR.
+  const en = isLatinExam(data.questions);
 
   const tab = (v: View) =>
     `rounded-full px-4 py-1.5 text-sm transition ${
@@ -158,17 +182,26 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
         </button>
       </div>
 
+      <div dir={en ? "ltr" : undefined}>
       {/* الترويسة */}
       <div className="mb-4 border-b border-line pb-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-display text-2xl font-bold">{data.title}</h1>
           <span className="text-sm text-ink/60">
-            {view === "key" ? "سلّم التصحيح" : "ورقة الأسئلة"}
+            {en
+              ? view === "key"
+                ? "Answer key"
+                : "Question paper"
+              : view === "key"
+                ? "سلّم التصحيح"
+                : "ورقة الأسئلة"}
           </span>
         </div>
         <p className="mt-1 text-sm text-ink/60">
-          {data.subjectName} • {data.questions.length} سؤال • الدرجة الكلّية:{" "}
-          {data.totalPoints}
+          <bdi>{data.subjectName}</bdi>
+          {en
+            ? ` • ${data.questions.length} questions • Total marks: ${data.totalPoints}`
+            : ` • ${data.questions.length} سؤال • الدرجة الكلّية: ${data.totalPoints}`}
         </p>
         {data.description && (
           <p className="mt-1 text-sm leading-relaxed text-ink/70">
@@ -177,18 +210,21 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
         )}
         {view === "questions" && (
           <div className="mt-2 flex flex-wrap gap-x-10 gap-y-0.5 text-sm text-ink/70">
-            <span>الاسم: ............................................</span>
-            <span>الصفّ: ......................</span>
-            <span>التاريخ: ......................</span>
+            <span>{en ? "Name:" : "الاسم:"} ............................................</span>
+            <span>{en ? "Class:" : "الصفّ:"} ......................</span>
+            <span>{en ? "Date:" : "التاريخ:"} ......................</span>
           </div>
         )}
       </div>
 
       {/* الأسئلة — حشو مضغوط لتوفير الورق */}
       <ol className="space-y-2 print:space-y-1">
-        {data.questions.map((q) => (
+        {data.questions.map((q) => {
+          const latin = isLatinQuestion(q);
+          return (
           <li
             key={q.index}
+            dir={latin ? "ltr" : undefined}
             className="rounded-xl border border-line p-3 print:rounded-none print:border-x-0 print:border-t-0 print:border-b print:p-2"
           >
             {/* رأس السؤال */}
@@ -196,9 +232,11 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
               <p dir="auto" className="font-medium leading-snug">
                 {q.index}. <MathText text={q.content} />
               </p>
-              <span className="shrink-0 text-xs text-ink/50">({q.points} درجة)</span>
+              <span className="shrink-0 text-xs text-ink/50">
+                {latin ? `(${q.points} ${q.points === 1 ? "mark" : "marks"})` : `(${q.points} درجة)`}
+              </span>
             </div>
-            <p className="mb-1 text-[11px] text-ink/35">{TYPE_LABEL[q.type] ?? q.type}</p>
+            <p className="mb-1 text-[11px] text-ink/35">{(latin ? TYPE_LABEL_EN[q.type] : TYPE_LABEL[q.type]) ?? q.type}</p>
 
             {q.imageId && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -211,17 +249,17 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
 
             {/* الخيارات */}
             {q.options.length > 0 ? (
-              <OptionsBlock q={q} showKey={view === "key"} />
+              <OptionsBlock q={q} showKey={view === "key"} latin={latin} />
             ) : view === "key" ? (
               q.acceptedAnswers.length > 0 ? (
                 <p className="mt-1 text-sm">
-                  <span className="text-ink/50">الإجابة: </span>
+                  <span className="text-ink/50">{latin ? "Answer: " : "الإجابة: "}</span>
                   <span className="font-medium text-primary-dark">
                     {q.acceptedAnswers.join(" / ")}
                   </span>
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-ink/50">يُصحَّح يدوياً.</p>
+                <p className="mt-1 text-sm text-ink/50">{latin ? "Marked manually." : "يُصحَّح يدوياً."}</p>
               )
             ) : (
               /* فراغ الإجابة — سطر واحد للقصيرة/الحساب، سطران للمقالي */
@@ -239,8 +277,10 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
               </p>
             )}
           </li>
-        ))}
+          );
+        })}
       </ol>
+      </div>
     </div>
   );
 }
