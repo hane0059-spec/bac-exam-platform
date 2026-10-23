@@ -40,6 +40,7 @@ export default async function TakeQuizPage({
       quiz: {
         include: {
           nodes: { where: { nodeType: "QUESTION" }, select: { id: true } },
+          subject: { select: { name: true } },
         },
       },
     },
@@ -82,6 +83,7 @@ export default async function TakeQuizPage({
           timeLimitSec={settings.timeLimitSec}
           gender={session.gender}
           viewSessionId={viewSessionId}
+          subjectName={quiz.subject.name}
         />
       </DashboardShell>
     );

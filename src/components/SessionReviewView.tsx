@@ -2,7 +2,7 @@
 // عرض مراجعة جلسة (خادمي): الدرجة + استعراض الأسئلة والإجابات.
 import type { SessionReview } from "@/lib/exam";
 import MathText from "@/components/MathText";
-import { isLatinQuestion, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
+import { questionLang, subjectLang, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
 
 export default function SessionReviewView({
   review,
@@ -10,6 +10,7 @@ export default function SessionReviewView({
   review: SessionReview;
 }) {
   const pct = review.percentage;
+  const hint = subjectLang(review.subjectName);
   const tone = pct >= 50 ? "text-primary-dark" : "text-red-600";
   return (
     <div className="space-y-5">
@@ -83,8 +84,8 @@ export default function SessionReviewView({
                     }`}
                   >
                     {o.label !== o.content &&
-                      `${displayOptionLabel(o.label, it.options.indexOf(o), isLatinQuestion(it))}. `}
-                    <MathText text={displayOptionContent(o.content, it.type, isLatinQuestion(it))} />
+                      `${displayOptionLabel(o.label, it.options.indexOf(o), questionLang(it, hint))}. `}
+                    <MathText text={displayOptionContent(o.content, it.type, questionLang(it, hint))} />
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابة الطالب"}
                   </li>

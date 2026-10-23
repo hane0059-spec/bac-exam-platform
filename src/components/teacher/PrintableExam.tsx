@@ -4,35 +4,15 @@
 import { useState } from "react";
 import MathText from "@/components/MathText";
 import {
-  isLatinExam,
-  isLatinQuestion,
+  examLang,
+  questionLang,
+  subjectLang,
   displayOptionLabel,
   displayOptionContent,
+  defaultOptionLetter,
+  type Lang,
 } from "@/lib/textDir";
-
-const TYPE_LABEL: Record<string, string> = {
-  MULTIPLE_CHOICE: "اختيار من متعدد",
-  TRUE_FALSE: "صح / خطأ",
-  SHORT_ANSWER: "إجابة قصيرة",
-  ESSAY: "مقالي",
-  MATCHING: "مطابقة",
-  FILL_BLANK: "ملء فراغ",
-  DIAGRAM_LABEL: "توسيم رسم",
-  CALCULATION: "حساب",
-  ORDER: "ترتيب",
-};
-
-const TYPE_LABEL_EN: Record<string, string> = {
-  MULTIPLE_CHOICE: "Multiple choice",
-  TRUE_FALSE: "True / False",
-  SHORT_ANSWER: "Short answer",
-  ESSAY: "Essay",
-  MATCHING: "Matching",
-  FILL_BLANK: "Fill in the blank",
-  DIAGRAM_LABEL: "Label the diagram",
-  CALCULATION: "Calculation",
-  ORDER: "Put in order",
-};
+import { EXAM_STRINGS } from "@/lib/examStrings";
 
 export interface PrintOption {
   label: string;
@@ -63,11 +43,11 @@ type View = "questions" | "key";
 function OptionsBlock({
   q,
   showKey,
-  latin,
+  lang,
 }: {
   q: PrintQuestion;
   showKey: boolean;
-  latin: boolean;
+  lang: Lang;
 }) {
   if (q.options.length === 0) return null;
 
@@ -93,7 +73,7 @@ function OptionsBlock({
               >
                 {correct ? "✓" : ""}
               </span>
-              <MathText text={displayOptionContent(o.content, q.type, latin)} />
+              <MathText text={displayOptionContent(o.content, q.type, lang)} />
             </span>
           );
         })}
@@ -115,7 +95,7 @@ function OptionsBlock({
         ))}
         {showKey && q.acceptedAnswers[0] && (
           <p className="mt-1 w-full rounded bg-primary-light px-2 py-0.5 text-xs font-medium text-primary-dark">
-            {latin ? "Correct order:" : "الترتيب الصحيح:"} {q.acceptedAnswers[0]}
+            {EXAM_STRINGS[lang].correctOrder} {q.acceptedAnswers[0]}
           </p>
         )}
       </div>
@@ -138,8 +118,8 @@ function OptionsBlock({
           >
             <span className="shrink-0 font-medium">
               {o.label && o.label !== o.content
-                ? `${displayOptionLabel(o.label, i, latin)}.`
-                : `${latin ? String.fromCharCode(65 + i) : String.fromCharCode(0x0627 + i)}.`}
+                ? `${displayOptionLabel(o.label, i, lang)}.`
+                : `${defaultOptionLetter(i, lang)}.`}
             </span>
             <span className="leading-snug">
               <MathText text={o.content} />
@@ -154,8 +134,10 @@ function OptionsBlock({
 
 export default function PrintableExam({ data }: { data: PrintExamData }) {
   const [view, setView] = useState<View>("questions");
-  // ورقة إنكليزية (أغلبية الأسئلة): ترويسة وتسميات إنكليزية واتجاه LTR.
-  const en = isLatinExam(data.questions);
+  // لغة الورقة (عربي/إنكليزي/فرنسي/روسي): تحدّد الترويسة والتسميات والاتجاه (LTR لغير العربي).
+  const hint = subjectLang(data.subjectName);
+  const lang = examLang(data.questions, data.subjectName);
+  const S = EXAM_STRINGS[lang];
 
   const tab = (v: View) =>
     `rounded-full px-4 py-1.5 text-sm transition ${
@@ -182,26 +164,18 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
         </button>
       </div>
 
-      <div dir={en ? "ltr" : undefined}>
+      <div dir={lang === "ar" ? undefined : "ltr"}>
       {/* الترويسة */}
       <div className="mb-4 border-b border-line pb-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-display text-2xl font-bold">{data.title}</h1>
           <span className="text-sm text-ink/60">
-            {en
-              ? view === "key"
-                ? "Answer key"
-                : "Question paper"
-              : view === "key"
-                ? "سلّم التصحيح"
-                : "ورقة الأسئلة"}
+            {view === "key" ? S.key : S.sheet}
           </span>
         </div>
         <p className="mt-1 text-sm text-ink/60">
           <bdi>{data.subjectName}</bdi>
-          {en
-            ? ` • ${data.questions.length} questions • Total marks: ${data.totalPoints}`
-            : ` • ${data.questions.length} سؤال • الدرجة الكلّية: ${data.totalPoints}`}
+          {S.summary(data.questions.length, data.totalPoints)}
         </p>
         {data.description && (
           <p className="mt-1 text-sm leading-relaxed text-ink/70">
@@ -210,9 +184,9 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
         )}
         {view === "questions" && (
           <div className="mt-2 flex flex-wrap gap-x-10 gap-y-0.5 text-sm text-ink/70">
-            <span>{en ? "Name:" : "الاسم:"} ............................................</span>
-            <span>{en ? "Class:" : "الصفّ:"} ......................</span>
-            <span>{en ? "Date:" : "التاريخ:"} ......................</span>
+            <span>{S.name} ............................................</span>
+            <span>{S.cls} ......................</span>
+            <span>{S.date} ......................</span>
           </div>
         )}
       </div>
@@ -220,11 +194,12 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
       {/* الأسئلة — حشو مضغوط لتوفير الورق */}
       <ol className="space-y-2 print:space-y-1">
         {data.questions.map((q) => {
-          const latin = isLatinQuestion(q);
+          const ql = questionLang(q, hint);
+          const QS = EXAM_STRINGS[ql];
           return (
           <li
             key={q.index}
-            dir={latin ? "ltr" : undefined}
+            dir={ql === "ar" ? undefined : "ltr"}
             className="rounded-xl border border-line p-3 print:rounded-none print:border-x-0 print:border-t-0 print:border-b print:p-2"
           >
             {/* رأس السؤال */}
@@ -233,10 +208,10 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
                 {q.index}. <MathText text={q.content} />
               </p>
               <span className="shrink-0 text-xs text-ink/50">
-                {latin ? `(${q.points} ${q.points === 1 ? "mark" : "marks"})` : `(${q.points} درجة)`}
+                {QS.marks(q.points)}
               </span>
             </div>
-            <p className="mb-1 text-[11px] text-ink/35">{(latin ? TYPE_LABEL_EN[q.type] : TYPE_LABEL[q.type]) ?? q.type}</p>
+            <p className="mb-1 text-[11px] text-ink/35">{QS.types[q.type] ?? q.type}</p>
 
             {q.imageId && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -249,17 +224,17 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
 
             {/* الخيارات */}
             {q.options.length > 0 ? (
-              <OptionsBlock q={q} showKey={view === "key"} latin={latin} />
+              <OptionsBlock q={q} showKey={view === "key"} lang={ql} />
             ) : view === "key" ? (
               q.acceptedAnswers.length > 0 ? (
                 <p className="mt-1 text-sm">
-                  <span className="text-ink/50">{latin ? "Answer: " : "الإجابة: "}</span>
+                  <span className="text-ink/50">{QS.answer}</span>
                   <span className="font-medium text-primary-dark">
                     {q.acceptedAnswers.join(" / ")}
                   </span>
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-ink/50">{latin ? "Marked manually." : "يُصحَّح يدوياً."}</p>
+                <p className="mt-1 text-sm text-ink/50">{QS.manual}</p>
               )
             ) : (
               /* فراغ الإجابة — سطر واحد للقصيرة/الحساب، سطران للمقالي */

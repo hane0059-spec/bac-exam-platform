@@ -1,17 +1,53 @@
 // src/lib/textDir.ts
-// كشف الأسئلة الإنكليزية لعرضها بشكل إنكليزي (تسميات A/B/C، True/False، اتجاه LTR).
-// آمن للعميل (بلا prisma). عرضيّ فقط — التصحيح بمعرّفات الخيارات لا بنصّها.
+// كشف لغة محتوى الأسئلة (عربي/إنكليزي/فرنسي/روسي) لعرضها بشكل مناسب: اتجاه LTR وتسميات
+// الخيارات (A/B/C أو А/Б/В) وصح/خطأ بلغة الاختبار. آمن للعميل (بلا prisma). عرضيّ فقط —
+// التصحيح بمعرّفات الخيارات لا بنصّها.
+
+export type Lang = "ar" | "en" | "fr" | "ru";
 
 const LATIN = /[A-Za-z]/g;
-const ARABIC = /[\u0600-\u06FF]/g;
+const CYRILLIC = /[Ѐ-ӿ]/g;
+const ARABIC = /[؀-ۿ]/g;
 const ARABIC_LABELS = new Set(["أ", "ب", "ج", "د", "هـ", "و"]);
 
-/** نصّ لاتيني غالب (أحرف لاتينية أكثر من العربية). */
-export function isLatinText(s: string | null | undefined): boolean {
-  if (!s) return false;
-  const l = (s.match(LATIN) ?? []).length;
-  const a = (s.match(ARABIC) ?? []).length;
-  return l > 0 && l > a;
+const FR_ACCENTS = /[àâçéèêëîïôùûüœæ]/gi;
+const FR_WORDS =
+  /\b(le|la|les|des|une|un|est|et|que|qui|dans|pour|pas|sont|ce|du|au|aux|avec|quel|quelle|quels|quelles|sur|par|ou|nous|vous|ils)\b/gi;
+const EN_WORDS =
+  /\b(the|is|are|of|and|to|in|that|which|what|this|with|for|was|were|will|it|you|he|she|they|do|does)\b/gi;
+
+type Script = "latin" | "cyrillic" | "arabic" | null;
+
+function count(s: string, re: RegExp): number {
+  return (s.match(re) ?? []).length;
+}
+
+function dominantScript(s: string | null | undefined): Script {
+  if (!s) return null;
+  const l = count(s, LATIN);
+  const c = count(s, CYRILLIC);
+  const a = count(s, ARABIC);
+  const max = Math.max(l, c, a);
+  if (max === 0) return null;
+  if (max === c) return "cyrillic";
+  if (max === l) return "latin";
+  return "arabic";
+}
+
+/** لغة مادة من اسمها (إنكليزي/فرنسي/روسي) أو null. */
+export function subjectLang(name: string | null | undefined): Lang | null {
+  if (!name) return null;
+  if (/إنجليز|إنكليز|انجليز|انكليز|english/i.test(name)) return "en";
+  if (/فرنس|french|fran[cç]ais/i.test(name)) return "fr";
+  if (/روس|russian|русск/i.test(name)) return "ru";
+  return null;
+}
+
+/** تمييز الفرنسي من الإنكليزي لنصّ لاتيني (تلميح بالحروف المعلّمة والكلمات الشائعة). */
+function latinLang(text: string): "en" | "fr" {
+  const fr = count(text, FR_ACCENTS) + count(text, FR_WORDS);
+  const en = count(text, EN_WORDS);
+  return fr > en ? "fr" : "en";
 }
 
 interface QLike {
@@ -20,44 +56,64 @@ interface QLike {
   options: { content: string }[];
 }
 
+function questionText(q: QLike): string {
+  // خيارات صح/خطأ المخزَّنة بالعربية لا تُحتسَب حتى لا تُرجِّح العربية.
+  return q.type === "TRUE_FALSE"
+    ? q.content
+    : [q.content, ...q.options.map((o) => o.content)].join(" ");
+}
+
 /**
- * السؤال إنكليزي؟ يُقدَّر من نصّه وخياراته (خيارات صح/خطأ المخزَّنة بالعربية
- * لا تُحتسَب حتى لا تُرجِّح العربية على سؤال إنكليزي).
+ * لغة السؤال: السكربت يحسم الروسي (سيريلي) والعربي؛ واللاتيني يتبع `hint`
+ * (لغة المادة: en/fr) إن وُجد وإلا يُقدَّر بالكلمات.
  */
-export function isLatinQuestion(q: QLike): boolean {
-  const parts =
-    q.type === "TRUE_FALSE"
-      ? [q.content]
-      : [q.content, ...q.options.map((o) => o.content)];
-  return isLatinText(parts.join(" "));
+export function questionLang(q: QLike, hint?: Lang | null): Lang {
+  const text = questionText(q);
+  const sc = dominantScript(text);
+  if (sc === "cyrillic") return "ru";
+  if (sc === "latin") return hint === "en" || hint === "fr" ? hint : latinLang(text);
+  return "ar";
 }
 
-/** الاختبار إنكليزي إن كانت أغلبية أسئلته إنكليزية. */
-export function isLatinExam(questions: QLike[]): boolean {
-  if (questions.length === 0) return false;
-  const n = questions.filter(isLatinQuestion).length;
-  return n * 2 > questions.length;
+/** لغة الاختبار: الأكثر تكراراً بين الأسئلة غير العربية إن زادت عن النصف، وإلا العربية. */
+export function examLang(questions: QLike[], subjectName?: string | null): Lang {
+  if (questions.length === 0) return "ar";
+  const hint = subjectLang(subjectName);
+  const langs = questions.map((q) => questionLang(q, hint));
+  const nonAr = langs.filter((l) => l !== "ar");
+  if (nonAr.length * 2 <= langs.length) return "ar";
+  const freq = new Map<Lang, number>();
+  for (const l of nonAr) freq.set(l, (freq.get(l) ?? 0) + 1);
+  return [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
-/** تسمية الخيار: أ/ب/ج → A/B/C في السؤال الإنكليزي. */
-export function displayOptionLabel(
-  label: string,
-  index: number,
-  latin: boolean
-): string {
-  if (latin && ARABIC_LABELS.has(label)) return String.fromCharCode(65 + index);
+const RU_LETTERS = ["А", "Б", "В", "Г", "Д", "Е"];
+
+/** حرف الخيار الافتراضي حسب اللغة وموضعه. */
+export function defaultOptionLetter(index: number, lang: Lang): string {
+  if (lang === "ru") return RU_LETTERS[index] ?? String(index + 1);
+  if (lang === "ar") return String.fromCharCode(0x0627 + index);
+  return String.fromCharCode(65 + index);
+}
+
+/** تسمية الخيار: أ/ب/ج → A/B/C (أو А/Б/В) في السؤال غير العربي. */
+export function displayOptionLabel(label: string, index: number, lang: Lang): string {
+  if (lang !== "ar" && ARABIC_LABELS.has(label)) return defaultOptionLetter(index, lang);
   return label;
 }
 
-/** نصّ الخيار: «صح/خطأ» → True/False في سؤال صح/خطأ إنكليزي. */
-export function displayOptionContent(
-  content: string,
-  type: string,
-  latin: boolean
-): string {
-  if (latin && type === "TRUE_FALSE") {
-    if (content.trim() === "صح") return "True";
-    if (content.trim() === "خطأ" || content.trim() === "خطا") return "False";
+const TF: Record<Exclude<Lang, "ar">, { t: string; f: string }> = {
+  en: { t: "True", f: "False" },
+  fr: { t: "Vrai", f: "Faux" },
+  ru: { t: "Верно", f: "Неверно" },
+};
+
+/** نصّ الخيار: «صح/خطأ» → True/False أو Vrai/Faux أو Верно/Неверно بلغة السؤال. */
+export function displayOptionContent(content: string, type: string, lang: Lang): string {
+  if (lang !== "ar" && type === "TRUE_FALSE") {
+    const c = content.trim();
+    if (c === "صح") return TF[lang].t;
+    if (c === "خطأ" || c === "خطا") return TF[lang].f;
   }
   return content;
 }

@@ -11,7 +11,13 @@ import StudentArchiveToggle from "@/components/student/StudentArchiveToggle";
 import PrintButton from "@/components/student/PrintButton";
 import { CERTIFICATE_THRESHOLD } from "@/lib/certificate";
 import MathText from "@/components/MathText";
-import { isLatinQuestion, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
+import {
+  questionLang,
+  subjectLang,
+  displayOptionLabel,
+  displayOptionContent,
+  type Lang,
+} from "@/lib/textDir";
 import MathAnswerInput from "@/components/math/MathAnswerInput";
 
 type Gender = "MALE" | "FEMALE";
@@ -107,6 +113,7 @@ export default function QuizRunner({
   timeLimitSec,
   gender,
   viewSessionId,
+  subjectName,
 }: {
   quizId: string;
   title: string;
@@ -117,7 +124,10 @@ export default function QuizRunner({
   // عرض نتيجة منتهية مباشرةً (رابط "عرض النتيجة") بلا المرور بشاشة «ابدأ
   // الاختبار» — لمراجعة نتيجة/ردّ رسالة دون إيحاء ببدء محاولة جديدة.
   viewSessionId?: string;
+  /** اسم المادة (لتحديد لغة الأسئلة اللاتينية: إنكليزي/فرنسي). */
+  subjectName?: string;
 }) {
+  const hint = subjectLang(subjectName);
   const [phase, setPhase] = useState<Phase>(viewSessionId ? "loading" : "intro");
   const [error, setError] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
@@ -354,6 +364,7 @@ export default function QuizRunner({
     return (
       <ResultView
         result={result}
+        hint={hint}
         onReload={() => sessionId && void loadResult(sessionId)}
       />
     );
@@ -609,11 +620,11 @@ export default function QuizRunner({
                   />
                   {o.label !== o.content && (
                     <span className="font-medium text-ink/80">
-                      {displayOptionLabel(o.label, question.options.indexOf(o), isLatinQuestion(question))}.
+                      {displayOptionLabel(o.label, question.options.indexOf(o), questionLang(question, hint))}.
                     </span>
                   )}
                   <span>
-                    <MathText text={displayOptionContent(o.content, question.type, isLatinQuestion(question))} />
+                    <MathText text={displayOptionContent(o.content, question.type, questionLang(question, hint))} />
                   </span>
                 </label>
               ))}
@@ -836,9 +847,11 @@ function FeedbackCard({
 
 function ResultView({
   result,
+  hint,
   onReload,
 }: {
   result: ResultData;
+  hint: Lang | null;
   onReload: () => void;
 }) {
   const pct = result.percentage;
@@ -975,8 +988,8 @@ function ResultView({
                     }`}
                   >
                     {o.label !== o.content &&
-                      `${displayOptionLabel(o.label, it.options.indexOf(o), isLatinQuestion(it))}. `}
-                    <MathText text={displayOptionContent(o.content, it.type, isLatinQuestion(it))} />
+                      `${displayOptionLabel(o.label, it.options.indexOf(o), questionLang(it, hint))}. `}
+                    <MathText text={displayOptionContent(o.content, it.type, questionLang(it, hint))} />
                     {o.isCorrect && " ✓"}
                     {o.selected && !o.isCorrect && " — إجابتك"}
                   </li>

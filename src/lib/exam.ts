@@ -499,6 +499,7 @@ export interface SessionReviewItem {
 
 export interface SessionReview {
   quizTitle: string;
+  subjectName: string;
   studentName: string;
   status: string;
   totalScore: number;
@@ -515,7 +516,7 @@ export async function getSessionReview(
   const exam = await prisma.examSession.findUnique({
     where: { id: sessionId },
     include: {
-      quiz: { select: { title: true } },
+      quiz: { select: { title: true, subject: { select: { name: true } } } },
       student: { select: { firstName: true, lastName: true } },
     },
   });
@@ -680,6 +681,7 @@ export async function getSessionReview(
 
   return {
     quizTitle: exam.quiz.title,
+    subjectName: exam.quiz.subject.name,
     studentName: exam.student
       ? `${exam.student.firstName} ${exam.student.lastName}`
       : "",
