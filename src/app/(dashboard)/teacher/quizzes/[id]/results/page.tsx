@@ -1,5 +1,6 @@
 // src/app/(dashboard)/teacher/quizzes/[id]/results/page.tsx
 // تفاصيل نتائج اختبار: جلسات الطلاب ودرجاتهم.
+import { agoArabic } from "@/lib/relativeTime";
 import EndSessionButton from "@/components/teacher/EndSessionButton";
 import { isStaleSession } from "@/lib/staleSession";
 import { parseSettings } from "@/lib/exam";
@@ -68,9 +69,13 @@ export default async function QuizResultsPage({
         by: ["sessionId"],
         where: { sessionId: { in: openIds } },
         _max: { answeredAt: true },
+        _count: { _all: true },
       })
     : [];
   const lastActivity = new Map(lastAnswers.map((a) => [a.sessionId, a._max.answeredAt]));
+  const answeredCount = new Map(lastAnswers.map((a) => [a.sessionId, a._count._all]));
+  const totalQuestions = await prisma.quizNode.count({ where: { quizId: quiz.id, nodeType: "QUESTION" } });
+  const nowMs = Date.now();
   const quizLimit = parseSettings(quiz.settings).timeLimitSec;
   const staleIds = new Set(
     sessions
@@ -199,6 +204,21 @@ export default async function QuizResultsPage({
                   </td>
                   <td className="p-2">
                     {STATUS[s.status] ?? s.status}
+                    {s.status === "IN_PROGRESS" && (
+                      <span className="mt-0.5 block text-xs leading-relaxed text-ink/55">
+                        بدأ {agoArabic(nowMs - s.startedAt.getTime())}
+                        {" · "}
+                        {lastActivity.get(s.id)
+                          ? `آخر إجابة ${agoArabic(nowMs - lastActivity.get(s.id)!.getTime())}`
+                          : "لم يُجب عن شيء بعد"}
+                        {totalQuestions > 0 && (answeredCount.get(s.id) ?? 0) > 0 && (
+                          <> · أجاب {answeredCount.get(s.id)} من {totalQuestions}</>
+                        )}
+                        {staleIds.has(s.id) && (
+                          <span className="mr-1 font-medium text-red-800"> — يبدو منقطعاً</span>
+                        )}
+                      </span>
+                    )}
                     {pendingBySession.get(s.id) ? (
                       <span className="mr-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs text-gold">
                         بانتظار المراجعة
