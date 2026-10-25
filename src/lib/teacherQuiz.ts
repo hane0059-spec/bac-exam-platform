@@ -19,6 +19,8 @@ const settingsSchema = z.object({
   maxAttempts: z.number().int().min(1).max(10),
   revealAnswers: z.enum(["immediate", "end"]),
   shuffle: z.boolean().default(false),
+  // مراجعة الإجابات وتعديلها قبل التسليم النهائي (يُلغي التصحيح الفوري).
+  reviewBeforeSubmit: z.boolean().default(false),
   selfRegister: z.boolean().default(false),
 });
 

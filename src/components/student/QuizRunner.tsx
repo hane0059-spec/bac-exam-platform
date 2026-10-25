@@ -44,6 +44,13 @@ interface Question {
   mathInput?: boolean; // إجابة قصيرة رياضية → لوحة معادلات
   mathLayout?: "math" | "physics" | "chemistry";
   customKeyboard?: { latex: string; label: string }[];
+  // وضع المراجعة: إجابة الطالب السابقة عن هذا السؤال (لإعادة ملء الحقول).
+  previous?: { optionIds: string[]; text: string | null } | null;
+}
+interface ReviewItem {
+  nodeId: string;
+  index: number;
+  answered: boolean;
 }
 interface Reveal {
   needsReview: boolean;
@@ -97,6 +104,7 @@ type Phase =
   | "question"
   | "feedback"
   | "finished"
+  | "review"
   | "error";
 
 function mmss(sec: number): string {
@@ -144,19 +152,58 @@ export default function QuizRunner({
   const [blanks, setBlanks] = useState<string[]>([]);
   const [matches, setMatches] = useState<string[]>([]);
   const submitting = useRef(false);
+  // وضع المراجعة قبل التسليم النهائي (يفعّله المدرّس لكل اختبار).
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[] | null>(null);
+  // نافذة تأكيد: «last» = إرسال آخر سؤال ينهي الاختبار، «final» = التسليم النهائي.
+  const [confirm, setConfirm] = useState<null | "last" | "final">(null);
+  const [finishing, setFinishing] = useState(false);
 
-  // سؤال الترتيب: ابدأ بالترتيب المعروض (المخلوط) ثم يرتّبه الطالب.
+  // تهيئة حقول السؤال: فارغة، أو بإجابة الطالب السابقة (وضع المراجعة).
   useEffect(() => {
-    if (question?.type === "ORDER") setOrdered(question.options);
-    // ملء الفراغات: خانة فارغة لكل فراغ في نصّ القالب.
-    if (question?.type === "FILL_BLANK")
-      setBlanks(Array(countBlanks(question.content)).fill(""));
-    // توسيم الرسم: خانة لكل فراغ مرقّم (عددها من الخادم).
-    if (question?.type === "DIAGRAM_LABEL")
-      setBlanks(Array(question.blankCount ?? 0).fill(""));
-    // المطابقة: اختيار فارغ لكل عنصر أيسر.
-    if (question?.type === "MATCHING")
-      setMatches(Array(question.matchLefts?.length ?? 0).fill(""));
+    if (!question) return;
+    const prev = question.previous ?? null;
+    const parseArr = (t: string | null | undefined): string[] => {
+      try {
+        const a = JSON.parse(t ?? "[]");
+        return Array.isArray(a) ? a.map((x) => (typeof x === "string" ? x : "")) : [];
+      } catch {
+        return [];
+      }
+    };
+    // سؤال الترتيب: ابدأ بالترتيب المعروض (المخلوط) ثم يرتّبه الطالب.
+    if (question.type === "ORDER") {
+      const byId = new Map(question.options.map((o) => [o.id, o]));
+      const restored = (prev?.text ? prev.text.split(",") : [])
+        .map((id) => byId.get(id))
+        .filter((o): o is SanitizedOption => Boolean(o));
+      setOrdered(restored.length === question.options.length ? restored : question.options);
+    }
+    // ملء الفراغات: خانة لكل فراغ في نصّ القالب. توسيم الرسم: خانة لكل فراغ مرقّم.
+    if (question.type === "FILL_BLANK" || question.type === "DIAGRAM_LABEL") {
+      const n =
+        question.type === "FILL_BLANK"
+          ? countBlanks(question.content)
+          : question.blankCount ?? 0;
+      const arr = parseArr(prev?.text);
+      setBlanks(Array.from({ length: n }, (_, i) => arr[i] ?? ""));
+    }
+    // المطابقة: اختيار لكل عنصر أيسر.
+    if (question.type === "MATCHING") {
+      const n = question.matchLefts?.length ?? 0;
+      const arr = parseArr(prev?.text);
+      setMatches(Array.from({ length: n }, (_, i) => arr[i] ?? ""));
+    }
+    if (prev) {
+      if (question.type === "MULTIPLE_CHOICE" || question.type === "TRUE_FALSE")
+        setSelected(prev.optionIds[0] ?? "");
+      else if (
+        question.type === "SHORT_ANSWER" ||
+        question.type === "ESSAY" ||
+        question.type === "CALCULATION"
+      )
+        setText(prev.text ?? "");
+    }
   }, [question]);
 
   function moveOrdered(idx: number, dir: -1 | 1) {
@@ -202,6 +249,7 @@ export default function QuizRunner({
       return;
     }
     setSessionId(data.sessionId);
+    setReviewMode(Boolean(data.reviewMode));
     if (data.finished || !data.question) {
       await loadResult(data.sessionId);
       return;
@@ -214,7 +262,75 @@ export default function QuizRunner({
     setPhase("question");
   }, [quizId, loadResult]);
 
-  const submit = useCallback(async () => {
+  // وضع المراجعة: قائمة الأسئلة وحالة كلٍّ، والانتقال لسؤال، والتسليم النهائي.
+  const openReview = useCallback(async () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    const res = await fetch(`/api/student/sessions/${sessionId}/review`);
+    const data = await res.json().catch(() => ({}));
+    submitting.current = false;
+    if (!res.ok) {
+      setError(data.error ?? "تعذّر تحميل قائمة الأسئلة.");
+      setPhase("error");
+      return;
+    }
+    if (data.finished) {
+      await loadResult(sessionId);
+      return;
+    }
+    setReviewItems(data.items as ReviewItem[]);
+    if (typeof data.timeRemainingSec === "number") setRemaining(data.timeRemainingSec);
+    setConfirm(null);
+    setPhase("review");
+  }, [sessionId, loadResult]);
+
+  const gotoNode = useCallback(
+    async (nodeId: string) => {
+      if (submitting.current) return;
+      submitting.current = true;
+      const res = await fetch(`/api/student/sessions/${sessionId}/goto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nodeId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      submitting.current = false;
+      if (!res.ok) {
+        setError(data.error ?? "تعذّر فتح السؤال.");
+        setPhase("error");
+        return;
+      }
+      if (data.finished) {
+        await loadResult(sessionId);
+        return;
+      }
+      setSelected("");
+      setText("");
+      setSkipNote("");
+      setQuestion(data.question as Question);
+      setPhase("question");
+    },
+    [sessionId, loadResult]
+  );
+
+  const finalSubmit = useCallback(async () => {
+    if (submitting.current) return;
+    submitting.current = true;
+    setFinishing(true);
+    const res = await fetch(`/api/student/sessions/${sessionId}/finish`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    submitting.current = false;
+    setFinishing(false);
+    setConfirm(null);
+    if (!res.ok) {
+      setError(data.error ?? "تعذّر التسليم.");
+      setPhase("error");
+      return;
+    }
+    await loadResult(sessionId);
+  }, [sessionId, loadResult]);
+
+  const submit = useCallback(async (opts?: { thenReview?: boolean }) => {
     if (submitting.current || !question) return;
     submitting.current = true;
     setSkipNote("");
@@ -251,6 +367,20 @@ export default function QuizRunner({
       await loadResult(sessionId);
       return;
     }
+    // وضع المراجعة: لا إنهاء تلقائي؛ بعد آخر سؤال تُفتح قائمة المراجعة.
+    if (data.review) {
+      setConfirm(null);
+      if (opts?.thenReview || data.allAnswered) {
+        await openReview();
+        return;
+      }
+      setSelected("");
+      setText("");
+      setSkipNote("");
+      setQuestion(data.next as Question);
+      setPhase("question");
+      return;
+    }
     // وضع «الكشف في النهاية»: لا تصحيح فوري — تقدّم مباشرةً.
     if (!data.reveal) {
       if (data.finished) {
@@ -268,7 +398,7 @@ export default function QuizRunner({
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
     setPhase("feedback");
-  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult]);
+  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult, openReview]);
 
   const goNext = useCallback(() => {
     if (pendingFinish) {
@@ -316,14 +446,23 @@ export default function QuizRunner({
 
   // المؤقّت العرضي — يتناقص كل ثانية أثناء عرض السؤال.
   useEffect(() => {
-    if (phase !== "question" || remaining == null) return;
+    if ((phase !== "question" && phase !== "review") || remaining == null) return;
     if (remaining <= 0) {
-      void submit();
+      void (phase === "review" ? finalSubmit() : submit());
       return;
     }
     const t = setTimeout(() => setRemaining((r) => (r == null ? r : r - 1)), 1000);
     return () => clearTimeout(t);
-  }, [phase, remaining, submit]);
+  }, [phase, remaining, submit, finalSubmit]);
+
+  // زرّ «إرسال الإجابة»: آخر سؤال في اختبار بلا مراجعة ينهي الاختبار فوراً، فنطلب تأكيداً.
+  function requestSubmit() {
+    if (!reviewMode && question && question.index === question.total) {
+      setConfirm("last");
+      return;
+    }
+    void submit();
+  }
 
   // ── العرض ──
   if (phase === "intro") {
@@ -367,6 +506,89 @@ export default function QuizRunner({
         hint={hint}
         onReload={() => sessionId && void loadResult(sessionId)}
       />
+    );
+  }
+
+  if (phase === "review" && reviewItems) {
+    const unanswered = reviewItems.filter((i) => !i.answered);
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between text-sm text-ink/60">
+          <span>مراجعة الإجابات</span>
+          {remaining != null && (
+            <span
+              className={`rounded-lg px-2 py-1 font-medium ${
+                remaining <= 30 ? "bg-red-100 text-red-700" : "bg-ink/5 text-ink/70"
+              }`}
+            >
+              ⏱ {mmss(remaining)}
+            </span>
+          )}
+        </div>
+        <div className="card p-4 sm:p-6">
+          <h3 className="font-display text-lg font-bold">راجع إجاباتك قبل التسليم</h3>
+          <p className="mt-1 text-sm text-ink/70">
+            أجبتَ عن {reviewItems.length - unanswered.length} من {reviewItems.length}. اضغط على رقم
+            سؤال لمراجعته أو تعديل إجابته، ثم اضغط «تسليم نهائي» حين تنتهي.
+          </p>
+          <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
+            {reviewItems.map((it) => (
+              <button
+                key={it.nodeId}
+                type="button"
+                onClick={() => void gotoNode(it.nodeId)}
+                className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
+                  it.answered
+                    ? "border-primary bg-primary-light text-primary-dark hover:bg-primary/20"
+                    : "border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                }`}
+                aria-label={`السؤال ${it.index} — ${it.answered ? "مُجاب" : "غير مُجاب"}`}
+              >
+                {it.index}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/60">
+            <span>
+              <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-primary-light ring-1 ring-primary" />
+              مُجاب
+            </span>
+            <span>
+              <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-amber-100 ring-1 ring-amber-400" />
+              غير مُجاب (يُحسب صفراً إن سلّمتَ هكذا)
+            </span>
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button onClick={() => setConfirm("final")} className="btn-primary w-full sm:w-auto">
+            تسليم نهائي
+          </button>
+          {unanswered.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void gotoNode(unanswered[0].nodeId)}
+              className="w-full rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5 sm:w-auto"
+            >
+              الانتقال لأول سؤال غير مُجاب ({unanswered.length})
+            </button>
+          )}
+        </div>
+        {confirm === "final" && (
+          <ConfirmDialog
+            title="التسليم النهائي؟"
+            body={
+              unanswered.length > 0
+                ? `لديك ${unanswered.length} ${unanswered.length === 1 ? "سؤال" : "أسئلة"} غير مُجاب (تُحسب صفراً). بعد التسليم لا يمكنك تعديل أي إجابة.`
+                : "بعد التسليم ينتهي الاختبار ولا يمكنك تعديل أي إجابة."
+            }
+            confirmLabel="نعم، سلّم الاختبار"
+            cancelLabel="العودة للمراجعة"
+            busy={finishing}
+            onConfirm={() => void finalSubmit()}
+            onCancel={() => setConfirm(null)}
+          />
+        )}
+      </div>
     );
   }
 
@@ -641,22 +863,33 @@ export default function QuizRunner({
             )}
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
-                onClick={submit}
+                onClick={requestSubmit}
                 disabled={!canSubmit}
                 className="btn-primary w-full sm:w-auto"
               >
-                إرسال الإجابة
+                {reviewMode ? "حفظ الإجابة" : "إرسال الإجابة"}
               </button>
               <button
-                onClick={skip}
+                onClick={() => void skip()}
                 type="button"
                 className="w-full rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5 sm:w-auto"
               >
                 تخطٍّ مؤقّت
               </button>
+              {reviewMode && (
+                <button
+                  onClick={() => void (canSubmit ? submit({ thenReview: true }) : openReview())}
+                  type="button"
+                  className="w-full rounded-xl border border-primary px-5 py-3 font-medium text-primary hover:bg-primary-light sm:w-auto"
+                >
+                  قائمة الأسئلة والمراجعة
+                </button>
+              )}
             </div>
             <p className="text-xs text-ink/50">
-              التخطّي ينقلك للسؤال التالي، وتعود للأسئلة المتخطّاة في آخر الاختبار.
+              {reviewMode
+                ? "يمكنك الرجوع لأي سؤال وتعديل إجابته قبل «التسليم النهائي» من قائمة الأسئلة."
+                : "التخطّي ينقلك للسؤال التالي، وتعود للأسئلة المتخطّاة في آخر الاختبار."}
             </p>
             <div className="pt-1 text-left">
               <ReportButton
@@ -666,6 +899,20 @@ export default function QuizRunner({
               />
             </div>
           </div>
+        )}
+
+        {confirm === "last" && (
+          <ConfirmDialog
+            title="هذا آخر سؤال"
+            body="بعد إرسال إجابتك ينتهي الاختبار فوراً ولا يمكنك تعديل أي إجابة."
+            confirmLabel="إرسال وإنهاء الاختبار"
+            cancelLabel="العودة للسؤال"
+            onConfirm={() => {
+              setConfirm(null);
+              void submit();
+            }}
+            onCancel={() => setConfirm(null)}
+          />
         )}
 
         {startedFeedback && reveal && (
@@ -681,6 +928,69 @@ export default function QuizRunner({
   }
 
   return null;
+}
+
+// نافذة تأكيد قبل إجراء لا رجعة فيه (إنهاء الاختبار/التسليم النهائي). الافتراضي المُركَّز هو العودة.
+function ConfirmDialog({
+  title,
+  body,
+  confirmLabel,
+  cancelLabel,
+  busy = false,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  body: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onCancel]);
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 p-4"
+      onClick={() => !busy && onCancel()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-display text-lg font-bold">{title}</h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink/70">{body}</p>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-800 transition hover:bg-red-50 disabled:opacity-60"
+          >
+            {busy ? "جارٍ التسليم…" : confirmLabel}
+          </button>
+          <button
+            type="button"
+            autoFocus
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
+          >
+            {cancelLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // زرّ «الإبلاغ عن خطأ» — حالته الخاصّة، يُعاد تركيبه لكل سؤال (key=nodeId).

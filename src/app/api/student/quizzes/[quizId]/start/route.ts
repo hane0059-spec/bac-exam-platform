@@ -13,6 +13,9 @@ import {
   isExpired,
   finalizeSession,
   attemptSeed,
+  orderedQuestionNodeIds,
+  loadPreviousAnswer,
+  nextUnansweredNodeId,
 } from "@/lib/exam";
 
 export const runtime = "nodejs";
@@ -74,17 +77,51 @@ export async function POST(
     const seed = settings.shuffle
       ? attemptSeed(studentId, quizId, existing.attemptNumber)
       : undefined;
-    const question = existing.currentNodeId
+    // وضع المراجعة: الفهرس موضع السؤال في الترتيب، ومعه إجابته السابقة. وإن عُطِّلت المراجعة
+    // أثناء جلسة جارية وكان السؤال الحالي مُجاباً ← انتقل لأوّل غير مُجاب (أو أنهِ).
+    let currentNodeId = existing.currentNodeId;
+    if (!settings.reviewBeforeSubmit && currentNodeId) {
+      const done = await prisma.studentAnswer.findFirst({
+        where: { sessionId: existing.id, nodeId: currentNodeId },
+        select: { id: true },
+      });
+      if (done) {
+        currentNodeId = await nextUnansweredNodeId(
+          quizId,
+          existing.id,
+          currentNodeId,
+          false,
+          seed
+        );
+        if (currentNodeId === null) {
+          await finalizeSession(existing.id, "COMPLETED");
+          return NextResponse.json({ sessionId: existing.id, finished: true });
+        }
+        await prisma.examSession.update({
+          where: { id: existing.id },
+          data: { currentNodeId },
+        });
+      }
+    }
+    const ids = settings.reviewBeforeSubmit
+      ? await orderedQuestionNodeIds(quizId, seed)
+      : [];
+    const loaded = currentNodeId
       ? await loadSanitizedQuestion(
-          existing.currentNodeId,
-          answered + 1,
+          currentNodeId,
+          settings.reviewBeforeSubmit ? ids.indexOf(currentNodeId) + 1 : answered + 1,
           total,
-          seed ? `${seed}:${existing.currentNodeId}` : undefined
+          seed ? `${seed}:${currentNodeId}` : undefined
         )
       : null;
+    const question =
+      loaded && settings.reviewBeforeSubmit && currentNodeId
+        ? { ...loaded, previous: await loadPreviousAnswer(existing.id, currentNodeId) }
+        : loaded;
     return NextResponse.json({
       sessionId: existing.id,
       resumed: true,
+      reviewMode: settings.reviewBeforeSubmit,
       finished: question === null,
       timeLimitSec: settings.timeLimitSec,
       timeRemainingSec: remainingSeconds(
@@ -152,6 +189,7 @@ export async function POST(
   );
   return NextResponse.json({
     sessionId: created.id,
+    reviewMode: settings.reviewBeforeSubmit,
     finished: false,
     timeLimitSec: settings.timeLimitSec,
     timeRemainingSec: remainingSeconds(created.startedAt, settings.timeLimitSec),

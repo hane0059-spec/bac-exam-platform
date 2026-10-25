@@ -183,6 +183,7 @@ export default async function EditQuizPage({
           maxAttempts: settings.maxAttempts,
           revealAnswers: settings.revealAnswers,
           shuffle: settings.shuffle,
+          reviewBeforeSubmit: settings.reviewBeforeSubmit,
           availableFrom: quiz.availableFrom
             ? quiz.availableFrom.toISOString()
             : null,

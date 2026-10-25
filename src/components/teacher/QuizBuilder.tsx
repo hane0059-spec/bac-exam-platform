@@ -47,6 +47,7 @@ export interface QuizBuilderInitial {
   maxAttempts: number;
   revealAnswers: "immediate" | "end";
   shuffle: boolean;
+  reviewBeforeSubmit: boolean;
   availableFrom: string | null;
   availableUntil: string | null;
   accessCode: string | null;
@@ -120,6 +121,7 @@ export default function QuizBuilder({
   const [maxAttempts, setMaxAttempts] = useState(initial.maxAttempts);
   const [reveal, setReveal] = useState(initial.revealAnswers);
   const [shuffle, setShuffle] = useState(initial.shuffle);
+  const [reviewMode, setReviewMode] = useState(initial.reviewBeforeSubmit);
   const [from, setFrom] = useState(isoToLocal(initial.availableFrom));
   const [until, setUntil] = useState(isoToLocal(initial.availableUntil));
   const [items, setItems] = useState<Item[]>(initialItems);
@@ -331,8 +333,9 @@ export default function QuizBuilder({
         settings: {
           timeLimitSec: noLimit ? null : Math.max(1, Math.round(minutes * 60)),
           maxAttempts,
-          revealAnswers: reveal,
+          revealAnswers: reviewMode ? "end" : reveal,
           shuffle,
+          reviewBeforeSubmit: reviewMode,
           selfRegister: canSelfRegister && codeJoin && selfRegister,
         },
         availableFrom: localToIso(from),
@@ -545,8 +548,8 @@ export default function QuizBuilder({
             <label className="mb-1 block text-sm font-medium">كشف التصحيح</label>
             <select
               className="field"
-              value={reveal}
-              disabled={!tune}
+              value={reviewMode ? "end" : reveal}
+              disabled={!tune || reviewMode}
               onChange={(e) =>
                 setReveal(e.target.value as "immediate" | "end")
               }
@@ -565,6 +568,22 @@ export default function QuizBuilder({
             className="accent-primary"
           />
           خلط ترتيب الأسئلة والخيارات لكل طالب (للنزاهة)
+        </label>
+        <label className="flex items-start gap-2 rounded-xl bg-gold/10 p-3 text-sm">
+          <input
+            type="checkbox"
+            checked={reviewMode}
+            disabled={!tune}
+            onChange={(e) => setReviewMode(e.target.checked)}
+            className="mt-0.5 accent-primary"
+          />
+          <span>
+            السماح للطالب بمراجعة إجاباته وتعديلها قبل التسليم النهائي
+            <span className="mt-0.5 block text-xs text-ink/60">
+              تظهر له قائمة الأسئلة (المُجاب وغير المُجاب) ويسلّم بزرّ «تسليم نهائي». يُلغي هذا
+              التصحيح الفوري بعد كل سؤال (يُكشف التصحيح في النهاية).
+            </span>
+          </span>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>

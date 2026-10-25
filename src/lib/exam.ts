@@ -43,6 +43,8 @@ export interface QuizSettings {
   maxAttempts: number;
   revealAnswers: "immediate" | "end";
   shuffle: boolean; // خلط ترتيب الأسئلة والخيارات لكل محاولة (نزاهة)
+  // مراجعة الإجابات وتعديلها قبل التسليم النهائي (يُلغي التصحيح الفوري).
+  reviewBeforeSubmit: boolean;
 }
 
 export function parseSettings(raw: unknown): QuizSettings {
@@ -56,8 +58,11 @@ export function parseSettings(raw: unknown): QuizSettings {
       typeof s.maxAttempts === "number" && s.maxAttempts > 0
         ? s.maxAttempts
         : 1,
-    revealAnswers: s.revealAnswers === "end" ? "end" : "immediate",
+    // وضع المراجعة يمنع الكشف الفوري (وإلا انكشف الصحيح قبل أن يعدّل الطالب إجابته).
+    revealAnswers:
+      s.revealAnswers === "end" || s.reviewBeforeSubmit === true ? "end" : "immediate",
     shuffle: s.shuffle === true,
+    reviewBeforeSubmit: s.reviewBeforeSubmit === true,
   };
 }
 
@@ -106,7 +111,7 @@ export function attemptSeed(
 }
 
 /** معرّفات عُقد الأسئلة بترتيب العرض، أو مخلوطةً ببذرة. */
-async function orderedQuestionNodeIds(
+export async function orderedQuestionNodeIds(
   quizId: string,
   seed?: string
 ): Promise<string[]> {
@@ -354,6 +359,19 @@ export async function loadSanitizedQuestion(
     index,
     total,
   };
+}
+
+/** إجابة الطالب السابقة عن سؤال (لإعادة ملء الحقول عند المراجعة) — إجابته هو فقط. */
+export async function loadPreviousAnswer(
+  sessionId: string,
+  nodeId: string
+): Promise<{ optionIds: string[]; text: string | null } | null> {
+  const a = await prisma.studentAnswer.findFirst({
+    where: { sessionId, nodeId },
+    select: { textAnswer: true, selectedOptions: { select: { id: true } } },
+  });
+  if (!a) return null;
+  return { optionIds: a.selectedOptions.map((o) => o.id), text: a.textAnswer };
 }
 
 /** عدد عُقد الأسئلة في اختبار. */

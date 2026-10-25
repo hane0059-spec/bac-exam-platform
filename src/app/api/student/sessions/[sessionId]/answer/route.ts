@@ -23,6 +23,7 @@ import {
   loadSanitizedQuestion,
   countQuestionNodes,
   attemptSeed,
+  orderedQuestionNodeIds,
 } from "@/lib/exam";
 
 export const runtime = "nodejs";
@@ -78,8 +79,10 @@ export async function POST(
     return NextResponse.json({ finished: true, expired: true });
   }
 
-  // يجب أن يُجاب السؤال الحالي فقط (لا تقديم/تكرار).
-  if (exam.currentNodeId !== nodeId) {
+  // يجب أن يُجاب السؤال الحالي فقط (لا تقديم/تكرار). وضع المراجعة: أيّ سؤال، ويمكن تعديل
+  // إجابة سابقة قبل التسليم النهائي (تُستبدَل وتُعاد حسبتها على الخادم).
+  const reviewMode = settings.reviewBeforeSubmit;
+  if (!reviewMode && exam.currentNodeId !== nodeId) {
     return NextResponse.json(
       { error: "هذا ليس السؤال الحالي" },
       { status: 409 }
@@ -89,7 +92,7 @@ export async function POST(
     where: { sessionId: exam.id, nodeId },
     select: { id: true },
   });
-  if (already) {
+  if (already && !reviewMode) {
     return NextResponse.json(
       { error: "أُجيب هذا السؤال سابقاً" },
       { status: 409 }
@@ -213,6 +216,10 @@ export async function POST(
   // عقدة السؤال التالية (أو النهاية).
   // كتابة الإجابة وتسجيل المسار في معاملة واحدة.
   await prisma.$transaction([
+    // تعديل إجابة سابقة (وضع المراجعة): تُحذف القديمة وتُنشأ الجديدة بدرجتها الجديدة.
+    ...(already
+      ? [prisma.studentAnswer.deleteMany({ where: { sessionId: exam.id, nodeId } })]
+      : []),
     prisma.studentAnswer.create({
       data: {
         sessionId: exam.id,
@@ -227,10 +234,14 @@ export async function POST(
           : undefined,
       },
     }),
-    prisma.examSession.update({
-      where: { id: exam.id },
-      data: { pathTaken: { push: nodeId } },
-    }),
+    ...(already
+      ? []
+      : [
+          prisma.examSession.update({
+            where: { id: exam.id },
+            data: { pathTaken: { push: nodeId } },
+          }),
+        ]),
   ]);
 
   // بذرة الخلط (إن كان مفعّلاً) — ثابتة لهذه المحاولة.
@@ -246,7 +257,27 @@ export async function POST(
     false,
     seed
   );
-  const finished = nextNode === null;
+  const finished = nextNode === null && !reviewMode;
+
+  // وضع المراجعة: لا إنهاء تلقائي — عند اكتمال الإجابات يفتح الطالب شاشة المراجعة
+  // ويسلّم يدوياً (`/finish`).
+  if (reviewMode) {
+    if (nextNode) {
+      await prisma.examSession.update({
+        where: { id: exam.id },
+        data: { currentNodeId: nextNode },
+      });
+      const ids = await orderedQuestionNodeIds(exam.quizId, seed);
+      const next = await loadSanitizedQuestion(
+        nextNode,
+        ids.indexOf(nextNode) + 1,
+        ids.length,
+        seed ? `${seed}:${nextNode}` : undefined
+      );
+      return NextResponse.json({ review: true, allAnswered: false, next });
+    }
+    return NextResponse.json({ review: true, allAnswered: true });
+  }
 
   if (finished) {
     await finalizeSession(exam.id, "COMPLETED");
