@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import { resolveResourceMime, validateResourceBytes } from "@/lib/resources";
+import { readUploadPayload } from "@/lib/chunkedUpload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,13 +31,17 @@ export async function POST(req: Request) {
   });
   if (!grade) return NextResponse.json({ error: "صفّ غير موجود" }, { status: 400 });
 
-  const file = form.get("file");
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "لا ملف مرفوع" }, { status: 400 });
+  // ملفّ كامل أو جزء من رفع مجزَّأ (الاستضافة ترفض الطلبات > ~4.5MB).
+  const payload = await readUploadPayload(form, ctx.session.sub);
+  if (payload.status === "error") {
+    return NextResponse.json({ error: payload.error }, { status: 400 });
   }
-  const buffer = Buffer.from(await file.arrayBuffer());
+  if (payload.status === "partial") {
+    return NextResponse.json({ ok: true, partial: true });
+  }
+  const { buffer } = payload;
   const check = validateResourceBytes(
-    resolveResourceMime(file.name, file.type),
+    resolveResourceMime(payload.name, payload.type),
     buffer.length,
     buffer.subarray(0, 16),
   );
@@ -45,7 +50,7 @@ export async function POST(req: Request) {
   const created = await prisma.enrichmentFile.create({
     data: {
       gradeLevelId,
-      title: file.name.slice(0, 200) || "ملف",
+      title: payload.name.slice(0, 200) || "ملف",
       mimeType: check.mime,
       sizeBytes: buffer.length,
       data: buffer,

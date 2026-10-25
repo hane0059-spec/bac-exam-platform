@@ -5,6 +5,17 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { kindOfMime, RESOURCE_ACCEPT, MAX_POST_BODY } from "@/lib/resources";
 
+// الاستضافة ترفض الطلب > ~4.5MB، فالملفّات الأكبر من 3MB تُرفع على أجزاء (انظر src/lib/chunkedUpload.ts).
+const CHUNK_BYTES = 3 * 1024 * 1024;
+const MAX_FILE_BYTES = 15 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+async function errorOf(res: Response, fallback: string): Promise<string> {
+  if (res.status === 413) return "الملف أكبر من حدّ الاستضافة — جرّب ملفاً أصغر.";
+  const d = await res.json().catch(() => null);
+  return d?.error ?? `${fallback} (${res.status})`;
+}
+
 interface FileRow {
   id: string;
   title: string;
@@ -47,6 +58,7 @@ export default function ResourcesManager({
   const [postTitle, setPostTitle] = useState("");
   const [postBody, setPostBody] = useState("");
   const [posting, setPosting] = useState(false);
+  const [progress, setProgress] = useState("");
 
   async function publishPost() {
     setError("");
@@ -69,19 +81,60 @@ export default function ResourcesManager({
 
   async function upload(file: File) {
     setError("");
-    setBusy(true);
-    const fd = new FormData();
-    fd.append("gradeLevelId", gradeId);
-    fd.append("file", file);
-    const res = await fetch(endpoints.upload, { method: "POST", body: fd });
-    setBusy(false);
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setError(d.error ?? "تعذّر الرفع.");
+    setProgress("");
+    if (file.size > MAX_FILE_BYTES) {
+      setError("حجم الملف يتجاوز 15 م.ب.");
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
-    if (inputRef.current) inputRef.current.value = "";
-    router.refresh();
+    if (file.type.startsWith("image/") && file.size > MAX_IMAGE_BYTES) {
+      setError("حجم الصورة يتجاوز 5 م.ب.");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+    setBusy(true);
+    try {
+      const total = Math.ceil(file.size / CHUNK_BYTES);
+      if (total <= 1) {
+        const fd = new FormData();
+        fd.append("gradeLevelId", gradeId);
+        fd.append("file", file);
+        const res = await fetch(endpoints.upload, { method: "POST", body: fd });
+        if (!res.ok) {
+          setError(await errorOf(res, "تعذّر الرفع"));
+          return;
+        }
+      } else {
+        const uploadId = crypto.randomUUID();
+        for (let i = 0; i < total; i++) {
+          setProgress(`جارٍ الرفع… ${i + 1} / ${total}`);
+          const fd = new FormData();
+          fd.append("gradeLevelId", gradeId);
+          fd.append("uploadId", uploadId);
+          fd.append("index", String(i));
+          fd.append("total", String(total));
+          fd.append("name", file.name);
+          fd.append("type", file.type);
+          fd.append(
+            "file",
+            file.slice(i * CHUNK_BYTES, (i + 1) * CHUNK_BYTES),
+            file.name,
+          );
+          const res = await fetch(endpoints.upload, { method: "POST", body: fd });
+          if (!res.ok) {
+            setError(await errorOf(res, "تعذّر الرفع"));
+            return;
+          }
+        }
+      }
+      if (inputRef.current) inputRef.current.value = "";
+      router.refresh();
+    } catch {
+      setError("انقطع الاتصال أثناء الرفع — أعد المحاولة.");
+    } finally {
+      setBusy(false);
+      setProgress("");
+    }
   }
 
   async function remove(id: string) {
@@ -161,7 +214,7 @@ export default function ResourcesManager({
             </span>
           </div>
         </div>
-        {busy && <p className="text-sm text-ink/50">جارٍ الرفع…</p>}
+        {busy && <p className="text-sm text-ink/50">{progress || "جارٍ الرفع…"}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
 
