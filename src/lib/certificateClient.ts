@@ -1,5 +1,8 @@
 // src/lib/certificateClient.ts
 // أدوات الشهادة التي تعمل في المتصفّح فقط (خطوط/تنزيل/قراءة الأسلوب المحفوظ على الجهاز).
+import { CERT_H, CERT_W } from "@/lib/certificateArt";
+import { jpegToPdf } from "@/lib/pdfImage";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import {
   DEFAULT_FLAG_COLORS,
   EMBLEMS,
@@ -20,8 +23,15 @@ function familyOf(cssVar: string, fallback: string): string {
   return f && !f.includes("var(") ? `${f}, ${fallback}` : fallback;
 }
 
-/** يحلّ عائلتَي الخطّ المضمّنتين (Reem Kufi / Amiri) ويحمّلهما قبل الرسم على canvas. */
-export async function loadCertFonts(): Promise<CertFonts> {
+let fontsPromise: Promise<CertFonts> | null = null;
+
+/** يحلّ عائلتَي الخطّ المضمّنتين (Reem Kufi / Amiri) ويحمّلهما قبل الرسم على canvas (مرّة واحدة). */
+export function loadCertFonts(): Promise<CertFonts> {
+  if (!fontsPromise) fontsPromise = resolveCertFonts();
+  return fontsPromise;
+}
+
+async function resolveCertFonts(): Promise<CertFonts> {
   const fonts: CertFonts = {
     title: familyOf("--font-reem", "'Reem Kufi', Tahoma, sans-serif"),
     body: familyOf("--font-amiri", "Amiri, 'Traditional Arabic', serif"),
@@ -100,4 +110,26 @@ export async function readSavedCertStyle(): Promise<SavedCertStyle> {
     // التخزين غير متاح — الأسلوب الافتراضي.
   }
   return style;
+}
+
+/** تنزيل الـcanvas صورة PNG. */
+export async function exportPng(canvas: HTMLCanvasElement, baseName: string): Promise<void> {
+  downloadBlob(await canvasBlob(canvas, "image/png"), `${baseName}.png`);
+}
+
+/** تنزيل الـcanvas ملفّ PDF (صفحة A4 أفقية). */
+export async function exportPdf(canvas: HTMLCanvasElement, baseName: string): Promise<void> {
+  const jpeg = new Uint8Array(await (await canvasBlob(canvas, "image/jpeg", 0.93)).arrayBuffer());
+  const pdf = jpegToPdf(jpeg, CERT_W, CERT_H);
+  downloadBlob(new Blob([pdf as BlobPart], { type: "application/pdf" }), `${baseName}.pdf`);
+}
+
+/** طباعة الـcanvas على A4 أفقي. */
+export function printCanvas(canvas: HTMLCanvasElement, baseName: string): void {
+  const src = canvas.toDataURL("image/jpeg", 0.93);
+  printHtmlInHiddenFrame(
+    `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${baseName}</title>
+<style>@page{size:A4 landscape;margin:0}html,body{margin:0;height:100%}img{display:block;width:100%;height:100%;object-fit:contain}
+body{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><img src="${src}" alt=""></body></html>`
+  );
 }

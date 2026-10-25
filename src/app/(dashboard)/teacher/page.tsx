@@ -133,6 +133,18 @@ export default async function TeacherDashboard() {
             بناء الاختبارات من بنك أسئلتك وضبط الدرجات والنشر.
           </p>
         </Link>
+        <Link
+          href="/teacher/general-certificate"
+          className="card-link p-4 sm:p-5"
+        >
+          <IconBadge icon="star" tone="gold" />
+          <h3 className="mb-2 font-display text-lg font-semibold">
+            شهادة عامّة
+          </h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            شهادة تقدير فارغة تعبّئها لأيّ اسم وسبب، بنماذج وزخارف إسلامية وعالمية.
+          </p>
+        </Link>
         {canEnrichment && (
           <Link
             href="/teacher/enrichment"

@@ -20,8 +20,23 @@ export type CertThemeId =
   | "classic"
   | "minimal"
   | "ruby"
-  | "flag";
-type FrameStyle = "diamonds" | "stars" | "pearls" | "lines" | "modern" | "flag";
+  | "flag"
+  | "geometric"
+  | "mihrab"
+  | "ottoman"
+  | "royal"
+  | "guilloche";
+type FrameStyle =
+  | "diamonds"
+  | "stars"
+  | "pearls"
+  | "lines"
+  | "modern"
+  | "flag"
+  | "khatim"
+  | "mihrab"
+  | "rosette"
+  | "guilloche";
 
 export interface CertTheme {
   id: CertThemeId;
@@ -42,6 +57,15 @@ export interface CertTheme {
   pearl?: string;
   /** ألوان الأشرطة الثلاثة لنموذج «ألوان العلم». */
   stripes?: [string, string, string];
+  /** لون شريط الإطار إن اختلف عن main (النماذج الداكنة). */
+  band?: string;
+  /** لون اسم المُكرَّم إن اختلف عن main. */
+  nameColor?: string;
+  /** شريط التقدير: لون التعبئة والنصّ إن اختلفا عن الافتراضي. */
+  ribbonFill?: string;
+  ribbonText?: string;
+  /** ارتفاع مركز الشعار إن لزم تنحيته (المحراب). */
+  logoY?: number;
 }
 
 /** ألوان افتراضية لنموذج العلم (يغيّرها المدرّس). */
@@ -155,6 +179,86 @@ export const CERT_THEMES: CertTheme[] = [
     pattern: false,
     stripes: DEFAULT_FLAG_COLORS,
   },
+  {
+    id: "geometric",
+    name: "الهندسي الإسلامي",
+    swatch: ["#0f5a4a", "#c9a227"],
+    main: "#0f5a4a",
+    mainDark: "#0a3d33",
+    gold: "#c9a227",
+    goldLight: "#f3dc84",
+    goldDark: "#8d6a0e",
+    bg1: "#fffaf0",
+    bg2: "#f1e4c1",
+    ink: "#34312a",
+    frame: "khatim",
+    pattern: true,
+  },
+  {
+    id: "mihrab",
+    name: "المحراب الأندلسي",
+    swatch: ["#1d3b73", "#d4af37"],
+    main: "#1d3b73",
+    mainDark: "#11264d",
+    gold: "#c9a227",
+    goldLight: "#f3dc84",
+    goldDark: "#8d6a0e",
+    bg1: "#fdfaf1",
+    bg2: "#e8edf6",
+    ink: "#2c3447",
+    frame: "mihrab",
+    pattern: true,
+    logoY: 172,
+  },
+  {
+    id: "ottoman",
+    name: "الوردة العثمانية",
+    swatch: ["#0b6170", "#c9a227"],
+    main: "#0b6170",
+    mainDark: "#073f49",
+    gold: "#c9a227",
+    goldLight: "#f3dc84",
+    goldDark: "#8d6a0e",
+    bg1: "#fffbef",
+    bg2: "#f4e9c9",
+    ink: "#2e3a3c",
+    frame: "rosette",
+    pattern: true,
+  },
+  {
+    id: "royal",
+    name: "الملكي الداكن",
+    swatch: ["#0c1530", "#d4af37"],
+    main: "#f3dc84",
+    mainDark: "#f3dc84",
+    gold: "#d4af37",
+    goldLight: "#f7e59a",
+    goldDark: "#9a7b1c",
+    bg1: "#1c2c52",
+    bg2: "#0b1430",
+    ink: "#ece6d2",
+    frame: "khatim",
+    pattern: true,
+    band: "#0b1430",
+    nameColor: "#f7e59a",
+    ribbonFill: "#d4af37",
+    ribbonText: "#0b1430",
+  },
+  {
+    id: "guilloche",
+    name: "الدولي الكلاسيكي",
+    swatch: ["#6e4a1e", "#c9a227"],
+    main: "#6e4a1e",
+    mainDark: "#47300f",
+    gold: "#c9a227",
+    goldLight: "#f1dc8a",
+    goldDark: "#7a5a0a",
+    bg1: "#fffdf6",
+    bg2: "#f5ebd0",
+    ink: "#3d3220",
+    frame: "guilloche",
+    pattern: false,
+  },
 ];
 
 export function themeById(id: string | null | undefined): CertTheme {
@@ -219,7 +323,7 @@ export const EMBLEMS: { id: EmblemId; name: string }[] = [
 
 type Ctx = CanvasRenderingContext2D;
 
-function starPath(ctx: Ctx, cx: number, cy: number, r: number, points: number, inner = 0.45) {
+export function starPath(ctx: Ctx, cx: number, cy: number, r: number, points: number, inner = 0.45) {
   ctx.beginPath();
   for (let i = 0; i < points * 2; i++) {
     const ang = -Math.PI / 2 + (i * Math.PI) / points;
@@ -232,7 +336,7 @@ function starPath(ctx: Ctx, cx: number, cy: number, r: number, points: number, i
   ctx.closePath();
 }
 
-function goldGradient(ctx: Ctx, t: CertTheme, x0: number, y0: number, x1: number, y1: number) {
+export function goldGradient(ctx: Ctx, t: CertTheme, x0: number, y0: number, x1: number, y1: number) {
   const g = ctx.createLinearGradient(x0, y0, x1, y1);
   g.addColorStop(0, t.goldDark);
   g.addColorStop(0.25, t.goldLight);
@@ -252,7 +356,7 @@ function diamond(ctx: Ctx, cx: number, cy: number, r: number) {
 }
 
 /** نصّ مركَّز بعرض أقصى (يصغّر الخطّ تلقائياً حتى يتّسع). */
-function text(
+export function text(
   ctx: Ctx,
   s: string,
   x: number,
@@ -260,11 +364,11 @@ function text(
   size: number,
   family: string,
   fill: string | CanvasGradient,
-  opts: { weight?: number; maxW?: number } = {}
+  opts: { weight?: number; maxW?: number; dir?: "rtl" | "ltr" } = {}
 ) {
   const weight = opts.weight ?? 400;
   let px = size;
-  ctx.direction = "rtl";
+  ctx.direction = opts.dir ?? "rtl";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.font = `${weight} ${px}px ${family}`;
@@ -278,7 +382,7 @@ function text(
   ctx.fillText(s, x, y);
 }
 
-function divider(ctx: Ctx, t: CertTheme, cx: number, y: number, half: number) {
+export function divider(ctx: Ctx, t: CertTheme, cx: number, y: number, half: number) {
   const g = goldGradient(ctx, t, cx - half, y, cx + half, y);
   ctx.strokeStyle = g;
   ctx.lineWidth = 3;
@@ -609,6 +713,246 @@ function drawFrame(ctx: Ctx, t: CertTheme, W: number, H: number) {
       }
       break;
     }
+    case "khatim": {
+      const band = t.band ?? t.main;
+      ctx.strokeStyle = band;
+      ctx.lineWidth = 46;
+      ctx.strokeRect(38, 38, W - 76, H - 76);
+      ctx.fillStyle = fillGold;
+      for (let x = 112; x < W - 80; x += 66) {
+        for (const y of [38, H - 38]) {
+          starPath(ctx, x, y, 18, 8, 0.765);
+          ctx.fill();
+        }
+      }
+      for (let y = 112; y < H - 80; y += 66) {
+        for (const x of [38, W - 38]) {
+          starPath(ctx, x, y, 18, 8, 0.765);
+          ctx.fill();
+        }
+      }
+      ctx.fillStyle = t.goldLight;
+      for (let x = 145; x < W - 80; x += 66) {
+        for (const y of [38, H - 38]) {
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      for (let y = 145; y < H - 80; y += 66) {
+        for (const x of [38, W - 38]) {
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.strokeStyle = fillGold;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(70, 70, W - 140, H - 140);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(86, 86, W - 172, H - 172);
+      for (const [x, y] of [
+        [74, 74],
+        [W - 74, 74],
+        [74, H - 74],
+        [W - 74, H - 74],
+      ]) {
+        starPath(ctx, x, y, 76, 8, 0.765);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        starPath(ctx, x, y, 60, 8, 0.765);
+        ctx.fillStyle = band;
+        ctx.fill();
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.PI / 8);
+        starPath(ctx, 0, 0, 42, 8, 0.765);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.fillStyle = t.bg1;
+        ctx.fill();
+      }
+      break;
+    }
+    case "mihrab": {
+      const band = t.band ?? t.main;
+      ctx.strokeStyle = band;
+      ctx.lineWidth = 24;
+      ctx.strokeRect(40, 40, W - 80, H - 80);
+      ctx.strokeStyle = fillGold;
+      ctx.lineWidth = 5;
+      ctx.strokeRect(64, 64, W - 128, H - 128);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(78, 78, W - 156, H - 156);
+      // صفّ المحاريب (أقواس مدبّبة) أعلى الشهادة
+      const aw = 84;
+      const n = Math.floor((W - 420) / aw);
+      const x0 = W / 2 - ((n - 1) * aw) / 2;
+      for (let k = 0; k < n; k++) {
+        const x = x0 + k * aw;
+        ctx.beginPath();
+        ctx.moveTo(x - aw / 2 + 8, 124);
+        ctx.bezierCurveTo(x - aw / 2 + 8, 100, x - 12, 98, x, 84);
+        ctx.bezierCurveTo(x + 12, 98, x + aw / 2 - 8, 100, x + aw / 2 - 8, 124);
+        ctx.closePath();
+        ctx.fillStyle = band;
+        ctx.fill();
+        ctx.strokeStyle = fillGold;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        diamond(ctx, x, 112, 5);
+        ctx.fillStyle = t.goldLight;
+        ctx.fill();
+      }
+      for (const [x, y] of [
+        [78, 78],
+        [W - 78, 78],
+        [78, H - 78],
+        [W - 78, H - 78],
+      ]) {
+        starPath(ctx, x, y, 44, 8, 0.765);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        starPath(ctx, x, y, 30, 8, 0.765);
+        ctx.fillStyle = band;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = t.goldLight;
+        ctx.fill();
+      }
+      // معيّنات على الجانبين والأسفل
+      ctx.fillStyle = fillGold;
+      for (let y = 190; y < H - 150; y += 74) {
+        diamond(ctx, 52, y, 6);
+        ctx.fill();
+        diamond(ctx, W - 52, y, 6);
+        ctx.fill();
+      }
+      for (let x = 190; x < W - 150; x += 74) {
+        diamond(ctx, x, H - 52, 6);
+        ctx.fill();
+      }
+      break;
+    }
+    case "rosette": {
+      const band = t.band ?? t.main;
+      ctx.strokeStyle = band;
+      ctx.lineWidth = 44;
+      ctx.strokeRect(38, 38, W - 76, H - 76);
+      const rosette = (x: number, y: number) => {
+        starPath(ctx, x, y, 21, 12, 0.62);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = band;
+        ctx.fill();
+      };
+      for (let x = 118; x < W - 90; x += 80) {
+        rosette(x, 38);
+        rosette(x, H - 38);
+      }
+      for (let y = 118; y < H - 90; y += 80) {
+        rosette(38, y);
+        rosette(W - 38, y);
+      }
+      ctx.fillStyle = t.goldLight;
+      for (let x = 158; x < W - 90; x += 80) {
+        diamond(ctx, x, 38, 6);
+        ctx.fill();
+        diamond(ctx, x, H - 38, 6);
+        ctx.fill();
+      }
+      for (let y = 158; y < H - 90; y += 80) {
+        diamond(ctx, 38, y, 6);
+        ctx.fill();
+        diamond(ctx, W - 38, y, 6);
+        ctx.fill();
+      }
+      ctx.strokeStyle = fillGold;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(72, 72, W - 144, H - 144);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(88, 88, W - 176, H - 176);
+      for (const [x, y] of [
+        [76, 76],
+        [W - 76, 76],
+        [76, H - 76],
+        [W - 76, H - 76],
+      ]) {
+        starPath(ctx, x, y, 80, 16, 0.78);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, 56, 0, Math.PI * 2);
+        ctx.fillStyle = band;
+        ctx.fill();
+        starPath(ctx, x, y, 46, 12, 0.6);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fillStyle = t.bg1;
+        ctx.fill();
+      }
+      break;
+    }
+    case "guilloche": {
+      ctx.strokeStyle = fillGold;
+      ctx.lineWidth = 5;
+      ctx.strokeRect(36, 36, W - 72, H - 72);
+      ctx.strokeRect(112, 112, W - 224, H - 224);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(46, 46, W - 92, H - 92);
+      ctx.strokeRect(102, 102, W - 204, H - 204);
+      // موجتان متقاطعتان (غيّوشي) على كل ضلع
+      const wave = (horizontal: boolean, fixed: number, phase: number, color: string | CanvasGradient, w: number) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        const len = horizontal ? W : H;
+        for (let a = 118; a <= len - 118; a += 4) {
+          const off = 22 * Math.sin((a / 62) * Math.PI * 2 + phase);
+          const x = horizontal ? a : fixed + off;
+          const y = horizontal ? fixed + off : a;
+          if (a === 118) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      };
+      for (const fixed of [74, H - 74]) {
+        wave(true, fixed, 0, t.main, 5);
+        wave(true, fixed, Math.PI, fillGold, 4);
+      }
+      for (const fixed of [74, W - 74]) {
+        wave(false, fixed, 0, t.main, 5);
+        wave(false, fixed, Math.PI, fillGold, 4);
+      }
+      for (const [x, y] of [
+        [74, 74],
+        [W - 74, 74],
+        [74, H - 74],
+        [W - 74, H - 74],
+      ]) {
+        ctx.fillStyle = t.bg1;
+        ctx.fillRect(x - 40, y - 40, 80, 80);
+        ctx.strokeStyle = fillGold;
+        ctx.lineWidth = 5;
+        ctx.strokeRect(x - 40, y - 40, 80, 80);
+        starPath(ctx, x, y, 32, 12, 0.6);
+        ctx.fillStyle = fillGold;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, 11, 0, Math.PI * 2);
+        ctx.fillStyle = t.main;
+        ctx.fill();
+      }
+      break;
+    }
     case "modern": {
       frameBand(ctx, t, W, H, 14);
       ctx.strokeStyle = t.gold;
@@ -635,6 +979,66 @@ function drawFrame(ctx: Ctx, t: CertTheme, W: number, H: number) {
   }
 }
 
+/** الخلفية + النقش + الإطار (مشتركة بين شهادة الإنجاز والشهادة العامّة). */
+export function paintBackdrop(ctx: Ctx, t: CertTheme): void {
+  const W = CERT_W;
+  const H = CERT_H;
+  const cx = W / 2;
+  const bg = ctx.createRadialGradient(cx, H / 2, 100, cx, H / 2, W * 0.7);
+  bg.addColorStop(0, t.bg1);
+  bg.addColorStop(1, t.bg2);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  if (t.pattern) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(96, 96, W - 192, H - 192);
+    ctx.clip();
+    const step = 96;
+    for (let row = 0, y = 96; y < H; row++, y += step / 2) {
+      for (let x = 96 + (row % 2 ? step / 2 : 0); x < W; x += step) {
+        starPath(ctx, x, y, 20, 8, 0.5);
+        ctx.fillStyle = "rgba(160,130,40,0.07)";
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  drawFrame(ctx, t, W, H);
+}
+
+/** يرسم الشعار (صورة مرفوعة أو جاهز) أعلى الشهادة ويُعيد هل رُسم شيء. */
+export function paintLogo(
+  ctx: Ctx,
+  t: CertTheme,
+  opts: { emblem?: EmblemId | null; logoImage?: CanvasImageSource | null }
+): boolean {
+  const cx = CERT_W / 2;
+  const y = t.logoY ?? 140;
+  const radius = t.logoY ? 46 : 54;
+  if (opts.logoImage) {
+    const img = opts.logoImage as CanvasImageSource & { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+    const iw = img.naturalWidth ?? img.width ?? 1;
+    const ih = img.naturalHeight ?? img.height ?? 1;
+    const box = { w: 260, h: radius * 2 + 4 };
+    const k = Math.min(box.w / iw, box.h / ih);
+    ctx.drawImage(img, cx - (iw * k) / 2, y - (ih * k) / 2, iw * k, ih * k);
+    return true;
+  }
+  if (opts.emblem) {
+    drawEmblem(ctx, t, opts.emblem, cx, y, radius);
+    return true;
+  }
+  return false;
+}
+
+/** ارتفاع سطر اسم الجهة/المنصّة تحت الشعار. */
+export function brandBaseline(t: CertTheme, hasLogo: boolean): number {
+  if (!hasLogo) return 232;
+  return t.logoY ? t.logoY + 90 : 252;
+}
+
 export interface CertRenderOptions {
   themeId?: CertThemeId;
   /** ألوان نموذج «ألوان العلم». */
@@ -657,48 +1061,11 @@ export function drawCertificate(
   const L = certificateLines(d);
   const cx = W / 2;
 
-  // ── الخلفية ──
-  const bg = ctx.createRadialGradient(cx, H / 2, 100, cx, H / 2, W * 0.7);
-  bg.addColorStop(0, t.bg1);
-  bg.addColorStop(1, t.bg2);
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  if (t.pattern) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(96, 96, W - 192, H - 192);
-    ctx.clip();
-    const step = 96;
-    for (let row = 0, y = 96; y < H; row++, y += step / 2) {
-      for (let x = 96 + (row % 2 ? step / 2 : 0); x < W; x += step) {
-        starPath(ctx, x, y, 20, 8, 0.5);
-        ctx.fillStyle = "rgba(160,130,40,0.07)";
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  }
-
-  drawFrame(ctx, t, W, H);
-
-  // ── الشعار (اختياري) ──
-  const hasLogo = Boolean(opts.logoImage || opts.emblem);
-  if (opts.logoImage) {
-    const img = opts.logoImage as CanvasImageSource & { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
-    const iw = img.naturalWidth ?? img.width ?? 1;
-    const ih = img.naturalHeight ?? img.height ?? 1;
-    const box = { w: 260, h: 112 };
-    const k = Math.min(box.w / iw, box.h / ih);
-    const dw = iw * k;
-    const dh = ih * k;
-    ctx.drawImage(img, cx - dw / 2, 140 - dh / 2, dw, dh);
-  } else if (opts.emblem) {
-    drawEmblem(ctx, t, opts.emblem, cx, 140, 54);
-  }
+  paintBackdrop(ctx, t);
+  const hasLogo = paintLogo(ctx, t, opts);
 
   // ── المنصّة والعنوان ──
-  text(ctx, d.brandName, cx, hasLogo ? 252 : 232, 46, fonts.title, t.main, { weight: 700, maxW: 900 });
+  text(ctx, d.brandName, cx, brandBaseline(t, hasLogo), 46, fonts.title, t.nameColor ?? t.main, { weight: 700, maxW: 900 });
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.18)";
   ctx.shadowBlur = 10;
@@ -711,7 +1078,7 @@ export function drawCertificate(
 
   // ── نصّ المنح ──
   text(ctx, L.intro, cx, 535, 48, fonts.body, t.ink, { maxW: 1500 });
-  text(ctx, d.studentName, cx, 665, 124, fonts.body, t.main, { weight: 700, maxW: 1500 });
+  text(ctx, d.studentName, cx, 665, 124, fonts.body, t.nameColor ?? t.main, { weight: 700, maxW: 1500 });
   ctx.strokeStyle = goldGradient(ctx, t, cx - 520, 0, cx + 520, 0);
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -743,14 +1110,13 @@ export function drawCertificate(
   text(ctx, pctStr, cx, my + (info ? 10 : 24), info ? 60 : 74, fonts.title, t.mainDark, { weight: 700, maxW: 140 });
   if (info) {
     // حرف التقدير الدولي (A+ … D) تحت النسبة
-    ctx.direction = "ltr";
-    text(ctx, info.letter, cx, my + 54, 34, fonts.title, t.main, { weight: 700 });
+    text(ctx, info.letter, cx, my + 54, 34, fonts.title, t.main, { weight: 700, dir: "ltr" });
   }
 
   // شريط التقدير
   const bw = 820;
   const by = 1096;
-  ctx.fillStyle = t.main;
+  ctx.fillStyle = t.ribbonFill ?? t.main;
   ctx.beginPath();
   ctx.moveTo(cx - bw / 2 - 40, by);
   ctx.lineTo(cx - bw / 2, by - 4);
@@ -763,12 +1129,14 @@ export function drawCertificate(
   ctx.strokeStyle = goldGradient(ctx, t, cx - bw / 2, 0, cx + bw / 2, 0);
   ctx.lineWidth = 4;
   ctx.stroke();
-  text(ctx, `بتقدير: ${d.honor}`, cx, by + 46, 46, fonts.title, t.goldLight, { weight: 700, maxW: bw - 80 });
+  text(ctx, `بتقدير: ${d.honor}`, cx, by + 46, 46, fonts.title, t.ribbonText ?? t.goldLight, { weight: 700, maxW: bw - 80 });
 
-  text(ctx, L.closing, cx, 1222, 42, fonts.body, t.ink, { maxW: 1400 });
+  // الإطار «غيّوشي» أعرض فيُرفَع الختام والتوقيع قليلاً ليبقيا داخل المساحة الحرّة.
+  const tight = t.frame === "guilloche";
+  text(ctx, L.closing, cx, tight ? 1198 : 1222, 42, fonts.body, t.ink, { maxW: 1400 });
 
   // ── التوقيع والتاريخ ──
-  const ly = 1290;
+  const ly = tight ? 1245 : 1290;
   for (const [x0, x1] of [
     [250, 650],
     [W - 650, W - 250],

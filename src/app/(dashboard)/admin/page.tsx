@@ -211,6 +211,16 @@ export default async function AdminDashboard() {
             تحرير التخزين بحذف مرفقات المستخدمين المعطّلين مع إبقاء درجاتهم.
           </p>
         </Link>
+        <Link
+          href="/admin/general-certificate"
+          className="card-link p-5"
+        >
+          <IconBadge icon="star" tone="gold" />
+          <h3 className="mb-2 font-display text-lg font-semibold">شهادة عامّة</h3>
+          <p className="text-sm leading-relaxed text-ink/60">
+            شهادة تقدير فارغة تعبّئها لأيّ اسم وجهة وسبب، بنماذج وزخارف إسلامية وعالمية.
+          </p>
+        </Link>
         {ctx.isSuper && (
           <Link
             href="/admin/resources"
