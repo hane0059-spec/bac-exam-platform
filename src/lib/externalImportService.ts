@@ -1,7 +1,7 @@
 // src/lib/externalImportService.ts
 // تنفيذ استيراد الطلاب الخارجيين وإسنادهم (مشترك بين المدير والمدرّس).
 import { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { nextStudentCode } from "@/lib/teacherStudents";
 import {
@@ -107,7 +107,7 @@ export async function runExternalImport(opts: {
     }
 
     const password = r.password || randomPassword();
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await hashPasswordFor("STUDENT", password);
     let done = false;
     for (let attempt = 0; attempt < 5 && !done; attempt++) {
       const studentCode = await nextStudentCode();

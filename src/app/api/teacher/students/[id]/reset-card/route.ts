@@ -2,7 +2,7 @@
 // POST: كلمة سرّ عشوائية جديدة لطالب واحد وإعادة بيانات بطاقته للطباعة. (المدرّس المُنشئ فقط + إذن إدارة الطلاب.)
 // بخلاف إعادة تعيين المجموعة لا يستثني من دخل: إجراء مقصود على طالب بعينه.
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession, teacherCanManageStudents } from "@/lib/teacher";
 import { ownedStudent } from "@/lib/teacherStudents";
@@ -43,7 +43,7 @@ export async function POST(
   ]);
 
   const password = randomPassword();
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await hashPasswordFor("STUDENT", password);
   await prisma.user.update({
     where: { id: student.id },
     data: { passwordHash, mustChangePassword: true },

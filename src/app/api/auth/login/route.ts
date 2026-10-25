@@ -1,7 +1,8 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
+import { verifyPasswordFor } from "@/lib/passwords";
+import { codeCandidates } from "@/lib/studentCredentials";
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
@@ -36,14 +37,16 @@ async function resolveUser(
   identifier: string
 ): Promise<{ user?: User; ambiguous?: boolean }> {
   // البحث الثلاثة متوازية لتقليل زمن الاستجابة.
+  // الرمز مرن الكتابة: s1002 / S 1002 / ١٠٠٢ ← S-1002 (انظر studentCredentials).
+  const codes = codeCandidates(identifier);
   const [byEmail, profile, tProfile] = await Promise.all([
     prisma.user.findFirst({ where: { email: identifier.toLowerCase() } }),
-    prisma.studentProfile.findUnique({
-      where: { studentCode: identifier },
+    prisma.studentProfile.findFirst({
+      where: { studentCode: { in: codes } },
       include: { user: true },
     }),
-    prisma.teacherProfile.findUnique({
-      where: { employeeCode: identifier },
+    prisma.teacherProfile.findFirst({
+      where: { employeeCode: { in: codes } },
       include: { user: true },
     }),
   ]);
@@ -120,8 +123,14 @@ export async function POST(req: Request) {
 
   if (!user || !user.isActive) return invalid;
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return invalid;
+  // الطالب: كلمة السرّ غير حسّاسة لحالة الأحرف، وتُرحَّل الحسابات القديمة عند أوّل دخول ناجح.
+  const check = await verifyPasswordFor(user.role, password, user.passwordHash);
+  if (!check.ok) return invalid;
+  if (check.rehash) {
+    await prisma.user
+      .update({ where: { id: user.id }, data: { passwordHash: check.rehash } })
+      .catch(() => {});
+  }
 
   // وضع الصيانة: يُمنع الدخول للجميع عدا المدير العام (ليعيد التشغيل).
   // يُفحَص بعد كلمة السر فقط كي لا يكشف وجود الحساب لغير المُصادَق.

@@ -4,7 +4,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import {
   getTeacherSession,
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
   const updates: Prisma.PrismaPromise<unknown>[] = [];
   for (let i = 0; i < targets.length; i += 10) {
     const chunk = targets.slice(i, i + 10).map((s) => ({ s, password: randomPassword() }));
-    const hashes = await Promise.all(chunk.map((c) => bcrypt.hash(c.password, 10)));
+    const hashes = await Promise.all(chunk.map((c) => hashPasswordFor("STUDENT", c.password)));
     chunk.forEach((c, j) => {
       updates.push(
         prisma.user.update({

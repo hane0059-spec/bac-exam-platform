@@ -1,7 +1,7 @@
 // src/app/api/admin/students/[id]/password/route.ts
 // POST: إعادة تعيين كلمة سرّ طالب من المدير (بعزل المؤسّسة).
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import { passwordSchema } from "@/lib/teacherStudents";
@@ -39,7 +39,7 @@ export async function POST(
       { status: 400 },
     );
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const passwordHash = await hashPasswordFor("STUDENT", parsed.data.password);
   await prisma.user.update({
     where: { id: params.id },
     data: { passwordHash, mustChangePassword: true },

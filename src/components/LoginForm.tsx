@@ -39,8 +39,8 @@ const WINDOWS: RoleWindow[] = [
     key: "STUDENT",
     title: "دخول الطلاب",
     subtitle: "للطالبات والطلاب",
-    hint: "رمز الطالب أو الاسم الكامل أو البريد",
-    placeholder: "S-1002 أو الاسم الكامل",
+    hint: "رمز الطالب (يكفي رقمه) أو الاسم الكامل أو البريد",
+    placeholder: "1002 أو S-1002 أو الاسم الكامل",
     icon: <Icon name="cap" className="h-8 w-8" />,
     accent: "bg-primary/10 text-primary ring-primary/20",
     barClass: "bg-primary",
@@ -456,6 +456,11 @@ export default function LoginForm({
                     onChange={setPassword}
                     onEnter={handleSubmit}
                   />
+                  {role.key === "STUDENT" && (
+                    <p className="mt-1.5 text-xs text-ink/60">
+                      لا فرق بين الأحرف الكبيرة والصغيرة في كلمة السرّ.
+                    </p>
+                  )}
                 </div>
 
                 {error && (

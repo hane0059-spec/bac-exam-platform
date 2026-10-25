@@ -2,7 +2,7 @@
 // POST: تغيير المستخدم كلمة سرّه بنفسه (يلزم كلمة السر الحالية). لأي دور.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor, verifyPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -35,19 +35,19 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { passwordHash: true },
+    select: { passwordHash: true, role: true },
   });
   if (!user)
     return NextResponse.json({ error: "الحساب غير موجود" }, { status: 404 });
 
-  const ok = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
-  if (!ok)
+  const check = await verifyPasswordFor(user.role, parsed.data.currentPassword, user.passwordHash);
+  if (!check.ok)
     return NextResponse.json(
       { error: "كلمة السر الحالية غير صحيحة." },
       { status: 400 },
     );
 
-  const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
+  const passwordHash = await hashPasswordFor(user.role, parsed.data.newPassword);
   await prisma.user.update({
     where: { id: session.sub },
     data: { passwordHash, mustChangePassword: false },

@@ -1,5 +1,6 @@
 // src/lib/externalImport.ts
 // أدوات استيراد الطلاب من ملف CSV أو xlsx عبر exceljs.
+import { generateStudentPassword } from "@/lib/studentCredentials";
 import ExcelJS from "exceljs";
 import { Readable } from "stream";
 
@@ -114,13 +115,9 @@ export function parseGender(v: string): "MALE" | "FEMALE" | null {
   return null;
 }
 
+/** كلمة سرّ مؤقّتة للطالب: أحرف صغيرة وأرقام واضحة بلا متشابهات (انظر studentCredentials). */
 export function randomPassword(len = 6): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < len; i++) {
-    out += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return out;
+  return generateStudentPassword(len);
 }
 
 export interface ParsedRow {

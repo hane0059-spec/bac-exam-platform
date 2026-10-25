@@ -2,7 +2,7 @@
 // GET: قائمة طلاب المدرّس (من إنشائه). POST: إنشاء حساب طالب وتسجيله في مادة.
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import {
   getTeacherSession,
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
   }
 
   const academicYear = await academicYearFor(session.sub, d.subjectId);
-  const passwordHash = await bcrypt.hash(d.password, 10);
+  const passwordHash = await hashPasswordFor("STUDENT", d.password);
   // الحقول المخصّصة.
   const cf = validateAndClean(
     await getFieldDefs("STUDENT"),

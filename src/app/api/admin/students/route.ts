@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import { nextStudentCode } from "@/lib/teacherStudents";
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: cf.error }, { status: 400 });
   }
 
-  const passwordHash = await bcrypt.hash(d.password, 10);
+  const passwordHash = await hashPasswordFor("STUDENT", d.password);
   for (let attempt = 0; attempt < 5; attempt++) {
     const studentCode = await nextStudentCode();
     try {

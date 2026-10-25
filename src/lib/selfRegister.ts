@@ -3,7 +3,7 @@
 // المدرّس مالك الاختبار (مؤسّسته، تسجيله في مادة الاختبار، وإسناد الاختبار).
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { isWithinWindow } from "@/lib/exam";
 import { teacherCanManageStudents } from "@/lib/teacher";
@@ -86,7 +86,7 @@ export async function registerStudentViaQuiz(
   }
 
   const academicYear = await academicYearFor(teacherId, quiz.subject.id);
-  const passwordHash = await bcrypt.hash(d.password, 10);
+  const passwordHash = await hashPasswordFor("STUDENT", d.password);
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const studentCode = await nextStudentCode();
