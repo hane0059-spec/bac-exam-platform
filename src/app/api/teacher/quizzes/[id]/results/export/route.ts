@@ -46,7 +46,11 @@ export async function GET(
 
   const pending = await prisma.studentAnswer.groupBy({
     by: ["sessionId"],
-    where: { sessionId: { in: sessions.map((s) => s.id) }, needsReview: true },
+    where: {
+      sessionId: { in: sessions.map((s) => s.id) },
+      needsReview: true,
+      session: { status: { in: ["COMPLETED", "TIMED_OUT"] } },
+    },
     _count: { _all: true },
   });
   const pendingSet = new Set(pending.map((p) => p.sessionId));

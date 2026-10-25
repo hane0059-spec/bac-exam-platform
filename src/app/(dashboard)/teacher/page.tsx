@@ -38,7 +38,11 @@ export default async function TeacherDashboard() {
           quiz: { creatorId: session.sub },
           OR: [
             { needsGrading: true },
-            { answers: { some: { needsReview: true } } },
+            // جلسة قيد الأداء لا تُراجَع بعد (لم يسلّمها الطالب) فلا تُحسب بانتظار التصحيح.
+            {
+              status: { in: ["COMPLETED", "TIMED_OUT"] },
+              answers: { some: { needsReview: true } },
+            },
           ],
         },
       }),

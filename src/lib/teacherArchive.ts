@@ -23,7 +23,10 @@ export async function computeDoneQuizIds(
       select: { quizId: true, studentId: true, status: true, needsGrading: true },
     }),
     prisma.studentAnswer.findMany({
-      where: { needsReview: true, session: { quizId: { in: quizIds } } },
+      where: {
+        needsReview: true,
+        session: { quizId: { in: quizIds }, status: { in: ["COMPLETED", "TIMED_OUT"] } },
+      },
       select: { session: { select: { quizId: true } } },
     }),
     prisma.gradeAppeal.findMany({

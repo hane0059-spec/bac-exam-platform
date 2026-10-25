@@ -51,7 +51,12 @@ export default async function QuizResultsPage({
   // الجلسات التي بها إجابات بانتظار التصحيح.
   const pending = await prisma.studentAnswer.groupBy({
     by: ["sessionId"],
-    where: { sessionId: { in: sessions.map((s) => s.id) }, needsReview: true },
+    where: {
+      sessionId: { in: sessions.map((s) => s.id) },
+      needsReview: true,
+      // المنتهية فقط: الجلسة قيد الأداء لا تُراجَع قبل أن يسلّمها الطالب.
+      session: { status: { in: ["COMPLETED", "TIMED_OUT"] } },
+    },
     _count: { _all: true },
   });
   const pendingBySession = new Map(pending.map((p) => [p.sessionId, p._count._all]));

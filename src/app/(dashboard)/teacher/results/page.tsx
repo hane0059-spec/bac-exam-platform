@@ -28,7 +28,11 @@ export default async function TeacherResultsPage() {
   // اختبار يحتاج تصحيحك الآن، إذ القائمة وحدها لا تكشف ذلك دون فتح كل اختبار.
   const pending = await prisma.studentAnswer.groupBy({
     by: ["sessionId"],
-    where: { needsReview: true, session: { quiz: { creatorId: session.sub } } },
+    // المنتهية فقط: ما زال قيد الأداء لا يحتاج تصحيحاً الآن.
+    where: {
+      needsReview: true,
+      session: { quiz: { creatorId: session.sub }, status: { in: ["COMPLETED", "TIMED_OUT"] } },
+    },
   });
   const pendingSessionIds = new Set(pending.map((p) => p.sessionId));
 
