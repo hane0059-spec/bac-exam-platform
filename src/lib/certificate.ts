@@ -40,7 +40,6 @@ export interface CertificateData {
   /** تاريخ الإنجاز نصّاً جاهزاً (DD/MM/YYYY). */
   dateStr: string;
   teacherName: string;
-  schoolName?: string;
   brandName: string;
   /** عبارة ختام اختيارية يكتبها المدرّس؛ الفارغة ← العبارة الافتراضية. */
   closing?: string;
@@ -60,12 +59,11 @@ export interface CertificateLines {
 export function certificateLines(d: CertificateData): CertificateLines {
   const f = d.female;
   const who = f ? "الطالبة" : "الطالب";
-  const school = d.schoolName?.trim();
   return {
     title: "شهادة تقدير",
     intro: `تتشرّف ${d.brandName} بمنح هذه الشهادة إلى ${who}`,
     body1: `تقديراً لتفوّق${f ? "ها" : "ه"} الباهر في اختبار «${d.quizTitle}»`,
-    body2: `في مادة ${d.subjectName}${school ? ` — ${school}` : ""}، حيث حقّق${f ? "ت" : ""} نسبة`,
+    body2: `في مادة ${d.subjectName}، حيث حقّق${f ? "ت" : ""} نسبة`,
     closing:
       d.closing?.trim() || `ونتمنّى ل${f ? "ها" : "ه"} دوام التوفيق والتميّز.`,
     dateLabel: "التاريخ",

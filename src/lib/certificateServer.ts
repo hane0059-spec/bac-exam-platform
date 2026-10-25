@@ -46,9 +46,7 @@ export async function loadTeacherCertificate(
           title: true,
           creatorId: true,
           subject: { select: { name: true } },
-          creator: {
-            select: { firstName: true, lastName: true, school: { select: { name: true } } },
-          },
+          creator: { select: { firstName: true, lastName: true } },
         },
       },
       answers: { where: { needsReview: true }, select: { id: true }, take: 1 },
@@ -88,7 +86,6 @@ export async function loadTeacherCertificate(
       honor: certificateHonor(pct) ?? "امتياز",
       dateStr: formatDay(exam.completedAt ?? new Date()),
       teacherName: `${exam.quiz.creator.firstName} ${exam.quiz.creator.lastName}`,
-      schoolName: exam.quiz.creator.school?.name,
       brandName: brand.name,
     },
   };

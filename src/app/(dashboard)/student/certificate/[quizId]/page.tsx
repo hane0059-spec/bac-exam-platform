@@ -58,7 +58,6 @@ export default async function CertificatePage({
       firstName: true,
       lastName: true,
       gender: true,
-      school: { select: { name: true } },
     },
   });
   const quiz = await prisma.quiz.findUnique({
@@ -94,7 +93,6 @@ export default async function CertificatePage({
           honor,
           dateStr,
           teacherName: `${quiz.creator.firstName} ${quiz.creator.lastName}`,
-          schoolName: me.school?.name,
           brandName: brand.name,
         }}
       />

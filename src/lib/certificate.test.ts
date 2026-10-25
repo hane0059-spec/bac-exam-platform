@@ -39,12 +39,12 @@ describe("شهادة المدرّس", () => {
     expect(f.body1).toContain("تفوّقها");
     expect(f.body2).toContain("حقّقت نسبة");
     expect(f.closing).toBe("ونتمنّى لها دوام التوفيق والتميّز.");
-    const m = certificateLines({ ...base, female: false, schoolName: "ثانوية النور" });
+    const m = certificateLines({ ...base, female: false });
     expect(m.intro).toContain("الطالب");
     expect(m.intro).not.toContain("الطالبة");
     expect(m.body1).toContain("تفوّقه");
     expect(m.body2).toContain("حقّق نسبة");
-    expect(m.body2).toContain("ثانوية النور");
+    expect(m.body2).toBe("في مادة علوم، حيث حقّق نسبة");
     expect(m.signLabel).toBe("المدرّس: محمد الحمود");
   });
 
