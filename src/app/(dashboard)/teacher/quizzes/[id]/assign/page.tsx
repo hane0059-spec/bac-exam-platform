@@ -38,7 +38,9 @@ export default async function AssignQuizPage({
           firstName: true,
           lastName: true,
           gender: true,
-          studentProfile: { select: { studentCode: true } },
+          studentProfile: {
+            select: { studentCode: true, gradeLevel: { select: { name: true } } },
+          },
         },
       },
     },
@@ -63,7 +65,9 @@ export default async function AssignQuizPage({
       firstName: true,
       lastName: true,
       gender: true,
-      studentProfile: { select: { studentCode: true } },
+      studentProfile: {
+            select: { studentCode: true, gradeLevel: { select: { name: true } } },
+          },
     },
     orderBy: [{ firstName: "asc" }],
   });
@@ -118,6 +122,7 @@ export default async function AssignQuizPage({
         name: `${st.firstName} ${st.lastName}`,
         studentCode: st.studentProfile?.studentCode ?? "—",
         genderLabel: roleLabel("STUDENT", st.gender),
+        gradeName: st.studentProfile?.gradeLevel?.name ?? "",
         assigned: assignedSet.has(st.id),
         dueDate: dueByStudent.get(st.id)?.toISOString() ?? null,
         statusLabel: statusLabel(st.id),
@@ -133,6 +138,7 @@ export default async function AssignQuizPage({
     name: `${st.firstName} ${st.lastName}`,
     studentCode: st.studentProfile?.studentCode ?? "—",
     genderLabel: roleLabel("STUDENT", st.gender),
+    gradeName: st.studentProfile?.gradeLevel?.name ?? "",
     assigned: assignedSet.has(st.id),
     dueDate: dueByStudent.get(st.id)?.toISOString() ?? null,
     statusLabel: statusLabel(st.id),

@@ -18,6 +18,7 @@ export interface AssignStudent {
   attemptsUsed: number;
   effectiveMax: number; // حدّ المحاولات + الإضافية
   groupName?: string; // مجموعة الطالب في مادة الاختبار ("" = بلا مجموعة)
+  gradeName?: string; // صفّ الطالب (يميّز «النجم» في التاسع عن «النجم» في العاشر)
 }
 
 function StudentRow({
@@ -58,6 +59,11 @@ function StudentRow({
             <span className="text-xs text-ink/40">
               {s.genderLabel} • {s.studentCode}
             </span>
+            {s.gradeName && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-dark">
+                {s.gradeName}
+              </span>
+            )}
             {s.groupName && (
               <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">
                 {s.groupName}
@@ -151,6 +157,8 @@ export default function AssignPanel({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // فلتر المجموعة: "" = كل الطلاب، NO_GROUP = بلا مجموعة، وإلا اسم المجموعة.
   const [groupFilter, setGroupFilter] = useState<string>("");
+  // فلتر الصفّ: "" = كل الصفوف. المجموعات تُحسب ضمن الصفّ المختار فلا تختلط «النجم» بين صفّين.
+  const [gradeFilter, setGradeFilter] = useState<string>("");
   // بحث بالاسم/الرمز يُضيّق صفوف القائمة فقط (لا يغيّر مجموعة الإسناد الجماعي).
   const [query, setQuery] = useState("");
   const [codes, setCodes] = useState("");
@@ -186,8 +194,15 @@ export default function AssignPanel({
   const dueIso = () => (due ? new Date(due).toISOString() : null);
   const NO_GROUP = "__none__";
   const groupOf = (s: AssignStudent) => s.groupName?.trim() || NO_GROUP;
-  const groupCounts = new Map<string, number>();
+  const gradeCounts = new Map<string, number>();
   for (const s of students) {
+    const g = s.gradeName?.trim() || "";
+    if (g) gradeCounts.set(g, (gradeCounts.get(g) ?? 0) + 1);
+  }
+  const grades = [...gradeCounts.keys()].sort((a, b) => a.localeCompare(b, "ar"));
+  const inGrade = gradeFilter ? students.filter((s) => s.gradeName === gradeFilter) : students;
+  const groupCounts = new Map<string, number>();
+  for (const s of inGrade) {
     const g = groupOf(s);
     groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
   }
@@ -196,10 +211,19 @@ export default function AssignPanel({
     .sort((a, b) => a.localeCompare(b, "ar"));
   const hasGroups = namedGroups.length > 0;
   const visible = groupFilter
-    ? students.filter((s) => groupOf(s) === groupFilter)
-    : students;
+    ? inGrade.filter((s) => groupOf(s) === groupFilter)
+    : inGrade;
   const groupLabel =
     groupFilter === NO_GROUP ? "بلا مجموعة" : groupFilter ? `«${groupFilter}»` : "";
+  // نطاق الإسناد الجماعي نصّاً: الصفّ والمجموعة معاً.
+  const scopeLabel =
+    groupFilter === NO_GROUP
+      ? `للطلاب بلا مجموعة${gradeFilter ? ` في ${gradeFilter}` : ""}`
+      : groupFilter
+        ? `لمجموعة ${groupLabel}${gradeFilter ? ` في ${gradeFilter}` : ""}`
+        : gradeFilter
+          ? `لصفّ «${gradeFilter}»`
+          : "للجميع";
   const unassigned = visible.filter((s) => !s.assigned);
   const q = query.trim().toLowerCase();
   const shownRows = q
@@ -349,12 +373,7 @@ export default function AssignPanel({
           disabled={busy || !published || unassigned.length === 0}
           className="btn-primary"
         >
-          {groupFilter === NO_GROUP
-            ? "إسناد للطلاب بلا مجموعة"
-            : groupFilter
-              ? `إسناد لمجموعة ${groupLabel}`
-              : "إسناد للجميع"}{" "}
-          ({unassigned.length})
+          إسناد {scopeLabel} ({unassigned.length})
         </button>
       </div>
 
@@ -405,11 +424,38 @@ export default function AssignPanel({
         <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>
       )}
 
+      {grades.length > 1 && (
+        <div className="card flex flex-wrap items-center gap-2 p-3">
+          <span className="text-sm font-medium">الصفّ:</span>
+          {[
+            { key: "", label: "كل الصفوف", n: students.length },
+            ...grades.map((g) => ({ key: g, label: g, n: gradeCounts.get(g) ?? 0 })),
+          ].map((c) => (
+            <button
+              key={c.key || "all-grades"}
+              type="button"
+              onClick={() => {
+                setGradeFilter(c.key);
+                setGroupFilter("");
+                setSelected(new Set());
+              }}
+              className={`rounded-full px-3 py-1 text-sm transition ${
+                gradeFilter === c.key
+                  ? "bg-primary text-white"
+                  : "bg-ink/5 text-ink/70 hover:bg-primary-light"
+              }`}
+            >
+              {c.label} ({c.n})
+            </button>
+          ))}
+        </div>
+      )}
+
       {hasGroups && (
         <div className="card flex flex-wrap items-center gap-2 p-3">
           <span className="text-sm font-medium">المجموعة:</span>
           {[
-            { key: "", label: "الكل", n: students.length },
+            { key: "", label: "الكل", n: inGrade.length },
             ...namedGroups.map((g) => ({ key: g, label: g, n: groupCounts.get(g) ?? 0 })),
             ...(groupCounts.has(NO_GROUP)
               ? [{ key: NO_GROUP, label: "بلا مجموعة", n: groupCounts.get(NO_GROUP) ?? 0 }]
