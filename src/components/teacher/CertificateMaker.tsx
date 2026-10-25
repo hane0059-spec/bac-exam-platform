@@ -4,7 +4,15 @@
 // يستعمله المدرّس (مع زرّ إشعار الطالب) والطالب (تنزيل/طباعة فقط) بنفس التصميم.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CertificateData } from "@/lib/certificate";
-import { CERT_W, CERT_H, drawCertificate, type CertFonts } from "@/lib/certificateArt";
+import {
+  CERT_W,
+  CERT_H,
+  CERT_THEMES,
+  drawCertificate,
+  themeById,
+  type CertFonts,
+  type CertThemeId,
+} from "@/lib/certificateArt";
 import { jpegToPdf } from "@/lib/pdfImage";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 
@@ -73,6 +81,24 @@ export default function CertificateMaker({
   const fontsRef = useRef<CertFonts | null>(null);
   const [ready, setReady] = useState(false);
   const [closing, setClosing] = useState(data.closing ?? "");
+  // نموذج الإطار (يُحفَظ على الجهاز فقط).
+  const [themeId, setThemeId] = useState<CertThemeId>("emerald");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("cert-theme");
+      if (saved) setThemeId(themeById(saved).id);
+    } catch {
+      // التخزين غير متاح — يبقى الافتراضي.
+    }
+  }, []);
+  function pickTheme(id: CertThemeId) {
+    setThemeId(id);
+    try {
+      localStorage.setItem("cert-theme", id);
+    } catch {
+      // تجاهل.
+    }
+  }
   const [busy, setBusy] = useState<"" | "png" | "pdf" | "notify">("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -84,9 +110,9 @@ export default function CertificateMaker({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, CERT_W, CERT_H);
-    drawCertificate(ctx, { ...data, closing }, fontsRef.current);
+    drawCertificate(ctx, { ...data, closing }, fontsRef.current, themeId);
     setReady(true);
-  }, [data, closing]);
+  }, [data, closing, themeId]);
 
   useEffect(() => {
     void draw();
@@ -156,6 +182,31 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><b
           aria-label={`شهادة تقدير — ${data.studentName}`}
         />
         {!ready && <p className="p-3 text-center text-sm text-ink/50">جارٍ تجهيز الشهادة…</p>}
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium">اختر نموذج الإطار</p>
+        <div className="flex flex-wrap gap-2">
+          {CERT_THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => pickTheme(t.id)}
+              aria-pressed={themeId === t.id}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                themeId === t.id
+                  ? "border-primary bg-primary-light text-primary-dark"
+                  : "border-line hover:bg-ink/5"
+              }`}
+            >
+              <span className="flex overflow-hidden rounded-full ring-1 ring-ink/20">
+                <span className="h-5 w-5" style={{ background: t.swatch[0] }} />
+                <span className="h-5 w-5" style={{ background: t.swatch[1] }} />
+              </span>
+              {t.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {allowCustomClosing && (
