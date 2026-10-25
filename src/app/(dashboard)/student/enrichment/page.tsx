@@ -22,7 +22,14 @@ export default async function StudentEnrichmentPage() {
   const teacherIds = await enrichmentTeacherIdsForStudent(session.sub);
   const files = teacherIds.length
     ? await prisma.enrichmentFile.findMany({
-        where: { teacherId: { in: teacherIds } },
+        // محتوى المدرّس الخاصّ + ما اعتمده المدير للصفحة العامّة من منشوراته (teacherId=null،
+        // sourceTeacherId=المدرّس): يبقى ظاهراً لطلاب المدرّس هنا أيضاً.
+        where: {
+          OR: [
+            { teacherId: { in: teacherIds } },
+            { sourceTeacherId: { in: teacherIds } },
+          ],
+        },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -33,7 +40,9 @@ export default async function StudentEnrichmentPage() {
           sizeBytes: true,
           createdAt: true,
           teacherId: true,
+          sourceTeacherId: true,
           teacher: { select: { firstName: true, lastName: true } },
+          sourceTeacher: { select: { firstName: true, lastName: true } },
         },
       })
     : [];
@@ -41,10 +50,11 @@ export default async function StudentEnrichmentPage() {
   // تجميع حسب المدرّس.
   const byTeacher = new Map<string, { name: string; items: typeof files }>();
   for (const f of files) {
-    const id = f.teacherId!;
+    const id = (f.teacherId ?? f.sourceTeacherId)!;
+    const owner = f.teacher ?? f.sourceTeacher!;
     if (!byTeacher.has(id))
       byTeacher.set(id, {
-        name: `${f.teacher!.firstName} ${f.teacher!.lastName}`,
+        name: `${owner.firstName} ${owner.lastName}`,
         items: [],
       });
     byTeacher.get(id)!.items.push(f);
