@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import MathText from "@/components/MathText";
+import { questionLang, paragraphDir } from "@/lib/textDir";
 
 export interface GradeItem {
   nodeId: string;
@@ -100,7 +101,10 @@ export default function GradePanel({
           return (
             <div key={it.nodeId} className="rounded-xl border border-line p-3">
               <div className="flex items-start justify-between gap-2">
-                <p dir="auto" className="font-medium">
+                <p
+                  dir={paragraphDir(questionLang({ type: it.type, content: it.content, options: [] }))}
+                  className="font-medium"
+                >
                   {it.index}. <MathText text={it.content} />
                 </p>
                 <span

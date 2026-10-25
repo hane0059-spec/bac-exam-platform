@@ -10,6 +10,7 @@ import {
   displayOptionLabel,
   displayOptionContent,
   defaultOptionLetter,
+  paragraphDir,
   type Lang,
 } from "@/lib/textDir";
 import { EXAM_STRINGS } from "@/lib/examStrings";
@@ -204,7 +205,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
           >
             {/* رأس السؤال */}
             <div className="flex items-start justify-between gap-2">
-              <p dir="auto" className="font-medium leading-snug">
+              <p dir={paragraphDir(ql)} className="font-medium leading-snug">
                 {q.index}. <MathText text={q.content} />
               </p>
               <span className="shrink-0 text-xs text-ink/50">

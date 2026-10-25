@@ -2,7 +2,7 @@
 // عرض مراجعة جلسة (خادمي): الدرجة + استعراض الأسئلة والإجابات.
 import type { SessionReview } from "@/lib/exam";
 import MathText from "@/components/MathText";
-import { questionLang, subjectLang, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
+import { questionLang, subjectLang, paragraphDir, displayOptionLabel, displayOptionContent } from "@/lib/textDir";
 
 export default function SessionReviewView({
   review,
@@ -46,7 +46,7 @@ export default function SessionReviewView({
             }`}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p dir="auto" className="font-medium leading-relaxed">
+              <p dir={paragraphDir(questionLang(it, hint))} className="font-medium leading-relaxed">
                 {it.index}. <MathText text={it.content} />
               </p>
               {it.isCancelled ? (

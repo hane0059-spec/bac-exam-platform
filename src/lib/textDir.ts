@@ -87,6 +87,15 @@ export function examLang(questions: QLike[], subjectName?: string | null): Lang 
   return [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
+/**
+ * اتجاه فقرة يسبقها رقم («14. …») حسب لغة السؤال. لا يُستعمَل `dir="auto"` هنا: `MathText` يلفّ
+ * النصّ بـ`<bdi>` فيتجاهله الكشف التلقائي، فلا يبقى في الفقرة سوى الرقم (محايد) ← تُحَلّ LTR
+ * ويظهر الرقم في نهاية السؤال العربي.
+ */
+export function paragraphDir(lang: Lang): "rtl" | "ltr" {
+  return lang === "ar" ? "rtl" : "ltr";
+}
+
 const RU_LETTERS = ["А", "Б", "В", "Г", "Д", "Е"];
 
 /** حرف الخيار الافتراضي حسب اللغة وموضعه. */

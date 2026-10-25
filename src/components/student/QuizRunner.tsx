@@ -14,6 +14,7 @@ import MathText from "@/components/MathText";
 import {
   questionLang,
   subjectLang,
+  paragraphDir,
   displayOptionLabel,
   displayOptionContent,
   type Lang,
@@ -1260,7 +1261,7 @@ function ResultView({
             }`}
           >
             <div className="mb-2 flex items-start justify-between gap-2">
-              <p dir="auto" className="font-medium leading-relaxed">
+              <p dir={paragraphDir(questionLang(it, hint))} className="font-medium leading-relaxed">
                 {it.index}. <MathText text={it.content} />
               </p>
               {it.isCancelled ? (
