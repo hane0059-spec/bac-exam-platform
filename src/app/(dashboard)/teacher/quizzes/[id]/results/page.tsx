@@ -1,5 +1,6 @@
 // src/app/(dashboard)/teacher/quizzes/[id]/results/page.tsx
 // تفاصيل نتائج اختبار: جلسات الطلاب ودرجاتهم.
+import { eligibleForTeacherCertificate } from "@/lib/certificate";
 import { sweepExpiredSessions } from "@/lib/exam";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
@@ -177,6 +178,19 @@ export default async function QuizResultsPage({
                         >
                           مراجعة
                         </Link>
+                        {eligibleForTeacherCertificate({
+                          status: s.status,
+                          percentage: Number(s.percentage),
+                          needsGrading: s.needsGrading,
+                          pendingReview: Boolean(pendingBySession.get(s.id)),
+                        }) && (
+                          <Link
+                            href={`/teacher/certificates/${s.id}`}
+                            className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold hover:bg-gold/25"
+                          >
+                            🏅 شهادة تقدير
+                          </Link>
+                        )}
                         {pendingBySession.get(s.id) ? (
                           <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs text-gold">
                             ⏳ بانتظار التصحيح

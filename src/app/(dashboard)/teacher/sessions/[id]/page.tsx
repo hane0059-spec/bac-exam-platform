@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getSessionReview } from "@/lib/exam";
+import { eligibleForTeacherCertificate } from "@/lib/certificate";
 import DashboardShell from "@/components/DashboardShell";
 import SessionReviewView from "@/components/SessionReviewView";
 import GradePanel from "@/components/teacher/GradePanel";
@@ -43,6 +44,19 @@ export default async function TeacherSessionReviewPage({
         <h2 className="mt-2 font-display text-xl font-bold">
           مراجعة: {review.studentName}
         </h2>
+        {eligibleForTeacherCertificate({
+          status: review.status,
+          percentage: Number(review.percentage),
+          needsGrading: false,
+          pendingReview: review.items.some((it) => it.needsReview),
+        }) && (
+          <Link
+            href={`/teacher/certificates/${params.id}`}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-gold/15 px-3 py-1.5 text-sm font-medium text-gold hover:bg-gold/25"
+          >
+            🏅 إصدار شهادة تقدير (بلغ {Number(review.percentage)}%)
+          </Link>
+        )}
       </div>
       <div className="space-y-5">
         <GradePanel
