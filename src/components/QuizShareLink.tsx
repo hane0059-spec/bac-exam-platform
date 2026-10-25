@@ -17,13 +17,13 @@ export default function QuizShareLink({ url }: { url: string }) {
   }
 
   return (
-    <div className="mt-3 flex w-full max-w-md items-center gap-2">
+    <div className="mt-3 flex w-full max-w-md flex-wrap items-center gap-2">
       <input
         readOnly
         dir="ltr"
         value={url}
         onFocus={(e) => e.currentTarget.select()}
-        className="field flex-1 text-xs"
+        className="field min-w-0 flex-1 basis-40 text-xs"
         aria-label="رابط الاختبار"
       />
       <button

@@ -608,7 +608,7 @@ export default function QuizBuilder({
               </div>
             )}
             {codeJoin && origin && (
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 basis-full sm:basis-64 sm:flex-1">
                 <p className="text-sm font-medium">رابط الاختبار للمشاركة</p>
                 <QuizShareLink url={`${origin}/join/${initial.accessCode}`} />
                 <p className="mt-1 text-xs text-ink/50">

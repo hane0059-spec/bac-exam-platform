@@ -121,12 +121,13 @@ export default function StudentShell({
           </p>
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <ThemeToggle />
-          <TextSizeControl />
-        </div>
-        <LogoutButton />
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <ThemeToggle />
+        <TextSizeControl />
+      </div>
+      {/* الخروج في صفّ مستقلّ بعيداً عن أزرار العرض لئلّا يُلمَس بالخطأ (ويطلب تأكيداً) */}
+      <div className="mt-4 border-t border-line pt-3">
+        <LogoutButton fullWidth />
       </div>
     </div>
   );

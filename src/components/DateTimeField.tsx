@@ -62,7 +62,8 @@ export default function DateTimeField({
   const box = "rounded-lg border border-line bg-surface px-1 py-2 text-center outline-none focus:border-primary";
 
   return (
-    <div className="flex items-center gap-1" dir="ltr">
+    <div className="flex max-w-full flex-wrap items-center gap-x-3 gap-y-2" dir="ltr">
+      <div className="flex items-center gap-1">
       <input
         type="number"
         min={1}
@@ -95,7 +96,8 @@ export default function DateTimeField({
         className={`${box} w-20`}
         aria-label="السنة"
       />
-      <span className="mx-1 text-ink/40">—</span>
+      </div>
+      <div className="flex items-center gap-1">
       <input
         type="number"
         min={0}
@@ -117,6 +119,7 @@ export default function DateTimeField({
         className={`${box} w-14`}
         aria-label="الدقيقة"
       />
+      </div>
     </div>
   );
 }
