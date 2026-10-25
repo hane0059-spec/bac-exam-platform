@@ -1,5 +1,8 @@
 // src/app/(dashboard)/teacher/quizzes/[id]/results/page.tsx
 // تفاصيل نتائج اختبار: جلسات الطلاب ودرجاتهم.
+import EndSessionButton from "@/components/teacher/EndSessionButton";
+import { isStaleSession } from "@/lib/staleSession";
+import { parseSettings } from "@/lib/exam";
 import { eligibleForTeacherCertificate } from "@/lib/certificate";
 import { sweepExpiredSessions } from "@/lib/exam";
 import Link from "next/link";
@@ -52,6 +55,33 @@ export default async function QuizResultsPage({
     _count: { _all: true },
   });
   const pendingBySession = new Map(pending.map((p) => [p.sessionId, p._count._all]));
+
+  // الجلسات «قيد الأداء» العالقة (بعد الموعد النهائي بساعة) ← زرّ إنهاء يدوي للمدرّس.
+  const openIds = sessions.filter((s) => s.status === "IN_PROGRESS").map((s) => s.id);
+  const lastAnswers = openIds.length
+    ? await prisma.studentAnswer.groupBy({
+        by: ["sessionId"],
+        where: { sessionId: { in: openIds } },
+        _max: { answeredAt: true },
+      })
+    : [];
+  const lastActivity = new Map(lastAnswers.map((a) => [a.sessionId, a._max.answeredAt]));
+  const quizLimit = parseSettings(quiz.settings).timeLimitSec;
+  const staleIds = new Set(
+    sessions
+      .filter(
+        (s) =>
+          s.status === "IN_PROGRESS" &&
+          !quiz.isFileBased &&
+          isStaleSession({
+            startedAt: s.startedAt,
+            lastActivity: lastActivity.get(s.id) ?? null,
+            timeLimitSec: quizLimit,
+            availableUntil: quiz.availableUntil,
+          })
+      )
+      .map((s) => s.id)
+  );
 
   // إحصاءات موجزة للجلسات المكتملة.
   const done = sessions.filter(
@@ -170,6 +200,12 @@ export default async function QuizResultsPage({
                     <bdi dir="ltr"><LocalTime value={s.startedAt} /></bdi>
                   </td>
                   <td className="p-2">
+                    {staleIds.has(s.id) && (
+                      <EndSessionButton
+                        sessionId={s.id}
+                        studentName={`${s.student.firstName} ${s.student.lastName}`}
+                      />
+                    )}
                     {s.status !== "IN_PROGRESS" && (
                       <span className="flex items-center gap-2">
                         <Link

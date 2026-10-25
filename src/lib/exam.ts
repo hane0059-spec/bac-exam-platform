@@ -1,6 +1,7 @@
 // src/lib/exam.ts
 // منطق حلقة الطالب على الخادم: الحراسة، إعدادات الاختبار، اجتياز الشجرة الخطّي،
 // تعقيم السؤال (دون كشف الإجابة الصحيحة)، المؤقّت، وإنهاء الجلسة وحساب الدرجة.
+import { isStaleSession, staleEndedAt } from "@/lib/staleSession";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -940,7 +941,8 @@ export async function sweepExpiredSessions(
     select: {
       id: true,
       startedAt: true,
-      quiz: { select: { isFileBased: true, settings: true } },
+      quiz: { select: { isFileBased: true, settings: true, availableUntil: true } },
+      answers: { select: { answeredAt: true }, orderBy: { answeredAt: "desc" }, take: 1 },
     },
   });
   let n = 0;
@@ -951,7 +953,33 @@ export async function sweepExpiredSessions(
         continue;
       }
       const limit = parseSettings(s.quiz.settings).timeLimitSec;
-      if (!limit || !isExpired(s.startedAt, limit)) continue;
+      if (!limit) {
+        // بلا مهلة: تُنهى تلقائياً بعد انتهاء نافذة الإتاحة بساعة (وإلا بقيت عالقة للأبد
+        // لأنّ الطالب لا يستطيع الاستئناف خارج النافذة). بلا نافذة أيضاً ← زرّ المدرّس اليدوي.
+        if (
+          s.quiz.availableUntil &&
+          isStaleSession({
+            startedAt: s.startedAt,
+            lastActivity: s.answers[0]?.answeredAt ?? null,
+            timeLimitSec: null,
+            availableUntil: s.quiz.availableUntil,
+          })
+        ) {
+          await finalizeSession(
+            s.id,
+            "TIMED_OUT",
+            staleEndedAt({
+              startedAt: s.startedAt,
+              lastActivity: s.answers[0]?.answeredAt ?? null,
+              timeLimitSec: null,
+              availableUntil: s.quiz.availableUntil,
+            })
+          );
+          n++;
+        }
+        continue;
+      }
+      if (!isExpired(s.startedAt, limit)) continue;
       await finalizeSession(
         s.id,
         "TIMED_OUT",
