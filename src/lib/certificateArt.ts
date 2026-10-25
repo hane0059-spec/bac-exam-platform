@@ -13,8 +13,15 @@ export interface CertFonts {
   body: string;
 }
 
-export type CertThemeId = "emerald" | "navy" | "burgundy" | "classic" | "minimal";
-type FrameStyle = "diamonds" | "stars" | "pearls" | "lines" | "modern";
+export type CertThemeId =
+  | "emerald"
+  | "navy"
+  | "burgundy"
+  | "classic"
+  | "minimal"
+  | "ruby"
+  | "flag";
+type FrameStyle = "diamonds" | "stars" | "pearls" | "lines" | "modern" | "flag";
 
 export interface CertTheme {
   id: CertThemeId;
@@ -31,7 +38,14 @@ export interface CertTheme {
   ink: string;
   frame: FrameStyle;
   pattern: boolean;
+  /** لون حبّات الشريط (pearls) إن اختلف عن goldLight. */
+  pearl?: string;
+  /** ألوان الأشرطة الثلاثة لنموذج «ألوان العلم». */
+  stripes?: [string, string, string];
 }
+
+/** ألوان افتراضية لنموذج العلم (يغيّرها المدرّس). */
+export const DEFAULT_FLAG_COLORS: [string, string, string] = ["#b3122a", "#ffffff", "#1c1c1c"];
 
 export const CERT_THEMES: CertTheme[] = [
   {
@@ -109,11 +123,99 @@ export const CERT_THEMES: CertTheme[] = [
     frame: "modern",
     pattern: false,
   },
+  {
+    id: "ruby",
+    name: "الأحمر والأبيض",
+    swatch: ["#b3122a", "#ffffff"],
+    main: "#b3122a",
+    mainDark: "#7d0b1c",
+    gold: "#c0283c",
+    goldLight: "#f4a3ad",
+    goldDark: "#7d0b1c",
+    bg1: "#ffffff",
+    bg2: "#fbeaec",
+    ink: "#3b2326",
+    frame: "pearls",
+    pattern: false,
+    pearl: "#ffffff",
+  },
+  {
+    id: "flag",
+    name: "ألوان العلم",
+    swatch: ["#b3122a", "#1c1c1c"],
+    main: "#b3122a",
+    mainDark: "#7d0b1c",
+    gold: "#b3122a",
+    goldLight: "#e57d8b",
+    goldDark: "#7d0b1c",
+    bg1: "#ffffff",
+    bg2: "#f6f1ee",
+    ink: "#2f2a2a",
+    frame: "flag",
+    pattern: false,
+    stripes: DEFAULT_FLAG_COLORS,
+  },
 ];
 
 export function themeById(id: string | null | undefined): CertTheme {
   return CERT_THEMES.find((t) => t.id === id) ?? CERT_THEMES[0];
 }
+
+function hexToRgb(hex: string): [number, number, number] {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  const n = m ? parseInt(m[1], 16) : 0;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex(r: number, g: number, b: number): string {
+  const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+/** مزج لونين (t=0 الأوّل، t=1 الثاني). */
+function mix(a: string, b: string, t: number): string {
+  const x = hexToRgb(a);
+  const y = hexToRgb(b);
+  return rgbToHex(x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t);
+}
+export function luminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+/** النموذج الفعلي: «ألوان العلم» يُشتقّ من أشرطته الثلاثة التي اختارها المدرّس. */
+export function themeFor(id: string | null | undefined, flagColors?: [string, string, string]): CertTheme {
+  const t = themeById(id);
+  if (t.id !== "flag") return t;
+  const stripes = flagColors ?? DEFAULT_FLAG_COLORS;
+  // اللون الغالب للنصوص: أغمق الأشرطة، والتمييز: أكثرها تشبّعاً (أو أوّلها).
+  const sorted = [...stripes].sort((a, b) => luminance(a) - luminance(b));
+  const dark = sorted[0];
+  const sat = (h: string) => {
+    const [r, g, b] = hexToRgb(h);
+    return Math.max(r, g, b) - Math.min(r, g, b);
+  };
+  const accent = [...stripes].sort((a, b) => sat(b) - sat(a))[0];
+  return {
+    ...t,
+    swatch: [stripes[0], stripes[2]],
+    main: dark,
+    mainDark: mix(dark, "#000000", 0.35),
+    gold: accent,
+    goldLight: mix(accent, "#ffffff", 0.5),
+    goldDark: mix(accent, "#000000", 0.4),
+    bg2: mix("#ffffff", accent, 0.08),
+    stripes,
+  };
+}
+
+// ───────── الشعارات الجاهزة ─────────
+export type EmblemId = "rosette" | "star" | "book" | "cap" | "laurel";
+export const EMBLEMS: { id: EmblemId; name: string }[] = [
+  { id: "rosette", name: "وردة" },
+  { id: "star", name: "نجمة" },
+  { id: "book", name: "كتاب" },
+  { id: "cap", name: "قبّعة تخرّج" },
+  { id: "laurel", name: "إكليل غار" },
+];
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -258,6 +360,143 @@ function alongBand(ctx: Ctx, W: number, H: number, step: number, draw: (x: numbe
   }
 }
 
+function drawEmblem(ctx: Ctx, t: CertTheme, id: EmblemId, cx: number, cy: number, R: number) {
+  const s = R / 55;
+  const g = goldGradient(ctx, t, cx - R, cy - R, cx + R, cy + R);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.lineJoin = "round";
+  switch (id) {
+    case "rosette": {
+      ctx.beginPath();
+      ctx.arc(0, 0, 54 * s, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, 43 * s, 0, Math.PI * 2);
+      ctx.fillStyle = t.main;
+      ctx.fill();
+      starPath(ctx, 0, 0, 37 * s, 16, 0.72);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, 15 * s, 0, Math.PI * 2);
+      ctx.fillStyle = t.mainDark;
+      ctx.fill();
+      starPath(ctx, 0, 0, 11 * s, 6, 0.5);
+      ctx.fillStyle = t.goldLight;
+      ctx.fill();
+      break;
+    }
+    case "star": {
+      ctx.beginPath();
+      ctx.arc(0, 0, 54 * s, 0, Math.PI * 2);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 6 * s;
+      ctx.stroke();
+      starPath(ctx, 0, 0, 46 * s, 8, 0.5);
+      ctx.fillStyle = t.main;
+      ctx.fill();
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 3 * s;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 13 * s, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      break;
+    }
+    case "book": {
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(0, -16 * s);
+        ctx.quadraticCurveTo(side * 26 * s, -34 * s, side * 52 * s, -26 * s);
+        ctx.lineTo(side * 52 * s, 24 * s);
+        ctx.quadraticCurveTo(side * 26 * s, 14 * s, 0, 32 * s);
+        ctx.closePath();
+        ctx.fillStyle = t.main;
+        ctx.fill();
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 4 * s;
+        ctx.stroke();
+        // سطور الصفحة
+        ctx.strokeStyle = t.goldLight;
+        ctx.lineWidth = 2 * s;
+        for (const dy of [-8, 2, 12]) {
+          ctx.beginPath();
+          ctx.moveTo(side * 8 * s, dy * s + 2 * s);
+          ctx.lineTo(side * 42 * s, dy * s - 6 * s);
+          ctx.stroke();
+        }
+      }
+      ctx.beginPath();
+      ctx.moveTo(0, -16 * s);
+      ctx.lineTo(0, 32 * s);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 4 * s;
+      ctx.stroke();
+      break;
+    }
+    case "cap": {
+      // القاعدة
+      ctx.beginPath();
+      ctx.moveTo(-30 * s, 6 * s);
+      ctx.lineTo(-30 * s, 28 * s);
+      ctx.quadraticCurveTo(0, 46 * s, 30 * s, 28 * s);
+      ctx.lineTo(30 * s, 6 * s);
+      ctx.lineTo(0, 22 * s);
+      ctx.closePath();
+      ctx.fillStyle = t.mainDark;
+      ctx.fill();
+      // اللوح
+      ctx.beginPath();
+      ctx.moveTo(0, -36 * s);
+      ctx.lineTo(58 * s, -8 * s);
+      ctx.lineTo(0, 20 * s);
+      ctx.lineTo(-58 * s, -8 * s);
+      ctx.closePath();
+      ctx.fillStyle = t.main;
+      ctx.fill();
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 4 * s;
+      ctx.stroke();
+      // الشرّابة
+      ctx.beginPath();
+      ctx.moveTo(46 * s, -3 * s);
+      ctx.lineTo(46 * s, 26 * s);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 4 * s;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(46 * s, 30 * s, 6 * s, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      break;
+    }
+    case "laurel": {
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 8; k++) {
+          const th = Math.PI / 2 + side * (0.42 + k * 0.3);
+          const x = Math.cos(th) * 46 * s;
+          const y = Math.sin(th) * 46 * s;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 6 * s, 14 * s, th + Math.PI / 2 + side * 0.25, 0, Math.PI * 2);
+          ctx.fillStyle = g;
+          ctx.fill();
+        }
+      }
+      starPath(ctx, 0, -2 * s, 24 * s, 5, 0.45);
+      ctx.fillStyle = t.main;
+      ctx.fill();
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 3 * s;
+      ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
+}
+
 function drawFrame(ctx: Ctx, t: CertTheme, W: number, H: number) {
   const corners: [number, number, number, number][] = [
     [58, 58, 1, 1],
@@ -292,7 +531,7 @@ function drawFrame(ctx: Ctx, t: CertTheme, W: number, H: number) {
     }
     case "pearls": {
       frameBand(ctx, t, W, H, 34);
-      ctx.fillStyle = t.goldLight;
+      ctx.fillStyle = t.pearl ?? t.goldLight;
       alongBand(ctx, W, H, 44, (x, y) => {
         ctx.beginPath();
         ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -336,6 +575,40 @@ function drawFrame(ctx: Ctx, t: CertTheme, W: number, H: number) {
       }
       break;
     }
+    case "flag": {
+      const st = t.stripes ?? DEFAULT_FLAG_COLORS;
+      const widths = 16;
+      st.forEach((color, i) => {
+        const inset = 36 + i * (widths + 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = widths;
+        ctx.strokeRect(inset, inset, W - inset * 2, H - inset * 2);
+        // خطّ رفيع يحدّد الشريط الفاتح حتى لا يذوب في الخلفية
+        if (luminance(color) > 0.8) {
+          ctx.strokeStyle = "#9a9a9a";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(inset - widths / 2, inset - widths / 2, W - (inset - widths / 2) * 2, H - (inset - widths / 2) * 2);
+          ctx.strokeRect(inset + widths / 2, inset + widths / 2, W - (inset + widths / 2) * 2, H - (inset + widths / 2) * 2);
+        }
+      });
+      for (const [x, y, sx, sy] of corners) {
+        ctx.save();
+        ctx.translate(x + sx * 38, y + sy * 38);
+        ctx.scale(sx, sy);
+        ctx.strokeStyle = st[0];
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 46, 0, Math.PI / 2);
+        ctx.stroke();
+        ctx.strokeStyle = st[2];
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 66, 0, Math.PI / 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      break;
+    }
     case "modern": {
       frameBand(ctx, t, W, H, 14);
       ctx.strokeStyle = t.gold;
@@ -362,13 +635,23 @@ function drawFrame(ctx: Ctx, t: CertTheme, W: number, H: number) {
   }
 }
 
+export interface CertRenderOptions {
+  themeId?: CertThemeId;
+  /** ألوان نموذج «ألوان العلم». */
+  flagColors?: [string, string, string];
+  /** شعار جاهز يُرسَم أعلى الشهادة. */
+  emblem?: EmblemId | null;
+  /** صورة شعار يرفعها المدرّس (لها الأولوية على الجاهز). */
+  logoImage?: CanvasImageSource | null;
+}
+
 export function drawCertificate(
   ctx: Ctx,
   d: CertificateData,
   fonts: CertFonts,
-  themeId: CertThemeId = "emerald"
+  opts: CertRenderOptions = {}
 ): void {
-  const t = themeById(themeId);
+  const t = themeFor(opts.themeId, opts.flagColors);
   const W = CERT_W;
   const H = CERT_H;
   const L = certificateLines(d);
@@ -399,8 +682,23 @@ export function drawCertificate(
 
   drawFrame(ctx, t, W, H);
 
+  // ── الشعار (اختياري) ──
+  const hasLogo = Boolean(opts.logoImage || opts.emblem);
+  if (opts.logoImage) {
+    const img = opts.logoImage as CanvasImageSource & { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+    const iw = img.naturalWidth ?? img.width ?? 1;
+    const ih = img.naturalHeight ?? img.height ?? 1;
+    const box = { w: 260, h: 112 };
+    const k = Math.min(box.w / iw, box.h / ih);
+    const dw = iw * k;
+    const dh = ih * k;
+    ctx.drawImage(img, cx - dw / 2, 140 - dh / 2, dw, dh);
+  } else if (opts.emblem) {
+    drawEmblem(ctx, t, opts.emblem, cx, 140, 54);
+  }
+
   // ── المنصّة والعنوان ──
-  text(ctx, d.brandName, cx, 232, 46, fonts.title, t.main, { weight: 700, maxW: 900 });
+  text(ctx, d.brandName, cx, hasLogo ? 252 : 232, 46, fonts.title, t.main, { weight: 700, maxW: 900 });
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.18)";
   ctx.shadowBlur = 10;
