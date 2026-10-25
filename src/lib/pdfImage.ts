@@ -17,9 +17,16 @@ function concat(parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
-/** يبني PDF (A4 أفقي) من بايتات JPEG وأبعادها بالبكسل. */
-export function jpegToPdf(jpeg: Uint8Array, widthPx: number, heightPx: number): Uint8Array {
+export interface PdfPage {
+  jpeg: Uint8Array;
+  widthPx: number;
+  heightPx: number;
+}
+
+/** يبني PDF بصفحات A4 أفقية، في كلٍّ صورة JPEG بملء الصفحة. */
+export function jpegsToPdf(pages: PdfPage[]): Uint8Array {
   const { w, h } = A4_LANDSCAPE_PT;
+  const n = pages.length;
   const chunks: Uint8Array[] = [];
   const offsets: number[] = [];
   let pos = 0;
@@ -28,33 +35,42 @@ export function jpegToPdf(jpeg: Uint8Array, widthPx: number, heightPx: number): 
     pos += b.length;
   };
   const text = (s: string) => push(enc.encode(s));
-
-  push(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a])); // %PDF-1.4 + تعليق ثنائي
-  const obj = (n: number, body: string) => {
-    offsets[n] = pos;
-    text(`${n} 0 obj\n${body}\nendobj\n`);
+  const obj = (num: number, body: string) => {
+    offsets[num] = pos;
+    text(`${num} 0 obj\n${body}\nendobj\n`);
   };
 
+  push(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a])); // %PDF-1.4 + تعليق ثنائي
   obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
-  obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-  obj(
-    3,
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`
-  );
-  // كائن الصورة (ببايتات خام)
-  offsets[4] = pos;
-  text(
-    `4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${widthPx} /Height ${heightPx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`
-  );
-  push(jpeg);
-  text("\nendstream\nendobj\n");
-  const content = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
-  obj(5, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 3} 0 R`).join(" ")}] /Count ${n} >>`);
+  pages.forEach((pg, i) => {
+    const page = 3 + i * 3;
+    const img = page + 1;
+    const content = page + 2;
+    obj(
+      page,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${w} ${h}] /Resources << /XObject << /Im0 ${img} 0 R >> >> /Contents ${content} 0 R >>`
+    );
+    offsets[img] = pos;
+    text(
+      `${img} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pg.widthPx} /Height ${pg.heightPx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpeg.length} >>\nstream\n`
+    );
+    push(pg.jpeg);
+    text("\nendstream\nendobj\n");
+    const body = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
+    obj(content, `<< /Length ${body.length} >>\nstream\n${body}\nendstream`);
+  });
 
+  const count = 2 + n * 3;
   const xrefPos = pos;
-  let xref = "xref\n0 6\n0000000000 65535 f \n";
-  for (let n = 1; n <= 5; n++) xref += `${String(offsets[n]).padStart(10, "0")} 00000 n \n`;
+  let xref = `xref\n0 ${count + 1}\n0000000000 65535 f \n`;
+  for (let k = 1; k <= count; k++) xref += `${String(offsets[k]).padStart(10, "0")} 00000 n \n`;
   text(xref);
-  text(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`);
+  text(`trailer\n<< /Size ${count + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`);
   return concat(chunks);
+}
+
+/** يبني PDF (A4 أفقي) من صفحة واحدة: بايتات JPEG وأبعادها بالبكسل. */
+export function jpegToPdf(jpeg: Uint8Array, widthPx: number, heightPx: number): Uint8Array {
+  return jpegsToPdf([{ jpeg, widthPx, heightPx }]);
 }

@@ -4,10 +4,9 @@ import {
   certificateLines,
   gradeInfo,
   eligibleForTeacherCertificate,
-  TEACHER_CERTIFICATE_THRESHOLD,
   type CertificateData,
 } from "./certificate";
-import { jpegToPdf } from "./pdfImage";
+import { jpegToPdf, jpegsToPdf } from "./pdfImage";
 
 const base: CertificateData = {
   studentName: "ليلى أحمد",
@@ -22,12 +21,10 @@ const base: CertificateData = {
 };
 
 describe("شهادة المدرّس", () => {
-  it("العتبة 60 والأهلية تشترط الاعتماد", () => {
-    expect(TEACHER_CERTIFICATE_THRESHOLD).toBe(60);
+  it("الأهلية: منتهية ومعتمدة فقط — أيّاً كانت النسبة", () => {
     const ok = { status: "COMPLETED", percentage: 65, needsGrading: false, pendingReview: false };
     expect(eligibleForTeacherCertificate(ok)).toBe(true);
-    expect(eligibleForTeacherCertificate({ ...ok, percentage: 60 })).toBe(true);
-    expect(eligibleForTeacherCertificate({ ...ok, percentage: 59.9 })).toBe(false);
+    expect(eligibleForTeacherCertificate({ ...ok, percentage: 20 })).toBe(true);
     expect(eligibleForTeacherCertificate({ ...ok, pendingReview: true })).toBe(false);
     expect(eligibleForTeacherCertificate({ ...ok, needsGrading: true })).toBe(false);
     expect(eligibleForTeacherCertificate({ ...ok, status: "IN_PROGRESS" })).toBe(false);
@@ -77,6 +74,16 @@ describe("شهادة المدرّس", () => {
     expect(m.signLabel).toBe("المدرّس: محمد الحمود");
   });
 
+  it("شهادة مشاركة لمن دون حدّ النجاح", () => {
+    const m = certificateLines({ ...base, percentage: 40, female: false, honor: "مشارك" });
+    expect(m.title).toBe("شهادة مشاركة");
+    expect(m.body1).toContain("تقديراً لمشاركته في اختبار");
+    expect(m.closing).toBe("ونتمنّى له مزيداً من الجدّ والتقدّم.");
+    expect(certificateLines({ ...base, percentage: 59.9 }).title).toBe("شهادة مشاركة");
+    expect(certificateLines({ ...base, percentage: 60 }).title).toBe("شهادة تقدير");
+    expect(certificateLines({ ...base, percentage: 40 }).body1).toContain("لمشاركتها");
+  });
+
   it("عبارة الختام المخصّصة تحلّ محلّ الافتراضية", () => {
     expect(certificateLines({ ...base, closing: "  مبارك!  " }).closing).toBe("مبارك!");
   });
@@ -102,5 +109,22 @@ describe("jpegToPdf", () => {
     // بايتات JPEG محفوظة كما هي
     const idx = s.indexOf("stream\n") + 7;
     expect([...pdf.slice(idx, idx + jpeg.length)]).toEqual([...jpeg]);
+  });
+
+  it("jpegsToPdf: عدّة صفحات بجدول مراجع مطابق", () => {
+    const j = (k: number) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, k, k, k, 0xff, 0xd9]);
+    const pdf = jpegsToPdf([
+      { jpeg: j(1), widthPx: 2000, heightPx: 1414 },
+      { jpeg: j(2), widthPx: 2000, heightPx: 1414 },
+      { jpeg: j(3), widthPx: 2000, heightPx: 1414 },
+    ]);
+    const s = new TextDecoder("latin1").decode(pdf);
+    expect(s).toContain("/Count 3");
+    expect(s).toContain("/Kids [3 0 R 6 0 R 9 0 R]");
+    expect(s).toContain("xref\n0 12");
+    const xref = s.slice(s.indexOf("xref\n0 12"));
+    const offs = [...xref.matchAll(/(\d{10}) 00000 n/g)].map((m) => Number(m[1]));
+    expect(offs).toHaveLength(11);
+    offs.forEach((o, i) => expect(s.slice(o, o + `${i + 1} 0 obj\n`.length)).toBe(`${i + 1} 0 obj\n`));
   });
 });

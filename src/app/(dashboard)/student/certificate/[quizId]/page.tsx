@@ -49,7 +49,18 @@ export default async function CertificatePage({
   );
 
   const pct = best ? Number(best.percentage) : 0;
-  const honor = best ? certificateHonor(pct) : null;
+  // من دون حدّ النجاح لا يُصدر الطالب شهادته بنفسه، لكن تُفتح له إن أصدرها مدرّسه وأشعره بها.
+  const issued = best && certificateHonor(pct) === null
+    ? await prisma.notification.findFirst({
+        where: {
+          userId: session.sub,
+          type: "certificate_issued",
+          linkUrl: `/student/certificate/${params.quizId}`,
+        },
+        select: { id: true },
+      })
+    : null;
+  const honor = best ? certificateHonor(pct) ?? (issued ? "مشارك" : null) : null;
   if (!best || honor === null) notFound();
 
   const me = await prisma.user.findUnique({

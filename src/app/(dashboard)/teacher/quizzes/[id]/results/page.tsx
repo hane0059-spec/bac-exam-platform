@@ -110,12 +110,22 @@ export default async function QuizResultsPage({
           </h2>
         </div>
         {sessions.length > 0 && (
-          <a
-            href={`/api/teacher/quizzes/${quiz.id}/results/export`}
-            className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
-          >
-            تصدير Excel ↓
-          </a>
+          <div className="flex flex-wrap gap-2">
+            {done.length > 0 && (
+              <Link
+                href={`/teacher/quizzes/${quiz.id}/certificates`}
+                className="rounded-xl border border-gold px-4 py-2 text-sm font-medium text-gold hover:bg-gold/10"
+              >
+                🏅 شهادات الطلاب (PDF)
+              </Link>
+            )}
+            <a
+              href={`/api/teacher/quizzes/${quiz.id}/results/export`}
+              className="rounded-xl border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary-light"
+            >
+              تصدير Excel ↓
+            </a>
+          </div>
         )}
       </div>
 

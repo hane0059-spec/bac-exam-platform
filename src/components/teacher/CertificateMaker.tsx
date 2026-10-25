@@ -18,56 +18,7 @@ import {
 } from "@/lib/certificateArt";
 import { jpegToPdf } from "@/lib/pdfImage";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
-
-function familyOf(cssVar: string, fallback: string): string {
-  const el = document.createElement("span");
-  el.style.fontFamily = `var(${cssVar})`;
-  el.style.position = "absolute";
-  el.style.visibility = "hidden";
-  document.body.appendChild(el);
-  const f = getComputedStyle(el).fontFamily;
-  el.remove();
-  return f && !f.includes("var(") ? `${f}, ${fallback}` : fallback;
-}
-
-async function loadFonts(): Promise<CertFonts> {
-  const fonts: CertFonts = {
-    title: familyOf("--font-reem", "'Reem Kufi', Tahoma, sans-serif"),
-    body: familyOf("--font-amiri", "Amiri, 'Traditional Arabic', serif"),
-  };
-  try {
-    await Promise.all([
-      document.fonts.load(`700 80px ${fonts.title}`, "شهادة تقدير إتقان 0123456789%"),
-      document.fonts.load(`400 40px ${fonts.body}`, "الطالب تتشرف بمنح هذه الشهادة"),
-      document.fonts.load(`700 40px ${fonts.body}`, "الطالب المدرس"),
-    ]);
-    await document.fonts.ready;
-  } catch {
-    // الخطوط الاحتياطية تكفي.
-  }
-  return fonts;
-}
-
-function safeFileName(s: string): string {
-  return s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim().slice(0, 60) || "شهادة";
-}
-
-function download(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
-}
-
-function canvasBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("تعذّر إنشاء الملفّ"))), type, quality)
-  );
-}
+import { canvasBlob, downloadBlob as download, loadCertFonts, safeFileName } from "@/lib/certificateClient";
 
 export default function CertificateMaker({
   data,
@@ -187,7 +138,7 @@ export default function CertificateMaker({
   const draw = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (!fontsRef.current) fontsRef.current = await loadFonts();
+    if (!fontsRef.current) fontsRef.current = await loadCertFonts();
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, CERT_W, CERT_H);

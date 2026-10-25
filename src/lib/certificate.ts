@@ -4,10 +4,7 @@
 /** أدنى نسبة لاستحقاق شهادة (حدّ النجاح في السلّم الدولي: 60%). */
 export const CERTIFICATE_THRESHOLD = 60;
 
-/** أدنى نسبة لتُصدِر له المدرّس شهادة رسمية ملوّنة (صورة/PDF) — الجميع من حدّ النجاح. */
-export const TEACHER_CERTIFICATE_THRESHOLD = CERTIFICATE_THRESHOLD;
-
-export type GradeTier = "honors" | "excellent" | "verygood" | "good" | "pass";
+export type GradeTier = "honors" | "excellent" | "verygood" | "good" | "pass" | "participation";
 
 export interface GradeInfo {
   tier: GradeTier;
@@ -36,19 +33,17 @@ export function certificateHonor(pct: number): string | null {
   return gradeInfo(pct)?.honor ?? null;
 }
 
-/** هل تستحقّ الجلسة شهادة المدرّس؟ منتهية، معتمدة (لا تصحيح معلّق)، ونسبتها ≥ حدّ النجاح. */
+/**
+ * هل يُمكن للمدرّس إصدار شهادة لهذه الجلسة؟ منتهية ومعتمدة (لا تصحيح معلّق) — أيّاً كانت نسبتها:
+ * من بلغ حدّ النجاح ينال شهادة تقدير بتقديره، ومن دونه «شهادة مشاركة».
+ */
 export function eligibleForTeacherCertificate(s: {
   status: string;
-  percentage: number;
+  percentage?: number;
   needsGrading: boolean;
   pendingReview: boolean;
 }): boolean {
-  return (
-    (s.status === "COMPLETED" || s.status === "TIMED_OUT") &&
-    !s.needsGrading &&
-    !s.pendingReview &&
-    s.percentage >= TEACHER_CERTIFICATE_THRESHOLD
-  );
+  return (s.status === "COMPLETED" || s.status === "TIMED_OUT") && !s.needsGrading && !s.pendingReview;
 }
 
 export interface CertificateData {
@@ -83,20 +78,23 @@ export function certificateLines(d: CertificateData): CertificateLines {
   const h = f ? "ها" : "ه";
   // «أداء» + الضمير تُكتَب الهمزة على ياء: أدائها / أدائه.
   const perf = f ? "ئها" : "ئه";
-  const tier = gradeInfo(d.percentage)?.tier ?? "pass";
+  const tier = gradeInfo(d.percentage)?.tier ?? "participation";
   const praise: Record<GradeTier, string> = {
     honors: `تقديراً لتفوّق${h} الباهر`,
     excellent: `تقديراً لتفوّق${h} الباهر`,
     verygood: `تقديراً لأدا${perf} المتميّز`,
     good: `تقديراً لجهد${h} وأدا${perf} الجيّد`,
     pass: `تقديراً لاجتهاد${h} ونجاح${h}`,
+    participation: `تقديراً لمشاركت${h}`,
   };
   const wish =
-    tier === "good" || tier === "pass"
-      ? `ونتمنّى ل${h} مزيداً من التقدّم والنجاح.`
-      : `ونتمنّى ل${h} دوام التوفيق والتميّز.`;
+    tier === "participation"
+      ? `ونتمنّى ل${h} مزيداً من الجدّ والتقدّم.`
+      : tier === "good" || tier === "pass"
+        ? `ونتمنّى ل${h} مزيداً من التقدّم والنجاح.`
+        : `ونتمنّى ل${h} دوام التوفيق والتميّز.`;
   return {
-    title: "شهادة تقدير",
+    title: tier === "participation" ? "شهادة مشاركة" : "شهادة تقدير",
     intro: `تتشرّف ${d.brandName} بمنح هذه الشهادة إلى ${who}`,
     body1: `${praise[tier]} في اختبار «${d.quizTitle}»`,
     body2: `في مادة ${d.subjectName}، حيث حقّق${f ? "ت" : ""} نسبة`,
