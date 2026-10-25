@@ -1,5 +1,5 @@
 // src/app/(dashboard)/teacher/certificates/[sessionId]/page.tsx
-// المدرّس: إصدار شهادة تقدير رسمية ملوّنة لطالب بلغ 95% فأكثر (صورة/PDF/طباعة + إشعار الطالب).
+// المدرّس: إصدار شهادة تقدير رسمية ملوّنة لكل طالب نجح (60% فأكثر) بتقدير حسب السلّم الدولي (صورة/PDF/طباعة + إشعار الطالب).
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/session";

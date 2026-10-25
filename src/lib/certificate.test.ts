@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   certificateHonor,
   certificateLines,
+  gradeInfo,
   eligibleForTeacherCertificate,
   TEACHER_CERTIFICATE_THRESHOLD,
   type CertificateData,
@@ -21,16 +22,44 @@ const base: CertificateData = {
 };
 
 describe("شهادة المدرّس", () => {
-  it("العتبة 95 والأهلية تشترط الاعتماد", () => {
-    expect(TEACHER_CERTIFICATE_THRESHOLD).toBe(95);
-    const ok = { status: "COMPLETED", percentage: 95, needsGrading: false, pendingReview: false };
+  it("العتبة 60 والأهلية تشترط الاعتماد", () => {
+    expect(TEACHER_CERTIFICATE_THRESHOLD).toBe(60);
+    const ok = { status: "COMPLETED", percentage: 65, needsGrading: false, pendingReview: false };
     expect(eligibleForTeacherCertificate(ok)).toBe(true);
-    expect(eligibleForTeacherCertificate({ ...ok, percentage: 94.9 })).toBe(false);
+    expect(eligibleForTeacherCertificate({ ...ok, percentage: 60 })).toBe(true);
+    expect(eligibleForTeacherCertificate({ ...ok, percentage: 59.9 })).toBe(false);
     expect(eligibleForTeacherCertificate({ ...ok, pendingReview: true })).toBe(false);
     expect(eligibleForTeacherCertificate({ ...ok, needsGrading: true })).toBe(false);
     expect(eligibleForTeacherCertificate({ ...ok, status: "IN_PROGRESS" })).toBe(false);
     expect(eligibleForTeacherCertificate({ ...ok, status: "TIMED_OUT" })).toBe(true);
+  });
+
+  it("سلّم التقديرات الدولي (A–D) وحدوده", () => {
+    const g = (p: number) => gradeInfo(p);
+    expect(g(100)).toMatchObject({ honor: "امتياز مع مرتبة الشرف", letter: "A+", tier: "honors" });
+    expect(g(95)).toMatchObject({ letter: "A+" });
+    expect(g(94.9)).toMatchObject({ honor: "ممتاز", letter: "A" });
+    expect(g(90)).toMatchObject({ honor: "ممتاز" });
+    expect(g(89.9)).toMatchObject({ honor: "جيد جداً", letter: "B" });
+    expect(g(80)).toMatchObject({ honor: "جيد جداً" });
+    expect(g(79.9)).toMatchObject({ honor: "جيد", letter: "C" });
+    expect(g(70)).toMatchObject({ honor: "جيد" });
+    expect(g(69.9)).toMatchObject({ honor: "مقبول", letter: "D" });
+    expect(g(65)).toMatchObject({ honor: "مقبول", tier: "pass" });
+    expect(g(60)).toMatchObject({ honor: "مقبول" });
+    expect(g(59.9)).toBeNull();
     expect(certificateHonor(96)).toBe("امتياز مع مرتبة الشرف");
+    expect(certificateHonor(40)).toBeNull();
+  });
+
+  it("عبارات الشهادة تناسب الدرجة", () => {
+    expect(certificateLines({ ...base, percentage: 97 }).body1).toContain("تفوّقها الباهر");
+    expect(certificateLines({ ...base, percentage: 85 }).body1).toContain("أدائها المتميّز");
+    expect(certificateLines({ ...base, percentage: 75 }).body1).toContain("جهدها وأدائها الجيّد");
+    const pass = certificateLines({ ...base, percentage: 65, female: false });
+    expect(pass.body1).toContain("تقديراً لاجتهاده ونجاحه");
+    expect(pass.closing).toBe("ونتمنّى له مزيداً من التقدّم والنجاح.");
+    expect(certificateLines({ ...base, percentage: 97 }).closing).toBe("ونتمنّى لها دوام التوفيق والتميّز.");
   });
 
   it("النصوص مؤنَّثة ومذكَّرة", () => {

@@ -1,7 +1,7 @@
 // src/lib/certificateArt.ts
 // رسم شهادة التقدير الرسمية على canvas (A4 أفقي) بإطار قابل للاختيار من عدّة نماذج.
 // بلا أيّ شعار أو ختم: إطار وزخرفة حدود فقط ثم النصّ وميدالية النسبة وشريط التقدير والتوقيع. للمتصفّح فقط.
-import { certificateLines, type CertificateData } from "@/lib/certificate";
+import { certificateLines, gradeInfo, type CertificateData } from "@/lib/certificate";
 
 export const CERT_W = 2000;
 export const CERT_H = 1414;
@@ -739,7 +739,13 @@ export function drawCertificate(
   ctx.lineWidth = 3;
   ctx.stroke();
   const pctStr = `${Math.round(d.percentage * 10) / 10}%`;
-  text(ctx, pctStr, cx, my + 24, 74, fonts.title, t.mainDark, { weight: 700, maxW: 150 });
+  const info = gradeInfo(d.percentage);
+  text(ctx, pctStr, cx, my + (info ? 10 : 24), info ? 60 : 74, fonts.title, t.mainDark, { weight: 700, maxW: 140 });
+  if (info) {
+    // حرف التقدير الدولي (A+ … D) تحت النسبة
+    ctx.direction = "ltr";
+    text(ctx, info.letter, cx, my + 54, 34, fonts.title, t.main, { weight: 700 });
+  }
 
   // شريط التقدير
   const bw = 820;

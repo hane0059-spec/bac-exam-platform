@@ -1,6 +1,6 @@
 // src/app/api/teacher/certificates/[sessionId]/notify/route.ts
 // POST: إشعار الطالب بأنّ مدرّسه أصدر له شهادة تقدير (تفتح صفحته الشهادة بالتصميم نفسه).
-// الحراسة: مدرّس فعّال مالك الاختبار + الجلسة مؤهّلة (95% فأكثر ومعتمدة). مرّة واحدة لكل اختبار.
+// الحراسة: مدرّس فعّال مالك الاختبار + الجلسة مؤهّلة (60% فأكثر ومعتمدة). مرّة واحدة لكل اختبار.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
