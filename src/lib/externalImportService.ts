@@ -17,6 +17,7 @@ export interface ImportResult {
     password: string;
     email: string;
     group: string;
+    grade: string;
   }[];
   reused: { name: string; identifier: string }[];
   errors: { row: number; reason: string }[];
@@ -52,6 +53,7 @@ export async function runExternalImport(opts: {
   if (!grades.some((g) => g.id === defaultGradeId)) {
     return { ok: false, error: "صفّ افتراضي غير صالح" };
   }
+  const gradeNameById = new Map(grades.map((g) => [g.id, g.name]));
   const gradeByKey = new Map<string, string>();
   for (const g of grades) {
     gradeByKey.set(g.name.trim().toLowerCase(), g.id);
@@ -164,6 +166,7 @@ export async function runExternalImport(opts: {
           password,
           email: email ?? "",
           group: r.groupName || enroll?.groupName || "",
+          grade: gradeNameById.get(gradeLevelId) ?? "",
         });
         done = true;
       } catch (e) {

@@ -48,7 +48,13 @@ export default function ResetAndPrintButton({
       setError(data.error ?? "تعذّر التنفيذ.");
       return;
     }
-    const reset = data.reset as { name: string; studentCode: string; password: string; group: string }[];
+    const reset = data.reset as {
+      name: string;
+      studentCode: string;
+      password: string;
+      group: string;
+      grade: string;
+    }[];
     const skipped = data.skipped as { name: string; studentCode: string }[];
     setMsg(
       `أُعيد تعيين ${reset.length} طالباً` +
@@ -66,6 +72,7 @@ export default function ResetAndPrintButton({
             studentCode: r.studentCode,
             password: r.password,
             group: r.group || undefined,
+            grade: r.grade || undefined,
           })),
           {
             brandName,

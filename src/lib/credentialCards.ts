@@ -10,6 +10,8 @@ export interface CredentialCard {
   studentCode: string;
   password: string;
   group?: string;
+  /** صفّ الطالب (يظهر على البطاقة ليُعرَف صاحبها بعد القصّ). */
+  grade?: string;
 }
 
 export interface CardsOptions {
@@ -30,18 +32,22 @@ export function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** ترتيب حسب المجموعة (الفارغة أخيراً) مع بقاء ترتيب الملف داخل المجموعة. */
+/** ترتيب حسب الصفّ ثم المجموعة (الفارغة أخيراً) مع بقاء ترتيب الملف داخلها. */
 export function sortByGroup(cards: CredentialCard[]): CredentialCard[] {
+  const cmp = (x: string, y: string) => {
+    if (x === y) return 0;
+    if (!x) return 1;
+    if (!y) return -1;
+    return x.localeCompare(y, "ar");
+  };
   return cards
     .map((c, i) => ({ c, i }))
-    .sort((a, b) => {
-      const ga = a.c.group ?? "";
-      const gb = b.c.group ?? "";
-      if (ga === gb) return a.i - b.i;
-      if (!ga) return 1;
-      if (!gb) return -1;
-      return ga.localeCompare(gb, "ar");
-    })
+    .sort(
+      (a, b) =>
+        cmp(a.c.grade ?? "", b.c.grade ?? "") ||
+        cmp(a.c.group ?? "", b.c.group ?? "") ||
+        a.i - b.i
+    )
     .map((x) => x.c);
 }
 
@@ -53,7 +59,13 @@ export function chunkCards<T>(items: T[], size = CARDS_PER_PAGE): T[][] {
 
 function cardHtml(c: CredentialCard, qrSvg: string, o: CardsOptions, host: string): string {
   return `<div class="card">
-<div class="top"><b>${escapeHtml(o.brandName)}</b><span>${c.group ? escapeHtml(c.group) : "بطاقة دخول طالب"}</span></div>
+<div class="top"><b>${escapeHtml(o.brandName)}</b><span>${
+    c.grade || c.group
+      ? [c.grade ? `<strong>${escapeHtml(c.grade)}</strong>` : "", c.group ? escapeHtml(c.group) : ""]
+          .filter(Boolean)
+          .join(" · ")
+      : "بطاقة دخول طالب"
+  }</span></div>
 <div class="body">
 <div class="info">
 <div class="nm">${escapeHtml(c.name)}</div>
@@ -64,6 +76,7 @@ function cardHtml(c: CredentialCard, qrSvg: string, o: CardsOptions, host: strin
 <div class="qr">${qrSvg}<small>امسح للدخول</small></div>
 </div>
 <div class="note"><b>كلمة السرّ مؤقّتة:</b> ستُطلب منك كلمة سرّ جديدة عند أول دخول${o.teacherName ? ` — المدرّس: ${escapeHtml(o.teacherName)}` : ""}</div>
+<div class="tip">يكفي كتابة رقم الرمز (مثل ${escapeHtml(c.studentCode.replace(/^[A-Za-z]+-?/, "") || c.studentCode)}) · لا فرق بين الأحرف الكبيرة والصغيرة في الرمز وكلمة السرّ</div>
 </div>`;
 }
 
@@ -120,5 +133,7 @@ header,footer{display:flex;justify-content:space-between;font-size:11px;color:#5
 .u{font-family:Consolas,"Courier New",monospace;font-size:11px;direction:ltr}
 .qr{text-align:center;font-size:10px;color:#444;display:flex;flex-direction:column;align-items:center}
 .note{font-size:11px;color:#8a4b00;border-top:1px solid #ccc;padding-top:1.5mm}
+.tip{font-size:10px;color:#444;margin-top:1mm}
+.top strong{font-size:14px;color:#111}
 </style></head><body>${qrDef}${body}</body></html>`;
 }

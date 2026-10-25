@@ -52,4 +52,27 @@ describe("credentialCards", () => {
     expect(html).toContain("كلمة السرّ مؤقّتة");
     expect(html).toContain("ستُطلب منك كلمة سرّ جديدة عند أول دخول");
   });
+
+  it("يعرض الصفّ على كل بطاقة ويرتّب بالصفّ ثم المجموعة", () => {
+    const withGrade = (n: number, grade?: string, group?: string): CredentialCard => ({
+      ...mk(n, group),
+      grade,
+    });
+    const sorted = sortByGroup([
+      withGrade(1, "العاشر", "النجم"),
+      withGrade(2, "التاسع", "النجم"),
+      withGrade(3, undefined, "النجم"),
+      withGrade(4, "التاسع", undefined),
+      withGrade(5, "التاسع", "الشمس"),
+    ]);
+    expect(sorted.map((c) => c.name)).toEqual(["طالب 5", "طالب 2", "طالب 4", "طالب 1", "طالب 3"]);
+    const html = buildCredentialCardsHtml([withGrade(7, "الصف التاسع", "النجم")], opts);
+    expect(html).toContain("<strong>الصف التاسع</strong> · النجم");
+  });
+
+  it("ينوّه لمرونة الرمز وعدم حساسية الأحرف", () => {
+    const html = buildCredentialCardsHtml([mk(6)], opts);
+    expect(html).toContain("لا فرق بين الأحرف الكبيرة والصغيرة");
+    expect(html).toContain("يكفي كتابة رقم الرمز (مثل 1006)");
+  });
 });

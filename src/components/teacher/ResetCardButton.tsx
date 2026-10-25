@@ -41,11 +41,25 @@ export default function ResetCardButton({
       return;
     }
     setDone(true);
-    const c = data.card as { name: string; studentCode: string; password: string; group: string };
+    const c = data.card as {
+      name: string;
+      studentCode: string;
+      password: string;
+      group: string;
+      grade: string;
+    };
     const subjects = (data.subjects as string[]) ?? [];
     printHtmlInHiddenFrame(
       buildCredentialCardsHtml(
-        [{ name: c.name, studentCode: c.studentCode, password: c.password, group: c.group || undefined }],
+        [
+          {
+            name: c.name,
+            studentCode: c.studentCode,
+            password: c.password,
+            group: c.group || undefined,
+            grade: c.grade || undefined,
+          },
+        ],
         {
           brandName,
           teacherName,

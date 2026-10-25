@@ -67,7 +67,9 @@ export async function POST(req: Request) {
       firstName: true,
       lastName: true,
       lastSeenAt: true,
-      studentProfile: { select: { studentCode: true } },
+      studentProfile: {
+        select: { studentCode: true, gradeLevel: { select: { name: true } } },
+      },
       examSessions: { select: { id: true }, take: 1 },
     },
     orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
@@ -93,7 +95,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const reset: { name: string; studentCode: string; password: string; group: string }[] = [];
+  const reset: {
+    name: string;
+    studentCode: string;
+    password: string;
+    group: string;
+    grade: string;
+  }[] = [];
   const updates: Prisma.PrismaPromise<unknown>[] = [];
   for (let i = 0; i < targets.length; i += 10) {
     const chunk = targets.slice(i, i + 10).map((s) => ({ s, password: randomPassword() }));
@@ -110,6 +118,7 @@ export async function POST(req: Request) {
         studentCode: c.s.studentProfile?.studentCode ?? "—",
         password: c.password,
         group: groupName,
+        grade: c.s.studentProfile?.gradeLevel?.name ?? "",
       });
     });
   }

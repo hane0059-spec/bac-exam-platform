@@ -36,6 +36,7 @@ interface Created {
   password: string;
   email: string;
   group?: string;
+  grade?: string;
 }
 interface Result {
   quizTitle: string;
@@ -106,6 +107,7 @@ export default function ExternalImport({
         studentCode: r.studentCode,
         password: r.password,
         group: r.group || undefined,
+        grade: r.grade || undefined,
       })),
       {
         brandName: printInfo?.brandName ?? "إتقان",

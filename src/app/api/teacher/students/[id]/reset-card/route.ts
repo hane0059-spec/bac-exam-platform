@@ -34,7 +34,7 @@ export async function POST(
   const [profile, enrollments] = await Promise.all([
     prisma.studentProfile.findUnique({
       where: { userId: student.id },
-      select: { studentCode: true },
+      select: { studentCode: true, gradeLevel: { select: { name: true } } },
     }),
     prisma.studentEnrollment.findMany({
       where: { studentId: student.id, teacherId: session.sub, isActive: true },
@@ -62,6 +62,7 @@ export async function POST(
       name: `${student.firstName} ${student.lastName}`,
       studentCode: profile?.studentCode ?? "—",
       password,
+      grade: profile?.gradeLevel?.name ?? "",
       group: enrollments.find((e) => e.groupName?.trim())?.groupName?.trim() ?? "",
     },
     subjects: enrollments.map((e) => e.subject.name),
