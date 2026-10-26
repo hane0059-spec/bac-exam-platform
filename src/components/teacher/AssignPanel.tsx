@@ -143,10 +143,13 @@ export default function AssignPanel({
   published,
   students,
   otherStudents,
+  focusStudentId,
 }: {
   quizId: string;
   published: boolean;
   students: AssignStudent[];
+  // طالب محدَّد قادم من رابط (مثل «منح محاولة إضافية»): تُضيَّق القائمة عليه ابتداءً.
+  focusStudentId?: string;
   // طلاب المدرّس في مواد أخرى (خارج مادة هذا الاختبار) — للتصفّح عند عدم تذكّر الرمز.
   otherStudents: AssignStudent[];
 }) {
@@ -160,7 +163,10 @@ export default function AssignPanel({
   // فلتر الصفّ: "" = كل الصفوف. المجموعات تُحسب ضمن الصفّ المختار فلا تختلط «النجم» بين صفّين.
   const [gradeFilter, setGradeFilter] = useState<string>("");
   // بحث بالاسم/الرمز يُضيّق صفوف القائمة فقط (لا يغيّر مجموعة الإسناد الجماعي).
-  const [query, setQuery] = useState("");
+  const focusStudent = focusStudentId
+    ? students.find((s) => s.id === focusStudentId)
+    : undefined;
+  const [query, setQuery] = useState(focusStudent?.studentCode ?? "");
   const [codes, setCodes] = useState("");
   const [codeResult, setCodeResult] = useState<{
     assigned: string[];
@@ -477,6 +483,19 @@ export default function AssignPanel({
               {c.label} ({c.n})
             </button>
           ))}
+        </div>
+      )}
+
+      {focusStudent && query === focusStudent.studentCode && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-primary-light px-3 py-2 text-sm text-primary-dark">
+          <span>تعرض الطالب: {focusStudent.name}</span>
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="text-primary hover:underline"
+          >
+            عرض كل الطلاب
+          </button>
         </div>
       )}
 

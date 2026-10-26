@@ -25,7 +25,7 @@ export default async function TeacherSessionReviewPage({
   // الملكية: الجلسة على اختبار يملكه هذا المدرّس.
   const exam = await prisma.examSession.findUnique({
     where: { id: params.id },
-    select: { quizId: true, quiz: { select: { creatorId: true } } },
+    select: { quizId: true, studentId: true, quiz: { select: { creatorId: true } } },
   });
   if (!exam || exam.quiz.creatorId !== session.sub) notFound();
 
@@ -87,7 +87,7 @@ export default async function TeacherSessionReviewPage({
           <SessionFeedbackBox
             sessionId={params.id}
             initial={review.teacherFeedback ?? ""}
-            assignHref={`/teacher/quizzes/${exam.quizId}/assign`}
+            assignHref={`/teacher/quizzes/${exam.quizId}/assign?student=${exam.studentId}`}
           />
         )}
         <SessionReviewView review={review} />

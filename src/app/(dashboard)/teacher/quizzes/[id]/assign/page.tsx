@@ -18,8 +18,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AssignQuizPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: { student?: string };
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -172,6 +174,7 @@ export default async function AssignQuizPage({
         published={quiz.status === "PUBLISHED"}
         students={students}
         otherStudents={otherStudents}
+        focusStudentId={searchParams.student}
       />
 
       {canManage && (

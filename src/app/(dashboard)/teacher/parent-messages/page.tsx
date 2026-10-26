@@ -28,6 +28,7 @@ export default async function TeacherParentMessagesPage() {
       createdAt: true,
       sessionId: true,
       parent: { select: { firstName: true, lastName: true } },
+      studentId: true,
       student: { select: { firstName: true, lastName: true } },
       session: {
         select: { quizId: true, quiz: { select: { title: true, isFileBased: true } } },
@@ -47,6 +48,7 @@ export default async function TeacherParentMessagesPage() {
       teacherResponse: true,
       createdAt: true,
       sessionId: true,
+      studentId: true,
       student: { select: { firstName: true, lastName: true } },
       session: {
         select: { quizId: true, quiz: { select: { title: true, isFileBased: true } } },
@@ -70,7 +72,7 @@ export default async function TeacherParentMessagesPage() {
       : `/teacher/sessions/${m.sessionId}`,
     assignHref: m.session.quiz.isFileBased
       ? `/teacher/file-exams/${m.session.quizId}`
-      : `/teacher/quizzes/${m.session.quizId}/assign`,
+      : `/teacher/quizzes/${m.session.quizId}/assign?student=${m.studentId}`,
   }));
 
   const fromParents: ParentMessageItem[] = rows.map((m) => ({
@@ -89,7 +91,7 @@ export default async function TeacherParentMessagesPage() {
       : `/teacher/sessions/${m.sessionId}`,
     assignHref: m.session.quiz.isFileBased
       ? `/teacher/file-exams/${m.session.quizId}`
-      : `/teacher/quizzes/${m.session.quizId}/assign`,
+      : `/teacher/quizzes/${m.session.quizId}/assign?student=${m.studentId}`,
   }));
   const items = [...fromStudents, ...fromParents].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt),
