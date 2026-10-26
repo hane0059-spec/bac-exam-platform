@@ -7,6 +7,7 @@ import { dashboardPath } from "@/lib/auth";
 import { roleLabel } from "@/lib/gender";
 import DashboardShell from "@/components/DashboardShell";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import PushToggle from "@/components/PushToggle";
 import RequestAccountDeletion from "@/components/teacher/RequestAccountDeletion";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export default async function AccountPage() {
         </p>
       </div>
       <div className="space-y-5">
+        {!forced && <PushToggle />}
         <ChangePasswordForm
           forced={forced}
           nextPath={forced ? dashboardPath(session.role) : undefined}

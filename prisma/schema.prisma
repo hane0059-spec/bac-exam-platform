@@ -194,6 +194,7 @@ model User {
   studentParents      ParentLink[]        @relation("StudentParents")
   uploadedAttachments Attachment[]        @relation("UploadedBy")
   notifications       Notification[]
+  pushSubscriptions   PushSubscription[]
   annotations         Annotation[]        @relation("AnnotationAuthor")
   questionReports     QuestionReport[]
   gradeAppeals        GradeAppeal[]       @relation("StudentAppeals")
@@ -321,6 +322,21 @@ model Notification {
 
   @@index([userId, isRead])
   @@map("notifications")
+}
+
+// اشتراك جهاز في إشعارات الدفع (Web Push): جهاز/متصفّح واحد لكل صفّ، والمفتاح الفريد هو endpoint.
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 // تعليق المدرّس على صورة إجابة بموضع نسبي (x,y) من 0 إلى 1.

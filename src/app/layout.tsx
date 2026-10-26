@@ -1,10 +1,11 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo, Tajawal, Reem_Kufi, Amiri, Tinos } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css"; // عرض المعادلات (KaTeX)
 import { getAppFont, FONT_CSS, getAppBgColor, bgColorToRgb } from "@/lib/settings";
 import { getBranding } from "@/lib/branding";
+import PwaRegister from "@/components/PwaRegister";
 
 // خطوط يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
 // Amiri/Tinos بدائل ويب للخطوط النظامية (التقليدي/تايمز) لتظهر على كل الأجهزة.
@@ -41,11 +42,16 @@ const tinos = Tinos({
 
 const FONT_VARS = `${cairo.variable} ${tajawal.variable} ${reem.variable} ${amiri.variable} ${tinos.variable}`;
 
+export const viewport: Viewport = { themeColor: "#171411" };
+
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getBranding();
   return {
     title: branding.name,
     description: branding.tagline || "منصة التقييم والتمكّن",
+    // PWA: أيقونة الشاشة الرئيسية للآيفون + وضع التطبيق المستقلّ.
+    icons: { apple: "/icons/180" },
+    appleWebApp: { capable: true, title: branding.name },
   };
 }
 
@@ -82,6 +88,7 @@ export default async function RootLayout({
               "(function(){try{var s=localStorage.getItem('bac-text-scale');if(s){document.documentElement.style.fontSize=(parseFloat(s)*100)+'%';}var t=localStorage.getItem('bac-theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();",
           }}
         />
+        <PwaRegister />
         {children}
       </body>
     </html>

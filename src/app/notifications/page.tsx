@@ -6,6 +6,7 @@ import { listNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import NotificationsList from "@/components/NotificationsList";
+import PushToggle from "@/components/PushToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,7 @@ export default async function NotificationsPage() {
   return (
     <DashboardShell session={session}>
       <h2 className="mb-4 font-display text-xl font-bold">الإشعارات</h2>
+      <PushToggle />
       <NotificationsList
         items={items.map((n) => ({
           id: n.id,

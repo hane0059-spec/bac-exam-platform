@@ -1,6 +1,7 @@
 // src/lib/notifications.ts
 // إشعارات داخل التطبيق (بلا مزوّد خارجي).
 import { prisma } from "@/lib/prisma";
+import { pushForNotification } from "@/lib/push";
 
 export async function createNotification(params: {
   userId: string;
@@ -16,6 +17,8 @@ export async function createNotification(params: {
       linkUrl: params.linkUrl ?? null,
     },
   });
+  // دفع للهاتف (best-effort، لا يرمي).
+  await pushForNotification([params.userId], params.linkUrl);
 }
 
 /** إنشاء عدّة إشعارات دفعةً واحدة (مثل إسناد لعدّة طلاب). */
@@ -36,6 +39,14 @@ export async function createNotifications(
       linkUrl: i.linkUrl ?? null,
     })),
   });
+  // الدفع: مجموعة لكل رابط مختلف (غالباً رابط واحد عند الإسناد لعدّة طلاب).
+  const byLink = new Map<string, string[]>();
+  for (const i of items) {
+    const k = i.linkUrl ?? "";
+    if (!byLink.has(k)) byLink.set(k, []);
+    byLink.get(k)!.push(i.userId);
+  }
+  await Promise.all([...byLink].map(([link, ids]) => pushForNotification(ids, link || null)));
 }
 
 export function unreadCount(userId: string): Promise<number> {
