@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { detachThisDevice } from "@/lib/pushClient";
 
 export default function LogoutButton({ fullWidth = false }: { fullWidth?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -20,6 +21,8 @@ export default function LogoutButton({ fullWidth = false }: { fullWidth?: boolea
   async function handleLogout() {
     setLoading(true);
     try {
+      // فصل الجهاز عن الحساب قبل الخروج (يلزم أن تكون الجلسة قائمة).
+      await detachThisDevice();
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
       window.location.href = "/login";
