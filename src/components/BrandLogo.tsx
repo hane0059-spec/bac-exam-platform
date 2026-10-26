@@ -1,6 +1,6 @@
 // src/components/BrandLogo.tsx
-// شعار المنصّة: صورة مرفوعة (عند وجودها) وإلا حلزون دنا ذهبي افتراضي.
-// مقاس قابل للضبط، ولا يستخدم clipPath (تفادي تعارض المعرّفات عند التكرار).
+// شعار المنصّة: صورة مرفوعة من المدير العام (عند وجودها) وإلا الشعار الافتراضي «إتقان»
+// (قبّعة التخرّج + الكتاب + ورقة الاختبار، من public/brand/emblem.png) على بلاط أبيض ليُقرأ في الوضعين.
 export default function BrandLogo({
   size = 40,
   hasLogo = false,
@@ -9,6 +9,7 @@ export default function BrandLogo({
   hasLogo?: boolean;
 }) {
   const r = Math.round(18 * (size / 80));
+  const custom = hasLogo;
   return (
     <div
       style={{
@@ -16,47 +17,24 @@ export default function BrandLogo({
         height: size,
         borderRadius: r,
         overflow: "hidden",
-        border: "1px solid #2A2420",
+        border: custom ? "1px solid #2A2420" : "1px solid rgba(0,0,0,0.12)",
+        background: custom ? undefined : "#FFFFFF",
         flexShrink: 0,
       }}
     >
-      {hasLogo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="/api/branding/logo"
-          alt=""
-          width={size}
-          height={size}
-          style={{ width: size, height: size, objectFit: "cover", display: "block" }}
-        />
-      ) : (
-        <svg viewBox="0 0 80 80" width={size} height={size}>
-          <rect width="80" height="80" fill="#171411" />
-          {/* الخيط الخلفي (أكتم) */}
-          <path
-            d="M 52,8 C 52,16 28,16 28,24 C 28,32 52,32 52,40 C 52,48 28,48 28,56 C 28,64 52,64 52,72"
-            fill="none"
-            stroke="#C49030"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            opacity={0.5}
-          />
-          {/* الخيط الأمامي (ذهبي) */}
-          <path
-            d="M 28,8 C 28,16 52,16 52,24 C 52,32 28,32 28,40 C 28,48 52,48 52,56 C 52,64 28,64 28,72"
-            fill="none"
-            stroke="#E2B038"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-          {/* جسور القواعد */}
-          <line x1="28" y1="8"  x2="52" y2="8"  stroke="#D4A838" strokeWidth="1.5" opacity={0.72} />
-          <line x1="28" y1="24" x2="52" y2="24" stroke="#D4A838" strokeWidth="1.2" opacity={0.50} />
-          <line x1="28" y1="40" x2="52" y2="40" stroke="#D4A838" strokeWidth="1.5" opacity={0.72} />
-          <line x1="28" y1="56" x2="52" y2="56" stroke="#D4A838" strokeWidth="1.2" opacity={0.50} />
-          <line x1="28" y1="72" x2="52" y2="72" stroke="#D4A838" strokeWidth="1.5" opacity={0.72} />
-        </svg>
-      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={custom ? "/api/branding/logo" : "/brand/emblem.png"}
+        alt=""
+        width={size}
+        height={size}
+        style={{
+          width: size,
+          height: size,
+          objectFit: custom ? "cover" : "contain",
+          display: "block",
+        }}
+      />
     </div>
   );
 }

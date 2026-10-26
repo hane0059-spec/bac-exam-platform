@@ -42,7 +42,7 @@ const tinos = Tinos({
 
 const FONT_VARS = `${cairo.variable} ${tajawal.variable} ${reem.variable} ${amiri.variable} ${tinos.variable}`;
 
-export const viewport: Viewport = { themeColor: "#171411" };
+export const viewport: Viewport = { themeColor: "#FFFFFF" };
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getBranding();
@@ -50,7 +50,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title: branding.name,
     description: branding.tagline || "منصة التقييم والتمكّن",
     // PWA: أيقونة الشاشة الرئيسية للآيفون + وضع التطبيق المستقلّ.
-    icons: { apple: "/icons/180" },
+    icons: {
+      icon: [{ url: "/brand/icon-192.png", sizes: "192x192", type: "image/png" }],
+      apple: "/brand/icon-180.png",
+    },
     appleWebApp: { capable: true, title: branding.name },
   };
 }

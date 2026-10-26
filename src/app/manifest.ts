@@ -17,12 +17,12 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     display: "standalone",
     dir: "rtl",
     lang: "ar",
-    background_color: "#171411",
-    theme_color: "#171411",
+    background_color: "#FFFFFF",
+    theme_color: "#FFFFFF",
     icons: [
-      { src: "/icons/192", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/512", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/brand/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/brand/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/brand/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

@@ -13,8 +13,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "لديك إشعار جديد",
-      icon: "/icons/192",
-      badge: "/icons/192",
+      icon: "/brand/icon-192.png",
+      badge: "/brand/icon-192.png",
       dir: "rtl",
       lang: "ar",
       data: { url: data.url || "/notifications" },
