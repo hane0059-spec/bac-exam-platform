@@ -20,6 +20,7 @@ import {
   type Lang,
 } from "@/lib/textDir";
 import MathAnswerInput from "@/components/math/MathAnswerInput";
+import DiagramImage from "@/components/student/DiagramImage";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -648,12 +649,7 @@ export default function QuizRunner({
           {isDiagram ? (
             <div className="space-y-3">
               {question.imageId && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/attachments/${question.imageId}`}
-                  alt="رسم السؤال"
-                  className="max-h-[28rem] w-full rounded-xl border border-line object-contain"
-                />
+                <DiagramImage key={question.imageId} id={question.imageId} />
               )}
               <p className="text-sm text-ink/60">
                 املأ الفراغات المرقّمة حسب الأسهم في الرسم:
