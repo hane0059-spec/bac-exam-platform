@@ -67,7 +67,11 @@ describe("textDir — التسميات", () => {
     expect(defaultOptionLetter(0, "en")).toBe("A");
     expect(defaultOptionLetter(2, "fr")).toBe("C");
     expect(defaultOptionLetter(1, "ru")).toBe("Б");
-    expect(defaultOptionLetter(0, "ar")).toBe("ا");
+    expect(defaultOptionLetter(0, "ar")).toBe("أ");
+    expect(defaultOptionLetter(2, "ar")).toBe("ج");
+    expect(defaultOptionLetter(3, "ar")).toBe("د");
+    expect(defaultOptionLetter(4, "ar")).toBe("هـ");
+    expect(defaultOptionLetter(12, "ar")).toBe("13");
   });
 
   it("تحويل تسمية الخيار العربية للغة السؤال فقط", () => {

@@ -1,7 +1,7 @@
 "use client";
 // src/components/teacher/PrintableExam.tsx
 // عرض قابل للطباعة: ورقة أسئلة + سلّم تصحيح، مع خيارات مدمجة لتوفير الورق.
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import MathText from "@/components/MathText";
 import {
   examLang,
@@ -14,6 +14,7 @@ import {
   type Lang,
 } from "@/lib/textDir";
 import { EXAM_STRINGS } from "@/lib/examStrings";
+import type { MatchingPrintLayout } from "@/lib/matchingPrint";
 
 export interface PrintOption {
   label: string;
@@ -28,6 +29,8 @@ export interface PrintQuestion {
   options: PrintOption[];
   acceptedAnswers: string[];
   imageId?: string | null;
+  // المطابقة: تخطيط الجدولين المتقابلين (يُحسب في الخادم).
+  matching?: MatchingPrintLayout | null;
   explanation: string | null;
 }
 export interface PrintExamData {
@@ -39,6 +42,60 @@ export interface PrintExamData {
 }
 
 type View = "questions" | "key";
+
+// المطابقة: جدولان متقابلان بينهما فراغ، في كل خانة نقطة اتصال على حافتها الداخلية ليصل الطالب بخطّ القلم.
+function MatchingBlock({
+  q,
+  showKey,
+  lang,
+}: {
+  q: PrintQuestion;
+  showKey: boolean;
+  lang: Lang;
+}) {
+  const m = q.matching;
+  if (!m || m.lefts.length === 0) return null;
+  const dot = (
+    <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-ink/70 bg-white" />
+  );
+  const cell =
+    "flex items-center gap-1.5 rounded-md border border-ink/40 bg-white/60 px-2 py-1.5 text-sm leading-snug print:py-1";
+  return (
+    <div className="mt-2">
+      <div className="grid grid-cols-[1fr_4.5rem_1fr] gap-y-2 print:gap-y-1.5">
+        {m.lefts.map((l, i) => (
+          <Fragment key={i}>
+            <div className={cell}>
+              <span className="shrink-0 font-semibold text-ink/55">{i + 1}.</span>
+              <span className="min-w-0 flex-1">
+                <MathText text={l} />
+              </span>
+              {dot}
+            </div>
+            <div aria-hidden />
+            <div className={cell}>
+              {dot}
+              <span className="shrink-0 font-semibold text-ink/55">
+                {defaultOptionLetter(i, lang)}.
+              </span>
+              <span className="min-w-0 flex-1">
+                <MathText text={m.rights[i] ?? ""} />
+              </span>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+      {showKey && (
+        <p className="mt-2 rounded bg-primary-light px-2 py-0.5 text-sm font-medium text-primary-dark">
+          {EXAM_STRINGS[lang].answer}
+          {m.answers
+            .map((pos, i) => `${i + 1} ← ${defaultOptionLetter(pos, lang)}`)
+            .join("   ")}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // عرض الخيارات حسب نوع السؤال (مدمج لتوفير الورق).
 function OptionsBlock({
@@ -201,7 +258,7 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
           <li
             key={q.index}
             dir={ql === "ar" ? undefined : "ltr"}
-            className="rounded-xl border border-line p-3 print:rounded-none print:border-x-0 print:border-t-0 print:border-b print:p-2"
+            className="break-inside-avoid rounded-xl border border-line p-3 print:rounded-none print:border-x-0 print:border-t-0 print:border-b print:p-2"
           >
             {/* رأس السؤال */}
             <div className="flex items-start justify-between gap-2">
@@ -224,7 +281,9 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
             )}
 
             {/* الخيارات */}
-            {q.options.length > 0 ? (
+            {q.type === "MATCHING" && q.matching ? (
+              <MatchingBlock q={q} showKey={view === "key"} lang={ql} />
+            ) : q.options.length > 0 ? (
               <OptionsBlock q={q} showKey={view === "key"} lang={ql} />
             ) : view === "key" ? (
               q.acceptedAnswers.length > 0 ? (

@@ -8,6 +8,7 @@ import PrintableExam, {
   type PrintExamData,
 } from "@/components/teacher/PrintableExam";
 import { fillTemplateForDisplay, parseBlankAnswers } from "@/lib/grading";
+import { buildMatchingLayout } from "@/lib/matchingPrint";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +113,13 @@ export default async function PrintQuizPage({
             : isOrder
             ? [correctOrder]
             : [],
+        // المطابقة: جدولان متقابلان (الثاني مخلوط) ليصل الطالب بينهما بالقلم.
+        matching: isMatch
+          ? buildMatchingLayout(
+              q.matchingPairs.map((p) => ({ left: p.leftItem, right: p.rightItem })),
+              `${i}:${q.content}`
+            )
+          : null,
         imageId: isDiagram ? q.attachments[0]?.id ?? null : null,
         explanation: q.explanation ?? null,
       };

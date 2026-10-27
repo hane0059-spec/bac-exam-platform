@@ -97,11 +97,13 @@ export function paragraphDir(lang: Lang): "rtl" | "ltr" {
 }
 
 const RU_LETTERS = ["А", "Б", "В", "Г", "Д", "Е"];
+// ترتيب الحروف العربية للخيارات: أ ب ج د هـ و ز ح ط ي (لا التسلسل الهجائي الأبجدي).
+const AR_LETTERS = ["أ", "ب", "ج", "د", "هـ", "و", "ز", "ح", "ط", "ي"];
 
 /** حرف الخيار الافتراضي حسب اللغة وموضعه. */
 export function defaultOptionLetter(index: number, lang: Lang): string {
   if (lang === "ru") return RU_LETTERS[index] ?? String(index + 1);
-  if (lang === "ar") return String.fromCharCode(0x0627 + index);
+  if (lang === "ar") return AR_LETTERS[index] ?? String(index + 1);
   return String.fromCharCode(65 + index);
 }
 
