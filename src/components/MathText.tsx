@@ -2,7 +2,7 @@
 // يعرض نصّاً قد يحوي معادلات LaTeX بين $...$ (سطرية) أو $$...$$ (مستقلّة)،
 // فيرسمها بـ KaTeX ويُبقي الباقي نصّاً عاديّاً. بلا حالة → يعمل في مكوّنات
 // الخادم والعميل معاً. عند فشل صيغة المعادلة يبقى النصّ كما كُتب (لا ينكسر).
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import katex from "katex";
 import "katex/dist/contrib/mhchem.js"; // دعم \ce{...} للكيمياء (mhchem)
 
@@ -21,9 +21,14 @@ function renderTex(tex: string, displayMode: boolean): string | null {
 // $$...$$ (مستقلّة) أو $...$ (سطرية، بلا سطر جديد بالداخل).
 const MATH_RE = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
 
+// عزل الاتجاه: `unicode-bidi: plaintext` يُحَلّ اتجاهه من أوّل حرف قويّ مثل `dir="auto"` لكنّه ليس سمةً
+// ولا `<bdi>` — فلا تتجاهله فقرةٌ أبوها `dir="auto"` (كان `<bdi dir="auto">` يُخفي النصّ عن كشف الأب
+// فتُحَلّ الفقرة LTR وينحاز السؤال العربي لليسار).
+const BIDI: CSSProperties = { unicodeBidi: "plaintext" };
+
 export default function MathText({ text }: { text: string | null | undefined }) {
   if (!text) return null;
-  if (!text.includes("$")) return <bdi dir="auto">{text}</bdi>; // مسار سريع: لا معادلات.
+  if (!text.includes("$")) return <span style={BIDI}>{text}</span>; // مسار سريع: لا معادلات.
 
   const nodes: ReactNode[] = [];
   let last = 0;
@@ -45,5 +50,5 @@ export default function MathText({ text }: { text: string | null | undefined }) 
     last = MATH_RE.lastIndex;
   }
   if (last < text.length) nodes.push(text.slice(last));
-  return <bdi dir="auto">{nodes}</bdi>;
+  return <span style={BIDI}>{nodes}</span>;
 }
