@@ -19,6 +19,7 @@ import { isMathAnswer } from "@/lib/mathAnswer";
 import { subjectLayout, type MathLayout } from "@/components/math/keyboards";
 import type { BankSymbol } from "@/components/math/symbolBank";
 import { normalizeKeyboard } from "@/lib/teacherKeyboard";
+import { parseSettings, type QuizSettings } from "@/lib/quizSettings";
 
 // ─────────────────────────────────────────────
 // الحراسة والإعدادات
@@ -39,33 +40,8 @@ export async function getStudentSession(): Promise<SessionData | null> {
   return session;
 }
 
-export interface QuizSettings {
-  timeLimitSec: number | null;
-  maxAttempts: number;
-  revealAnswers: "immediate" | "end";
-  shuffle: boolean; // خلط ترتيب الأسئلة والخيارات لكل محاولة (نزاهة)
-  // مراجعة الإجابات وتعديلها قبل التسليم النهائي (يُلغي التصحيح الفوري).
-  reviewBeforeSubmit: boolean;
-}
-
-export function parseSettings(raw: unknown): QuizSettings {
-  const s = (raw ?? {}) as Record<string, unknown>;
-  return {
-    timeLimitSec:
-      typeof s.timeLimitSec === "number" && s.timeLimitSec > 0
-        ? s.timeLimitSec
-        : null,
-    maxAttempts:
-      typeof s.maxAttempts === "number" && s.maxAttempts > 0
-        ? s.maxAttempts
-        : 1,
-    // وضع المراجعة يمنع الكشف الفوري (وإلا انكشف الصحيح قبل أن يعدّل الطالب إجابته).
-    revealAnswers:
-      s.revealAnswers === "end" || s.reviewBeforeSubmit === true ? "end" : "immediate",
-    shuffle: s.shuffle === true,
-    reviewBeforeSubmit: s.reviewBeforeSubmit === true,
-  };
-}
+export { parseSettings };
+export type { QuizSettings };
 
 // ─────────────────────────────────────────────
 // خلط مبذور ثابت (نفس البذرة = نفس الترتيب) — للنزاهة دون كسر الاستئناف.

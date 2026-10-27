@@ -110,7 +110,7 @@ export async function PATCH(
                   maxAttempts: data.settings.maxAttempts,
                   revealAnswers: data.settings.revealAnswers,
                   shuffle: data.settings.shuffle,
-                  reviewBeforeSubmit: data.settings.reviewBeforeSubmit,
+                  reviewBeforeSubmit: data.settings.revealAnswers === "end",
                   selfRegister: data.settings.selfRegister,
                 }
               : { ...prevSettings, selfRegister: data.settings.selfRegister },
@@ -183,7 +183,7 @@ export async function PATCH(
           maxAttempts: data.settings.maxAttempts,
           revealAnswers: data.settings.revealAnswers,
           shuffle: data.settings.shuffle,
-          reviewBeforeSubmit: data.settings.reviewBeforeSubmit,
+          reviewBeforeSubmit: data.settings.revealAnswers === "end",
           selfRegister: data.settings.selfRegister,
         },
       },

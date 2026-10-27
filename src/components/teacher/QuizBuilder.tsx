@@ -153,7 +153,7 @@ export default function QuizBuilder({
   const [maxAttempts, setMaxAttempts] = useState(initial.maxAttempts);
   const [reveal, setReveal] = useState(initial.revealAnswers);
   const [shuffle, setShuffle] = useState(initial.shuffle);
-  const [reviewMode, setReviewMode] = useState(initial.reviewBeforeSubmit);
+  // المراجعة قبل التسليم مشتقّة: التصحيح «في نهاية الاختبار» ⇒ مراجعة متاحة، و«فوري» ⇒ لا مراجعة.
   const [from, setFrom] = useState(isoToLocal(initial.availableFrom));
   const [until, setUntil] = useState(isoToLocal(initial.availableUntil));
   const [items, setItems] = useState<Item[]>(initialItems);
@@ -365,9 +365,9 @@ export default function QuizBuilder({
         settings: {
           timeLimitSec: noLimit ? null : Math.max(1, Math.round(minutes * 60)),
           maxAttempts,
-          revealAnswers: reviewMode ? "end" : reveal,
+          revealAnswers: reveal,
           shuffle,
-          reviewBeforeSubmit: reviewMode,
+          reviewBeforeSubmit: reveal === "end",
           selfRegister: canSelfRegister && codeJoin && selfRegister,
         },
         availableFrom: localToIso(from),
@@ -580,15 +580,20 @@ export default function QuizBuilder({
             <label className="mb-1 block text-sm font-medium">كشف التصحيح</label>
             <select
               className="field"
-              value={reviewMode ? "end" : reveal}
-              disabled={!tune || reviewMode}
+              value={reveal}
+              disabled={!tune}
               onChange={(e) =>
                 setReveal(e.target.value as "immediate" | "end")
               }
             >
-              <option value="immediate">فوري بعد كل سؤال</option>
-              <option value="end">في نهاية الاختبار</option>
+              <option value="immediate">فوري بعد كل سؤال (بلا مراجعة للإجابات)</option>
+              <option value="end">في نهاية الاختبار (مع مراجعة الإجابات قبل التسليم)</option>
             </select>
+            <p className="mt-1 text-xs text-ink/60">
+              {reveal === "end"
+                ? "يستطيع الطالب مراجعة كل إجاباته وتعديلها قبل «تسليم نهائي»، ويُكشف التصحيح في النهاية."
+                : "يرى الطالب الصحيح فور كل إجابة، فلا يستطيع العودة لتعديل إجاباته."}
+            </p>
           </div>
         </div>
         <label className="flex items-center gap-2 rounded-xl bg-gold/10 p-3 text-sm">
@@ -600,22 +605,6 @@ export default function QuizBuilder({
             className="accent-primary"
           />
           خلط ترتيب الأسئلة والخيارات لكل طالب (للنزاهة)
-        </label>
-        <label className="flex items-start gap-2 rounded-xl bg-gold/10 p-3 text-sm">
-          <input
-            type="checkbox"
-            checked={reviewMode}
-            disabled={!tune}
-            onChange={(e) => setReviewMode(e.target.checked)}
-            className="mt-0.5 accent-primary"
-          />
-          <span>
-            السماح للطالب بمراجعة إجاباته وتعديلها قبل التسليم النهائي
-            <span className="mt-0.5 block text-xs text-ink/60">
-              تظهر له قائمة الأسئلة (المُجاب وغير المُجاب) ويسلّم بزرّ «تسليم نهائي». يُلغي هذا
-              التصحيح الفوري بعد كل سؤال (يُكشف التصحيح في النهاية).
-            </span>
-          </span>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
