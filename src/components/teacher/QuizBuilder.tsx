@@ -722,6 +722,17 @@ export default function QuizBuilder({
                       {q ? TYPE_LABEL[q.type] : ""} • افتراضي {q?.points ?? 0}
                     </span>
                   </div>
+                  {q && (
+                    <Link
+                      href={`/teacher/questions/${it.questionId}/edit`}
+                      target="_blank"
+                      rel="noopener"
+                      title="تعديل السؤال في تبويب جديد (حدّث هذه الصفحة بعد الحفظ لترى التغيير هنا)"
+                      className="shrink-0 rounded-lg border border-primary/40 px-2 py-1 text-xs font-medium text-primary hover:bg-primary-light"
+                    >
+                      تعديل
+                    </Link>
+                  )}
                   {q && !q.inBank && (
                     <button
                       type="button"
