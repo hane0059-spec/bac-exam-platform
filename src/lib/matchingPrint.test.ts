@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMatchingLayout } from "./matchingPrint";
+import { buildMatchingLayout, stripLeadingEnumerator } from "./matchingPrint";
 
 const pairs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({ left: `L${i}`, right: `R${i}` }));
@@ -36,5 +36,36 @@ describe("buildMatchingLayout", () => {
   it("زوج واحد أو فارغ لا يفشل", () => {
     expect(buildMatchingLayout(pairs(1), "x").answers).toEqual([0]);
     expect(buildMatchingLayout([], "x")).toEqual({ lefts: [], rights: [], answers: [] });
+  });
+});
+
+describe("stripLeadingEnumerator", () => {
+  it("يحذف حرفاً/رقماً أوّلياً مع نقطة أو قوس", () => {
+    expect(stripLeadingEnumerator("د. احتفاظ العضلة بتقلصها")).toBe("احتفاظ العضلة بتقلصها");
+    expect(stripLeadingEnumerator("1. الانقباض")).toBe("الانقباض");
+    expect(stripLeadingEnumerator("١) الإطالة")).toBe("الإطالة");
+    expect(stripLeadingEnumerator("(ب) المرونة")).toBe("المرونة");
+    expect(stripLeadingEnumerator("هـ. التهيّج")).toBe("التهيّج");
+    expect(stripLeadingEnumerator("C- tissue")).toBe("tissue");
+  });
+  it("لا يمسّ النصّ العادي ولا الألقاب", () => {
+    expect(stripLeadingEnumerator("الانقباض")).toBe("الانقباض");
+    expect(stripLeadingEnumerator("أ.د. محمد")).toBe("أ.د. محمد");
+    expect(stripLeadingEnumerator("و ما بعده")).toBe("و ما بعده");
+    expect(stripLeadingEnumerator("3.5 غرام")).toBe("3.5 غرام");
+  });
+  it("إن لم يبقَ نصّ يُعاد الأصل", () => {
+    expect(stripLeadingEnumerator("أ. ")).toBe("أ.");
+  });
+  it("buildMatchingLayout يطبّقه على العمودين", () => {
+    const lay = buildMatchingLayout(
+      [
+        { left: "1. الانقباض", right: "د. تقصّر الليف" },
+        { left: "2. الإطالة", right: "ج. عودة الليف" },
+      ],
+      "s"
+    );
+    expect(lay.lefts).toEqual(["الانقباض", "الإطالة"]);
+    expect([...lay.rights].sort()).toEqual(["تقصّر الليف", "عودة الليف"].sort());
   });
 });

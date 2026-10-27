@@ -32,6 +32,18 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+const LET = String.raw`(?:\d{1,2}|[٠-٩]{1,2}|هـ|[أ-ي]|[A-Za-z])`;
+const ENUMERATOR = new RegExp(String.raw`^\s*(?:\(\s*${LET}\s*\)|${LET}\s*[.)\-–:،])\s+`);
+
+/**
+ * يحذف ترقيماً/حرفاً أوّلياً من نصّ الخانة («د. احتفاظ…»، «1) الانقباض»، «(ب) …») لأنّ الورقة تضع ترقيمها هي
+ * (أرقام للعمود الأوّل وحروف للثاني)؛ وإلا تتكرّر التسمية وتتضارب. لا يمسّ «أ.د. محمد» (لا فراغ بعد النقطة الأولى).
+ */
+export function stripLeadingEnumerator(text: string): string {
+  const out = text.replace(ENUMERATOR, "").trim();
+  return out || text.trim();
+}
+
 export function buildMatchingLayout(
   pairs: { left: string; right: string }[],
   seed: string
@@ -52,8 +64,8 @@ export function buildMatchingLayout(
     answers[pairIdx] = k;
   });
   return {
-    lefts: pairs.map((p) => p.left),
-    rights: order.map((idx) => pairs[idx].right),
+    lefts: pairs.map((p) => stripLeadingEnumerator(p.left)),
+    rights: order.map((idx) => stripLeadingEnumerator(pairs[idx].right)),
     answers,
   };
 }
