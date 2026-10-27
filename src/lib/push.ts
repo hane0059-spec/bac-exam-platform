@@ -3,7 +3,7 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 import { getBranding } from "@/lib/branding";
-import { buildPushPayload, type PushPayload } from "@/lib/pushPayload";
+import { buildPushPayload, pushBodyForType, type PushPayload } from "@/lib/pushPayload";
 
 let configured: boolean | null = null;
 
@@ -79,8 +79,12 @@ export async function sendPushToUsers(
   return result;
 }
 
-/** إشعار دفع عام (بلا نصّ الرسالة) يقابل إشعاراً داخل التطبيق. */
-export async function pushForNotification(userIds: string[], linkUrl?: string | null): Promise<void> {
+/** إشعار دفع يقابل إشعاراً داخل التطبيق: عنوان حسب النوع بلا أسماء/درجات/نصّ الرسالة. */
+export async function pushForNotification(
+  userIds: string[],
+  linkUrl?: string | null,
+  type?: string | null
+): Promise<void> {
   if (!configure()) return;
   let title = "إتقان";
   try {
@@ -88,5 +92,5 @@ export async function pushForNotification(userIds: string[], linkUrl?: string | 
   } catch {
     // الاسم الافتراضي.
   }
-  await sendPushToUsers(userIds, buildPushPayload({ title, linkUrl }));
+  await sendPushToUsers(userIds, buildPushPayload({ title, linkUrl, body: pushBodyForType(type) }));
 }

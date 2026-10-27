@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { buildPushPayload, safePushUrl, urlBase64ToUint8Array, GENERIC_PUSH_BODY } from "./pushPayload";
+import {
+  buildPushPayload,
+  safePushUrl,
+  urlBase64ToUint8Array,
+  GENERIC_PUSH_BODY,
+  PUSH_BODY_BY_TYPE,
+  pushBodyForType,
+} from "./pushPayload";
 
 describe("safePushUrl", () => {
   it("يقبل المسارات الداخلية", () => {
@@ -32,5 +39,22 @@ describe("urlBase64ToUint8Array", () => {
   it("يتعامل مع - و _", () => {
     // 0xfb 0xff = "-_8" في base64url
     expect(Array.from(urlBase64ToUint8Array("-_8"))).toEqual([0xfb, 0xff]);
+  });
+});
+
+describe("pushBodyForType", () => {
+  it("عنوان مخصّص للأنواع المعروفة", () => {
+    expect(pushBodyForType("ASSIGNED")).toBe("اختبار جديد مُسنَد إليك");
+    expect(pushBodyForType("exam_needs_grading")).toBe("تسليم جديد بانتظار تصحيحك");
+  });
+  it("نوع مجهول أو فارغ ← النصّ العام", () => {
+    expect(pushBodyForType("something_new")).toBe(GENERIC_PUSH_BODY);
+    expect(pushBodyForType(null)).toBe(GENERIC_PUSH_BODY);
+    expect(pushBodyForType(undefined)).toBe(GENERIC_PUSH_BODY);
+  });
+  it("الخصوصية: لا أرقام ولا قوالب في أي عنوان (لا درجات ولا أسماء تُحقَن)", () => {
+    for (const body of Object.values(PUSH_BODY_BY_TYPE)) {
+      expect(body).not.toMatch(/[0-9٠-٩%{}$]/);
+    }
   });
 });
