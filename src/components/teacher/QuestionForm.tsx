@@ -10,6 +10,7 @@ import MathTextInput from "@/components/math/MathTextInput";
 import { subjectLayout } from "@/components/math/keyboards";
 import type { CustomKeyboard } from "@/components/math/symbolBank";
 import { isMathAnswer, withMathAnswerTag } from "@/lib/mathAnswer";
+import { announceQuestionUpdate } from "@/lib/questionSync";
 
 type QType =
   | "MULTIPLE_CHOICE"
@@ -338,6 +339,18 @@ export default function QuestionForm({
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "تعذّر الحفظ.");
       return;
+    }
+    // تعديل: أعلِم باني الاختبار (إن كان مفتوحاً في تبويب آخر) ليحدّث السؤال فوراً.
+    if (mode === "edit" && questionId) {
+      const p = buildPayload();
+      announceQuestionUpdate({
+        id: questionId,
+        content: p.content,
+        type: p.type,
+        points: p.points,
+        difficulty: p.difficulty,
+        tags: p.tags,
+      });
     }
     // توسيم الرسم: إن اختيرت صورة قبل الحفظ فارفعها الآن بعد أن صار للسؤال معرّف.
     let createdData: { id?: string } | null = null;

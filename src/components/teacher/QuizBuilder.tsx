@@ -13,6 +13,7 @@ import QuestionForm, {
 import type { CustomKeyboard } from "@/components/math/symbolBank";
 import QrCode from "@/components/QrCode";
 import QuizShareLink from "@/components/QuizShareLink";
+import { listenQuestionUpdates } from "@/lib/questionSync";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
@@ -114,6 +115,37 @@ export default function QuizBuilder({
   // أصل الموقع لرابط رمز QR — يُحسَب على العميل فقط (لا وجود لـ window في الخادم).
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
+
+  // تعديل سؤال في تبويب آخر: يتحدّث نصّه/درجته هنا فور الحفظ (بلا إعادة تحميل ولا فقدان تغييرات الاختبار).
+  const [syncNote, setSyncNote] = useState(false);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = listenQuestionUpdates((u) => {
+      setQuestions((prev) =>
+        prev.some((q) => q.id === u.id)
+          ? prev.map((q) =>
+              q.id === u.id
+                ? {
+                    ...q,
+                    content: u.content,
+                    type: u.type as QType,
+                    points: u.points,
+                    difficulty: u.difficulty,
+                    tags: u.tags,
+                  }
+                : q
+            )
+          : prev
+      );
+      setSyncNote(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setSyncNote(false), 4000);
+    });
+    return () => {
+      stop();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
   const [noLimit, setNoLimit] = useState(initial.timeLimitSec === null);
   const [minutes, setMinutes] = useState(
     initial.timeLimitSec ? Math.round(initial.timeLimitSec / 60) : 10
@@ -700,6 +732,11 @@ export default function QuizBuilder({
             </span>
           </div>
         </div>
+        {syncNote && (
+          <p className="mb-2 rounded-lg bg-primary-light px-3 py-1.5 text-sm text-primary-dark">
+            ✓ تحدّث سؤال بعد تعديله في التبويب الآخر.
+          </p>
+        )}
         {items.length === 0 ? (
           <p className="text-sm text-ink/50">لم تَضِف أسئلة بعد.</p>
         ) : (
@@ -727,7 +764,7 @@ export default function QuizBuilder({
                       href={`/teacher/questions/${it.questionId}/edit`}
                       target="_blank"
                       rel="noopener"
-                      title="تعديل السؤال في تبويب جديد (حدّث هذه الصفحة بعد الحفظ لترى التغيير هنا)"
+                      title="تعديل السؤال في تبويب جديد — يتحدّث هنا تلقائياً بعد الحفظ"
                       className="shrink-0 rounded-lg border border-primary/40 px-2 py-1 text-xs font-medium text-primary hover:bg-primary-light"
                     >
                       تعديل
