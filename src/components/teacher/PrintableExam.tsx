@@ -15,6 +15,7 @@ import {
 } from "@/lib/textDir";
 import { EXAM_STRINGS } from "@/lib/examStrings";
 import type { MatchingPrintLayout } from "@/lib/matchingPrint";
+import { optionsFitOneLine } from "@/lib/printLayout";
 
 export interface PrintOption {
   label: string;
@@ -42,6 +43,44 @@ export interface PrintExamData {
 }
 
 type View = "questions" | "key";
+
+// صح / خطأ: خيارا الاختيار يُعرَضان بعد نصّ السؤال في سطره نفسه لتوفير المساحة.
+function TfChoices({
+  q,
+  showKey,
+  lang,
+}: {
+  q: PrintQuestion;
+  showKey: boolean;
+  lang: Lang;
+}) {
+  return (
+    <span className="inline-flex shrink-0 flex-wrap items-center gap-x-5 text-sm">
+      {q.options.map((o, i) => {
+        const correct = showKey && o.isCorrect;
+        return (
+          <span
+            key={i}
+            className={`inline-flex items-center gap-1.5 ${
+              correct ? "font-semibold text-primary-dark" : "text-ink/80"
+            }`}
+          >
+            <span
+              className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+                correct
+                  ? "border-primary bg-primary-light text-primary-dark"
+                  : "border-line"
+              }`}
+            >
+              {correct ? "✓" : ""}
+            </span>
+            <MathText text={displayOptionContent(o.content, q.type, lang)} />
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 // المطابقة: جدولان متقابلان بينهما فراغ، في كل خانة نقطة اتصال على حافتها الداخلية ليصل الطالب بخطّ القلم.
 function MatchingBlock({
@@ -109,35 +148,8 @@ function OptionsBlock({
 }) {
   if (q.options.length === 0) return null;
 
-  // صح / خطأ: خيارَان في صفّ أفقي واحد.
-  if (q.type === "TRUE_FALSE") {
-    return (
-      <div className="mt-1.5 flex flex-wrap gap-x-8 gap-y-0.5 text-sm">
-        {q.options.map((o, i) => {
-          const correct = showKey && o.isCorrect;
-          return (
-            <span
-              key={i}
-              className={`inline-flex items-center gap-1.5 ${
-                correct ? "font-semibold text-primary-dark" : "text-ink/80"
-              }`}
-            >
-              <span
-                className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
-                  correct
-                    ? "border-primary bg-primary-light text-primary-dark"
-                    : "border-line"
-                }`}
-              >
-                {correct ? "✓" : ""}
-              </span>
-              <MathText text={displayOptionContent(o.content, q.type, lang)} />
-            </span>
-          );
-        })}
-      </div>
-    );
-  }
+  // صح / خطأ: تُعرَض بعد نصّ السؤال في سطره (TfChoices) لا هنا.
+  if (q.type === "TRUE_FALSE") return null;
 
   // ترتيب: عناصر أفقية (تُرتَّب بالأسهم على الشاشة، هنا تُعرَض للترقيم).
   if (q.type === "ORDER") {
@@ -160,7 +172,34 @@ function OptionsBlock({
     );
   }
 
-  // اختيار من متعدد وغيره: شبكة عمودَين لتوفير الورق.
+  // اختيار من متعدد وغيره: سطر واحد إن كانت الخيارات قصيرة، وإلا شبكة عمودَين لتوفير الورق.
+  if (optionsFitOneLine(q.options)) {
+    return (
+      <ul className="mt-1.5 flex flex-wrap gap-x-6 gap-y-0.5 text-sm">
+        {q.options.map((o, i) => {
+          const correct = showKey && o.isCorrect;
+          return (
+            <li
+              key={i}
+              className={`flex items-start gap-1 ${
+                correct ? "font-semibold text-primary-dark" : "text-ink/80"
+              }`}
+            >
+              <span className="shrink-0 font-medium">
+                {o.label && o.label !== o.content
+                  ? `${displayOptionLabel(o.label, i, lang)}.`
+                  : `${defaultOptionLetter(i, lang)}.`}
+              </span>
+              <span className="leading-snug">
+                <MathText text={o.content} />
+                {correct && " ✓"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
   return (
     <ul className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
       {q.options.map((o, i) => {
@@ -262,14 +301,19 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
           >
             {/* رأس السؤال */}
             <div className="flex items-start justify-between gap-2">
-              <p dir={paragraphDir(ql)} className="font-medium leading-snug">
-                {q.index}. <MathText text={q.content} />
-              </p>
-              <span className="shrink-0 text-xs text-ink/50">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-5 gap-y-1">
+                <p dir={paragraphDir(ql)} className="font-medium leading-snug">
+                  {q.index}. <MathText text={q.content} />
+                </p>
+                {q.type === "TRUE_FALSE" && q.options.length > 0 && (
+                  <TfChoices q={q} showKey={view === "key"} lang={ql} />
+                )}
+              </div>
+              <span className="shrink-0 whitespace-nowrap text-xs text-ink/50">
                 {QS.marks(q.points)}
+                <span className="text-ink/35"> • {QS.types[q.type] ?? q.type}</span>
               </span>
             </div>
-            <p className="mb-1 text-[11px] text-ink/35">{QS.types[q.type] ?? q.type}</p>
 
             {q.imageId && (
               // eslint-disable-next-line @next/next/no-img-element
