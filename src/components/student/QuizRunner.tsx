@@ -599,6 +599,9 @@ export default function QuizRunner({
     const isFill = question.type === "FILL_BLANK";
     const isDiagram = question.type === "DIAGRAM_LABEL";
     const isMatch = question.type === "MATCHING";
+    // اتجاه حقول الكتابة حسب لغة السؤال: `dir="auto"` على حقلٍ فارغ يُحَلّ LTR (المؤشّر والنصّ البديل يميناً→يساراً
+    // خاطئاً في السؤال العربي) فنثبّته من لغة السؤال، فيبدأ الطالب العربي من اليمين.
+    const inputDir = paragraphDir(questionLang(question, hint));
     const isShort =
       !isOrder &&
       !isFill &&
@@ -672,7 +675,7 @@ export default function QuizRunner({
                         })
                       }
                       placeholder={`التسمية ${i + 1}`}
-                      dir="auto"
+                      dir={inputDir}
                       className="field flex-1"
                       aria-label={`التسمية ${i + 1}`}
                     />
@@ -698,7 +701,7 @@ export default function QuizRunner({
                         })
                       }
                       placeholder={`${i + 1}`}
-                      dir="auto"
+                      dir={inputDir}
                       className="mx-1 inline-block w-20 rounded-lg border border-line bg-surface px-2 py-1 text-center text-sm align-middle focus:border-primary focus:outline-none sm:w-32 sm:text-base"
                       aria-label={`الفراغ ${i + 1}`}
                     />
@@ -793,7 +796,7 @@ export default function QuizRunner({
                 disabled={startedFeedback}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="اكتب إجابتك المقالية هنا…"
-                dir="auto"
+                dir={inputDir}
                 className="field min-h-[140px]"
               />
             ) : question.type === "CALCULATION" || question.mathInput ? (
@@ -812,7 +815,7 @@ export default function QuizRunner({
                 disabled={startedFeedback}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="اكتب إجابتك هنا…"
-                dir="auto"
+                dir={inputDir}
                 className="field"
               />
             )
