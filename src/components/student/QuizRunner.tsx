@@ -54,6 +54,8 @@ interface ReviewItem {
   nodeId: string;
   index: number;
   answered: boolean;
+  /** مقتطف من نصّ السؤال ليتعرّف عليه الطالب بلا حفظ رقمه. */
+  title: string;
 }
 interface Reveal {
   needsReview: boolean;
@@ -161,6 +163,43 @@ export default function QuizRunner({
   // نافذة تأكيد: «last» = إرسال آخر سؤال ينهي الاختبار، «final» = التسليم النهائي.
   const [confirm, setConfirm] = useState<null | "last" | "final">(null);
   const [finishing, setFinishing] = useState(false);
+  // «علّم للمراجعة»: علامة شخصية للطالب تُحفَظ على جهازه لهذه الجلسة (لا تؤثّر في الدرجة).
+  const [flags, setFlags] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!sessionId) return;
+    try {
+      const raw = localStorage.getItem(`quiz-flags:${sessionId}`);
+      setFlags(new Set(raw ? (JSON.parse(raw) as string[]) : []));
+    } catch {
+      setFlags(new Set());
+    }
+  }, [sessionId]);
+  const toggleFlag = useCallback(
+    (nodeId: string) => {
+      setFlags((prev) => {
+        const next = new Set(prev);
+        if (next.has(nodeId)) next.delete(nodeId);
+        else next.add(nodeId);
+        try {
+          localStorage.setItem(`quiz-flags:${sessionId}`, JSON.stringify([...next]));
+        } catch {
+          // التخزين غير متاح: تبقى العلامة في الذاكرة فقط.
+        }
+        return next;
+      });
+    },
+    [sessionId]
+  );
+  // قائمة أسئلة الجلسة (ترتيبها + الحالة) تُحمَّل في وضع المراجعة ليعمل التنقّل بالأسهم.
+  const loadReviewItems = useCallback(async () => {
+    if (!sessionId) return;
+    const res = await fetch(`/api/student/sessions/${sessionId}/review`);
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && Array.isArray(data.items)) setReviewItems(data.items as ReviewItem[]);
+  }, [sessionId]);
+  useEffect(() => {
+    if (reviewMode && phase === "question" && !reviewItems) void loadReviewItems();
+  }, [reviewMode, phase, reviewItems, loadReviewItems]);
 
   // تهيئة حقول السؤال: فارغة، أو بإجابة الطالب السابقة (وضع المراجعة).
   useEffect(() => {
@@ -333,7 +372,7 @@ export default function QuizRunner({
     await loadResult(sessionId);
   }, [sessionId, loadResult]);
 
-  const submit = useCallback(async (opts?: { thenReview?: boolean }) => {
+  const submit = useCallback(async (opts?: { thenReview?: boolean; thenGoto?: string; thenFinal?: boolean }) => {
     if (submitting.current || !question) return;
     submitting.current = true;
     setSkipNote("");
@@ -373,6 +412,17 @@ export default function QuizRunner({
     // وضع المراجعة: لا إنهاء تلقائي؛ بعد آخر سؤال تُفتح قائمة المراجعة.
     if (data.review) {
       setConfirm(null);
+      // علّم هذا السؤال «مُجاباً» محلياً فتتحدّث القائمة والعدّاد فوراً.
+      const savedId = question.nodeId;
+      setReviewItems((prev) => prev && prev.map((i) => (i.nodeId === savedId ? { ...i, answered: true } : i)));
+      if (opts?.thenFinal) {
+        await finalSubmit();
+        return;
+      }
+      if (opts?.thenGoto) {
+        await gotoNode(opts.thenGoto);
+        return;
+      }
       if (opts?.thenReview || data.allAnswered) {
         await openReview();
         return;
@@ -401,7 +451,7 @@ export default function QuizRunner({
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
     setPhase("feedback");
-  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult, openReview]);
+  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult, openReview, finalSubmit, gotoNode]);
 
   const goNext = useCallback(() => {
     if (pendingFinish) {
@@ -531,50 +581,64 @@ export default function QuizRunner({
         <div className="card p-4 sm:p-6">
           <h3 className="font-display text-lg font-bold">راجع إجاباتك قبل التسليم</h3>
           <p className="mt-1 text-sm text-ink/70">
-            أجبتَ عن {reviewItems.length - unanswered.length} من {reviewItems.length}. اضغط على رقم
-            سؤال لمراجعته أو تعديل إجابته، ثم اضغط «تسليم نهائي» حين تنتهي.
+            أجبتَ عن {reviewItems.length - unanswered.length} من {reviewItems.length}. ابدأ المراجعة من أول
+            سؤال وتنقّل بالأسهم، أو اضغط أيَّ سؤال لتعديل إجابته. يمكنك «التسليم النهائي» في أي وقت.
           </p>
-          <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
-            {reviewItems.map((it) => (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void gotoNode(reviewItems[0].nodeId)}
+              className="btn-primary px-4 py-2 text-sm"
+            >
+              ابدأ المراجعة من أول سؤال
+            </button>
+            {unanswered.length > 0 && (
               <button
-                key={it.nodeId}
                 type="button"
-                onClick={() => void gotoNode(it.nodeId)}
-                className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
-                  it.answered
-                    ? "border-primary bg-primary-light text-primary-dark hover:bg-primary/20"
-                    : "border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100"
-                }`}
-                aria-label={`السؤال ${it.index} — ${it.answered ? "مُجاب" : "غير مُجاب"}`}
+                onClick={() => void gotoNode(unanswered[0].nodeId)}
+                className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
               >
-                {it.index}
+                أول سؤال غير مُجاب ({unanswered.length})
               </button>
-            ))}
+            )}
           </div>
-          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/60">
-            <span>
-              <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-primary-light ring-1 ring-primary" />
-              مُجاب
-            </span>
-            <span>
-              <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-amber-100 ring-1 ring-amber-400" />
-              غير مُجاب (يُحسب صفراً إن سلّمتَ هكذا)
-            </span>
-          </p>
+          <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
+            {reviewItems.map((it) => (
+              <li key={it.nodeId}>
+                <button
+                  type="button"
+                  onClick={() => void gotoNode(it.nodeId)}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-ink/5"
+                  aria-label={`السؤال ${it.index} — ${it.answered ? "مُجاب" : "غير مُجاب"}`}
+                >
+                  <span className="w-7 shrink-0 text-center font-bold text-ink/60">{it.index}</span>
+                  <span dir="auto" className="min-w-0 flex-1 truncate text-sm">
+                    {it.title || "سؤال"}
+                  </span>
+                  {flags.has(it.nodeId) && (
+                    <span title="معلَّم للمراجعة" aria-label="معلَّم للمراجعة">
+                      🚩
+                    </span>
+                  )}
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      it.answered
+                        ? "bg-primary-light text-primary-dark"
+                        : "bg-amber-100 text-amber-900"
+                    }`}
+                  >
+                    {it.answered ? "مُجاب" : "غير مُجاب"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-ink/60">غير المُجاب يُحسب صفراً إن سلّمتَ هكذا.</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button onClick={() => setConfirm("final")} className="btn-primary w-full sm:w-auto">
             تسليم نهائي
           </button>
-          {unanswered.length > 0 && (
-            <button
-              type="button"
-              onClick={() => void gotoNode(unanswered[0].nodeId)}
-              className="w-full rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5 sm:w-auto"
-            >
-              الانتقال لأول سؤال غير مُجاب ({unanswered.length})
-            </button>
-          )}
         </div>
         {confirm === "final" && (
           <ConfirmDialog
@@ -618,6 +682,16 @@ export default function QuizRunner({
       : isOrder
       ? ordered.length > 0
       : selected !== "";
+    // تنقّل المراجعة: يحفظ الإجابة الحالية (إن وُجدت) ثم ينتقل للسؤال المجاور بترتيب الطالب.
+    const navigate = async (dir: -1 | 1) => {
+      const target = reviewItems?.[question.index - 1 + dir];
+      if (!target) return;
+      if (canSubmit) await submit({ thenGoto: target.nodeId });
+      else await gotoNode(target.nodeId);
+    };
+    const pendingUnanswered = reviewItems
+      ? reviewItems.filter((i) => !i.answered && !(canSubmit && i.nodeId === question.nodeId)).length
+      : null;
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between text-sm text-ink/60">
@@ -833,6 +907,38 @@ export default function QuizRunner({
                 {skipNote}
               </p>
             )}
+            {reviewMode && (
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => void navigate(-1)}
+                  disabled={!reviewItems || question.index <= 1}
+                  className="rounded-xl border border-line px-4 py-2.5 text-sm font-medium hover:bg-ink/5 disabled:opacity-40"
+                >
+                  → السابق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleFlag(question.nodeId)}
+                  aria-pressed={flags.has(question.nodeId)}
+                  className={`rounded-xl border px-3 py-2.5 text-sm font-medium ${
+                    flags.has(question.nodeId)
+                      ? "border-amber-400 bg-amber-50 text-amber-900"
+                      : "border-line hover:bg-ink/5"
+                  }`}
+                >
+                  {flags.has(question.nodeId) ? "🚩 معلَّم للمراجعة" : "علّم للمراجعة"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void navigate(1)}
+                  disabled={!reviewItems || question.index >= question.total}
+                  className="rounded-xl border border-line px-4 py-2.5 text-sm font-medium hover:bg-ink/5 disabled:opacity-40"
+                >
+                  التالي ←
+                </button>
+              </div>
+            )}
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={requestSubmit}
@@ -841,26 +947,37 @@ export default function QuizRunner({
               >
                 {reviewMode ? "حفظ الإجابة" : "إرسال الإجابة"}
               </button>
-              <button
-                onClick={() => void skip()}
-                type="button"
-                className="w-full rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5 sm:w-auto"
-              >
-                تخطٍّ مؤقّت
-              </button>
-              {reviewMode && (
+              {!reviewMode && (
                 <button
-                  onClick={() => void (canSubmit ? submit({ thenReview: true }) : openReview())}
+                  onClick={() => void skip()}
                   type="button"
-                  className="w-full rounded-xl border border-primary px-5 py-3 font-medium text-primary hover:bg-primary-light sm:w-auto"
+                  className="w-full rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5 sm:w-auto"
                 >
-                  قائمة الأسئلة والمراجعة
+                  تخطٍّ مؤقّت
                 </button>
+              )}
+              {reviewMode && (
+                <>
+                  <button
+                    onClick={() => void (canSubmit ? submit({ thenReview: true }) : openReview())}
+                    type="button"
+                    className="w-full rounded-xl border border-primary px-5 py-3 font-medium text-primary hover:bg-primary-light sm:w-auto"
+                  >
+                    قائمة الأسئلة
+                  </button>
+                  <button
+                    onClick={() => setConfirm("final")}
+                    type="button"
+                    className="w-full rounded-xl border border-red-300 px-5 py-3 font-medium text-red-800 hover:bg-red-50 sm:w-auto"
+                  >
+                    تسليم نهائي
+                  </button>
+                </>
               )}
             </div>
             <p className="text-xs text-ink/50">
               {reviewMode
-                ? "يمكنك الرجوع لأي سؤال وتعديل إجابته قبل «التسليم النهائي» من قائمة الأسئلة."
+                ? "تنقّل بالأسهم بين الأسئلة (تُحفَظ إجابتك الحالية تلقائياً)، وسلّم نهائياً في أي وقت."
                 : "التخطّي ينقلك للسؤال التالي، وتعود للأسئلة المتخطّاة في آخر الاختبار."}
             </p>
             <div className="pt-1 text-left">
@@ -871,6 +988,22 @@ export default function QuizRunner({
               />
             </div>
           </div>
+        )}
+
+        {confirm === "final" && (
+          <ConfirmDialog
+            title="التسليم النهائي؟"
+            body={
+              pendingUnanswered
+                ? `لديك ${pendingUnanswered} ${pendingUnanswered === 1 ? "سؤال" : "أسئلة"} غير مُجاب (تُحسب صفراً). ${canSubmit ? "ستُحفَظ إجابتك الحالية. " : ""}بعد التسليم لا يمكنك تعديل أي إجابة.`
+                : `${canSubmit ? "ستُحفَظ إجابتك الحالية. " : ""}بعد التسليم ينتهي الاختبار ولا يمكنك تعديل أي إجابة.`
+            }
+            confirmLabel="نعم، سلّم الاختبار"
+            cancelLabel="العودة للسؤال"
+            busy={finishing}
+            onConfirm={() => void (canSubmit ? submit({ thenFinal: true }) : finalSubmit())}
+            onCancel={() => setConfirm(null)}
+          />
         )}
 
         {confirm === "last" && (

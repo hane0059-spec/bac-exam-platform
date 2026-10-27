@@ -9,6 +9,16 @@ import { loadReviewSession } from "@/lib/examReview";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** مقتطف قصير من نصّ السؤال: بلا علامات الفراغات/المعادلات وبمسافات موحّدة. */
+function snippet(content: string, max = 70): string {
+  const t = content
+    .replace(/\[\[\s*\]\]/g, "…")
+    .replace(/\$+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return t.length > max ? t.slice(0, max).trimEnd() + "…" : t;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: { sessionId: string } }
@@ -26,11 +36,18 @@ export async function GET(
       })
     ).map((a) => a.nodeId)
   );
+  // عنوان مختصر لكل سؤال (من نصّه) ليتعرّف عليه الطالب بلا حفظ رقمه؛ نصّ السؤال لا إجابته.
+  const nodes = await prisma.quizNode.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, question: { select: { content: true } } },
+  });
+  const titleOf = new Map(nodes.map((n) => [n.id, snippet(n.question?.content ?? "")]));
   return NextResponse.json({
     items: ids.map((nodeId, i) => ({
       nodeId,
       index: i + 1,
       answered: answered.has(nodeId),
+      title: titleOf.get(nodeId) ?? "",
     })),
     timeRemainingSec: remainingSeconds(exam.startedAt, settings.timeLimitSec),
   });
