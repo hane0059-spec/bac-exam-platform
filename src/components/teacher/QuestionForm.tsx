@@ -158,6 +158,12 @@ export default function QuestionForm({
       : [""]
   );
   const [hasImage, setHasImage] = useState(Boolean(initial?.imageId));
+  // توسيم الرسم عند الإنشاء: الصورة المختارة قبل الحفظ (تُرفع تلقائياً بعد إنشاء السؤال).
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const pendingUrl = useMemo(
+    () => (pendingImage ? URL.createObjectURL(pendingImage) : null),
+    [pendingImage]
+  );
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -333,9 +339,28 @@ export default function QuestionForm({
       setError(data.error ?? "تعذّر الحفظ.");
       return;
     }
+    // توسيم الرسم: إن اختيرت صورة قبل الحفظ فارفعها الآن بعد أن صار للسؤال معرّف.
+    let createdData: { id?: string } | null = null;
+    let imageFailed = false;
+    if (mode === "create") {
+      createdData = await res.json().catch(() => ({}));
+      if (createdData?.id && type === "DIAGRAM_LABEL" && pendingImage) {
+        try {
+          const fd = new FormData();
+          fd.append("file", pendingImage);
+          const up = await fetch(`/api/teacher/questions/${createdData.id}/image`, {
+            method: "POST",
+            body: fd,
+          });
+          imageFailed = !up.ok;
+        } catch {
+          imageFailed = true;
+        }
+      }
+    }
     // التأليف الفوريّ داخل الباني: أعِد السؤال للباني بلا تنقّل.
     if (mode === "create" && onCreated) {
-      const data = await res.json().catch(() => ({}));
+      const data = createdData ?? {};
       if (data.id) {
         onCreated({
           id: data.id,
@@ -346,9 +371,9 @@ export default function QuestionForm({
         return;
       }
     }
-    // توسيم الرسم عند الإنشاء: انتقل لصفحة التعديل لرفع صورة الرسم.
-    if (mode === "create" && type === "DIAGRAM_LABEL") {
-      const data = await res.json().catch(() => ({}));
+    // توسيم الرسم عند الإنشاء: بلا صورة مختارة أو فشل رفعها ← صفحة التعديل لرفعها/إعادة رفعها.
+    if (mode === "create" && type === "DIAGRAM_LABEL" && (!pendingImage || imageFailed)) {
+      const data = createdData ?? {};
       if (data.id) {
         router.push(`/teacher/questions/${data.id}/edit`);
         router.refresh();
@@ -940,9 +965,34 @@ export default function QuestionForm({
               صورة الرسم (بأسهم مرقّمة)
             </label>
             {mode === "create" ? (
-              <p className="rounded-xl bg-gold/15 p-3 text-sm text-gold">
-                احفظ السؤال أولاً، ثم ستُنقَل تلقائياً لرفع صورة الرسم.
-              </p>
+              <div className="space-y-3">
+                {pendingImage && pendingUrl ? (
+                  <div className="space-y-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={pendingUrl}
+                      alt="معاينة الرسم"
+                      className="max-h-72 rounded-xl border border-line object-contain"
+                    />
+                    <p className="text-xs text-ink/50">
+                      ستُرفع الصورة تلقائياً عند حفظ السؤال.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPendingImage(null)}
+                      className="text-sm text-red-500 hover:underline"
+                    >
+                      إزالة الصورة
+                    </button>
+                  </div>
+                ) : (
+                  <ImageUploadField
+                    onUpload={async (file) => setPendingImage(file)}
+                    label="اختر صورة الرسم"
+                    hint="صورة بأسهم مرقّمة بوضوح — تُضغط تلقائياً، وتُرفع عند حفظ السؤال."
+                  />
+                )}
+              </div>
             ) : (
               <div className="space-y-3">
                 {hasImage && questionId && (
