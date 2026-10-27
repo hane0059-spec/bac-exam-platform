@@ -73,9 +73,7 @@ export async function POST(req: Request) {
             settings: {
               timeLimitSec: 600,
               maxAttempts: 1,
-              // مراجعة الإجابات قبل التسليم النهائي افتراضياً (تُلغي الكشف الفوريّ؛ قابلة للتعديل من «الإعدادات»).
-              revealAnswers: "end",
-              reviewBeforeSubmit: true,
+              revealAnswers: "immediate",
             },
           },
           select: { id: true, title: true },
