@@ -15,3 +15,18 @@ export function optionsFitOneLine(options: { content: string }[]): boolean {
   }
   return total <= 78;
 }
+
+/**
+ * في وضع «ضغط أكبر» (عمودان): الأسئلة التي يضيق بها نصف الصفحة تُعرَض بعرض كامل —
+ * المطابقة (جدولان متقابلان)، توسيم الرسم (صورة)، والاختيار من متعدد ذو الخيارات الطويلة (شبكة عمودين).
+ */
+export function needsFullWidth(q: {
+  type: string;
+  options: { content: string }[];
+}): boolean {
+  if (q.type === "MATCHING" || q.type === "DIAGRAM_LABEL") return true;
+  if (q.type === "MULTIPLE_CHOICE" && !optionsFitOneLine(q.options)) {
+    return q.options.some((o) => o.content.length > 40);
+  }
+  return false;
+}

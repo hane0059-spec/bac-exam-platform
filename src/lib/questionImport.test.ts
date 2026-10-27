@@ -139,6 +139,26 @@ describe("normalizeBankJson — تطبيع ملفّات بنك الأسئلة", 
     ]);
   });
 
+  it("MATCH → يحذف الحرف/الرقم الأوّلي بالنقطة والقوس أيضاً (لا «د. …» مع حرف الورقة)", () => {
+    const r = normalizeBankJson({
+      questions: [
+        {
+          id: "M2",
+          type: "MATCH",
+          stem: "طابق",
+          column_A: ["1. الانقباض", "(2) الإطالة"],
+          column_B: ["أ. تقصّر الليف", "ب) عودة الليف لطوله"],
+          answer_key: { "1": "أ", "2": "ب" },
+        },
+      ],
+    });
+    const q = find(r, "M2")!;
+    expect(q.matchingPairs).toEqual([
+      { left: "الانقباض", right: "تقصّر الليف" },
+      { left: "الإطالة", right: "عودة الليف لطوله" },
+    ]);
+  });
+
   it("CONCEPT_MAP → FILL_BLANK بعلامات [[ ]] وإجاباتٍ بترتيب الظهور", () => {
     const r = normalizeBankJson({
       questions: [

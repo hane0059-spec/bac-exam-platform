@@ -21,6 +21,7 @@ import {
 } from "@/lib/textDir";
 import MathAnswerInput from "@/components/math/MathAnswerInput";
 import DiagramImage from "@/components/student/DiagramImage";
+import MatchingPicker from "@/components/student/MatchingPicker";
 
 type Gender = "MALE" | "FEMALE";
 
@@ -752,43 +753,14 @@ export default function QuizRunner({
               ))}
             </div>
           ) : isMatch ? (
-            <div className="space-y-2">
-              <p className="mb-1 text-sm text-ink/60">
-                طابِق كل عنصر بما يناسبه:
-              </p>
-              {question.matchLefts?.map((left, i) => (
-                <div
-                  key={left.id}
-                  dir="auto"
-                  className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-3"
-                >
-                  <span className="min-w-[6rem] flex-1 font-medium">
-                    {left.text}
-                  </span>
-                  <span className="text-ink/40">←</span>
-                  <select
-                    dir="auto"
-                    value={matches[i] ?? ""}
-                    disabled={startedFeedback}
-                    onChange={(e) =>
-                      setMatches((prev) => {
-                        const next = [...prev];
-                        next[i] = e.target.value;
-                        return next;
-                      })
-                    }
-                    className="field w-full sm:w-48"
-                  >
-                    <option value="">— اختر —</option>
-                    {question.matchRights?.map((r, k) => (
-                      <option key={k} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
+            <MatchingPicker
+              lefts={question.matchLefts ?? []}
+              rights={question.matchRights ?? []}
+              value={matches}
+              onChange={setMatches}
+              disabled={startedFeedback}
+              lang={questionLang(question, hint)}
+            />
           ) : isShort ? (
             question.type === "ESSAY" ? (
               <textarea

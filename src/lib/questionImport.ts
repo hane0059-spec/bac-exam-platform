@@ -3,6 +3,8 @@
 // تدعم صيغتين: الأنواع صغيرة الأحرف (multiple_choice/true_false/analysis/image_interpretation)
 // وأنماط البكالوريا كبيرة الأحرف (MCQ_*/TF/ORDER/MATCH/LABEL/…). لا تغيير مخطط.
 
+import { stripLeadingEnumerator } from "@/lib/matchingPrint";
+
 export type QType =
   | "MULTIPLE_CHOICE"
   | "TRUE_FALSE"
@@ -114,9 +116,12 @@ function figureDesc(q: Raw): string | undefined {
   );
 }
 
-/** يزيل بادئة الترقيم «1- » أو «أ- » من عناصر أعمدة المطابقة. */
+/**
+ * يزيل بادئة الترقيم من عناصر أعمدة المطابقة: «1- » و«أ- » (شرطة) ثم «د. » و«1) » و«(ب) » (نقطة/قوس)
+ * عبر `stripLeadingEnumerator`، لئلّا يُخزَّن الحرف مع النصّ فتتكرّر التسمية في الطباعة وعلى شاشة الطالب.
+ */
 function stripListPrefix(s: string): string {
-  return s.replace(/^\s*[^\s-]+\s*[-–]\s*/, "").trim();
+  return stripLeadingEnumerator(s.replace(/^\s*[^\s-]+\s*[-–]\s*/, "").trim());
 }
 
 // ─────────── بناة الأنواع ───────────

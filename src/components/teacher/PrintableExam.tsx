@@ -15,7 +15,7 @@ import {
 } from "@/lib/textDir";
 import { EXAM_STRINGS } from "@/lib/examStrings";
 import type { MatchingPrintLayout } from "@/lib/matchingPrint";
-import { optionsFitOneLine } from "@/lib/printLayout";
+import { needsFullWidth, optionsFitOneLine } from "@/lib/printLayout";
 
 export interface PrintOption {
   label: string;
@@ -231,6 +231,8 @@ function OptionsBlock({
 
 export default function PrintableExam({ data }: { data: PrintExamData }) {
   const [view, setView] = useState<View>("questions");
+  // ضغط أكبر: الأسئلة في عمودين وخطّ أصغر لتقليل عدد الصفحات المطبوعة.
+  const [compact, setCompact] = useState(false);
   // لغة الورقة (عربي/إنكليزي/فرنسي/روسي): تحدّد الترويسة والتسميات والاتجاه (LTR لغير العربي).
   const hint = subjectLang(data.subjectName);
   const lang = examLang(data.questions, data.subjectName);
@@ -253,6 +255,15 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
         <button onClick={() => setView("key")} className={tab("key")}>
           سلّم التصحيح
         </button>
+        <label className="flex cursor-pointer items-center gap-1.5 text-sm text-ink/70">
+          <input
+            type="checkbox"
+            checked={compact}
+            onChange={(e) => setCompact(e.target.checked)}
+            className="h-4 w-4 accent-primary"
+          />
+          ضغط أكبر (عمودان)
+        </label>
         <button
           onClick={() => window.print()}
           className="btn-primary mr-auto px-4 py-1.5 text-sm"
@@ -289,7 +300,13 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
       </div>
 
       {/* الأسئلة — حشو مضغوط لتوفير الورق */}
-      <ol className="space-y-2 print:space-y-1">
+      <ol
+        className={
+          compact
+            ? "columns-2 gap-x-6 [column-rule:1px_solid_rgb(var(--line))] text-[13px]"
+            : "space-y-2 print:space-y-1"
+        }
+      >
         {data.questions.map((q) => {
           const ql = questionLang(q, hint);
           const QS = EXAM_STRINGS[ql];
@@ -297,7 +314,11 @@ export default function PrintableExam({ data }: { data: PrintExamData }) {
           <li
             key={q.index}
             dir={ql === "ar" ? undefined : "ltr"}
-            className="break-inside-avoid rounded-xl border border-line p-3 print:rounded-none print:border-x-0 print:border-t-0 print:border-b print:p-2"
+            className={`break-inside-avoid rounded-xl border border-line p-3 print:rounded-none print:border-x-0 print:border-t-0 print:border-b print:p-2 ${
+              compact
+                ? `mb-2 !p-2 leading-snug print:mb-0 ${needsFullWidth(q) ? "[column-span:all]" : ""}`
+                : ""
+            }`}
           >
             {/* رأس السؤال */}
             <div className="flex items-start justify-between gap-2">
