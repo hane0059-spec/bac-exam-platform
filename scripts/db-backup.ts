@@ -1,24 +1,20 @@
 // scripts/db-backup.ts
-// نسخة احتياطية كاملة من قاعدة البيانات (كل الجداول) إلى ملفّ NDJSON مضغوط، بلا pg_dump.
+// نسخة احتياطية كاملة من قاعدة البيانات (كل الجداول + علاقات متعدّد-لمتعدّد) إلى ملفّ NDJSON مضغوط، بلا pg_dump.
 // قراءة فقط من القاعدة. الاستخدام:
 //   npm run db:backup                 ← ينشئ نسخة جديدة ويحتفظ بآخر 8
 //   npm run db:backup -- --verify ملف ← يتحقّق من سلامة ملفّ نسخة موجود
 // متغيّرات اختيارية: BACKUP_DIR (الافتراضي ~/bac-backups)، BACKUP_KEEP (الافتراضي 8).
+// الاسترجاع: scripts/db-restore.ts (npm run db:restore).
 import fs from "fs";
 import os from "os";
 import path from "path";
 import zlib from "zlib";
-import readline from "readline";
 import { once } from "events";
 import { Prisma, PrismaClient } from "@prisma/client";
+import { FILE_RE, FORMAT, loadEnv, lowerFirst, readBackup, serializeRow } from "./backupFormat";
 
-for (const line of fs.existsSync(".env") ? fs.readFileSync(".env", "utf8").split(/\r?\n/) : []) {
-  const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-  if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].trim().replace(/^"|"$/g, "");
-}
+loadEnv();
 
-const FORMAT = "bac-db-backup v1";
-const FILE_RE = /^bac-backup-\d{4}-\d{2}-\d{2}_\d{4}\.ndjson\.gz$/;
 // DATABASE_URL المحلي صار فرع التطوير (dev)؛ النسخ الاحتياطي يخصّ بيانات **الإنتاج** فيُفضَّل PROD_DATABASE_URL.
 // `--dev` يعكس ذلك لنسخ فرع التطوير.
 const useDev = process.argv.includes("--dev");
@@ -42,20 +38,26 @@ const keep = Math.max(2, Number(process.env.BACKUP_KEEP) || 8);
 const skipRow = (model: string, row: Record<string, unknown>) =>
   model === "AppSetting" && String(row.key ?? "").startsWith("upload:");
 
-function serialize(row: Record<string, unknown>): string {
-  return JSON.stringify(row, function (this: Record<string, unknown>, k, v) {
-    const raw = this[k];
-    if (raw instanceof Date) return { $d: raw.toISOString() };
-    if (Buffer.isBuffer(raw)) return { $b: raw.toString("base64") };
-    if (typeof raw === "bigint") return { $n: raw.toString() };
-    if (raw && typeof raw === "object" && (raw as { constructor?: { name?: string } }).constructor?.name === "Decimal")
-      return { $dec: String(raw) };
-    return v;
-  });
-}
-
-function lowerFirst(s: string) {
-  return s.charAt(0).toLowerCase() + s.slice(1);
+/** علاقات متعدّد-لمتعدّد الضمنية (جدول ربط يخفيه Prisma): طرف مالك واحد لكل علاقة. */
+function m2mRelations(): { model: string; field: string }[] {
+  const models = Prisma.dmmf.datamodel.models;
+  const byName = new Map(models.map((m) => [m.name, m]));
+  const out: { model: string; field: string }[] = [];
+  for (const m of models) {
+    for (const f of m.fields) {
+      if (f.kind !== "object" || !f.isList) continue;
+      const other = byName.get(f.type);
+      const back = other?.fields.find(
+        (x) => x.relationName === f.relationName && x.isList && !(other.name === m.name && x.name === f.name)
+      );
+      if (!other || !back) continue;
+      // طرف مالك واحد: الأصغر اسماً.
+      if (m.name < other.name || (m.name === other.name && f.name < back.name)) {
+        out.push({ model: m.name, field: f.name });
+      }
+    }
+  }
+  return out;
 }
 
 async function backup() {
@@ -115,12 +117,12 @@ async function backup() {
       const delegate = (prisma as unknown as Record<string, any>)[lowerFirst(model.name)];
       const hasBytes = model.fields.some((f) => f.type === "Bytes");
       const hasId = model.fields.some((f) => f.name === "id" && f.isId);
-      const take = hasBytes ? 10 : 500;
+      const take = hasBytes ? 1 : 500; // صفوف البايتات (ملفات حتى 15MB) واحداً واحداً: دفعات كبيرة كانت تُعلّق الاتصال
       let n = 0;
       const emit = async (rows: Record<string, unknown>[]) => {
         for (const row of rows) {
           if (skipRow(model.name, row)) continue;
-          await write(`{"m":${JSON.stringify(model.name)},"d":${serialize(row)}}`);
+          await write(`{"m":${JSON.stringify(model.name)},"d":${serializeRow(row)}}`);
           n++;
         }
       };
@@ -141,7 +143,35 @@ async function backup() {
         await emit(await delegate.findMany());
       }
       counts[model.name] = n;
+      if (process.env.BACKUP_DEBUG) console.error(`  ${model.name}: ${n}`);
     }
+
+    // علاقات متعدّد-لمتعدّد (مثل الخيارات التي اختارها الطالب في إجابته).
+    for (const { model, field } of m2mRelations()) {
+      const delegate = (prisma as unknown as Record<string, any>)[lowerFirst(model)];
+      const key = `${model}.${field}`;
+      let n = 0;
+      let cursor: string | undefined;
+      for (;;) {
+        const rows: { id: string; [k: string]: unknown }[] = await delegate.findMany({
+          take: 500,
+          orderBy: { id: "asc" },
+          select: { id: true, [field]: { select: { id: true } } },
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        });
+        if (rows.length === 0) break;
+        for (const r of rows) {
+          for (const rel of (r[field] as { id: string }[]) ?? []) {
+            await write(JSON.stringify({ m2: key, a: r.id, b: rel.id }));
+            n++;
+          }
+        }
+        cursor = rows[rows.length - 1].id;
+        if (rows.length < 500) break;
+      }
+      counts[key] = n;
+    }
+
     await write(JSON.stringify({ end: true, counts }));
     gz.end();
     await once(ws, "finish");
@@ -158,7 +188,7 @@ async function backup() {
   const verified = await verify(final);
   const mb = (fs.statSync(final).size / 1024 / 1024).toFixed(1);
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  console.log(`✔ نسخة جديدة: ${final} (${mb}MB، ${total} صفّاً، ${Object.keys(counts).length} جدولاً)`);
+  console.log(`✔ نسخة جديدة: ${final} (${mb}MB، ${total} سجلّاً، ${Object.keys(counts).length} جدولاً/علاقة)`);
   if (!verified) {
     console.error("✘ فشل التحقّق من النسخة — لن تُحذف أي نسخة قديمة.");
     process.exitCode = 1;
@@ -179,31 +209,14 @@ async function backup() {
   }
 }
 
-/** يقرأ الملفّ كاملاً: يتحقّق من التنسيق ومن أن أعداد الصفوف تطابق الذيل. */
+/** يقرأ الملفّ كاملاً: يتحقّق من التنسيق ومن أن الأعداد تطابق الذيل. */
 async function verify(file: string): Promise<boolean> {
-  const rl = readline.createInterface({
-    input: fs.createReadStream(file).pipe(zlib.createGunzip()),
-    crlfDelay: Infinity,
-  });
-  let header = false;
-  let footer: { counts: Record<string, number> } | null = null;
-  const seen: Record<string, number> = {};
   try {
-    for await (const line of rl) {
-      if (!line) continue;
-      const o = JSON.parse(line);
-      if (!header) {
-        if (o.format !== FORMAT) return false;
-        header = true;
-      } else if (o.end) footer = o;
-      else seen[o.m] = (seen[o.m] ?? 0) + 1;
-    }
+    await readBackup(file);
+    return true;
   } catch {
     return false;
   }
-  if (!header || !footer) return false;
-  for (const [m, c] of Object.entries(footer.counts)) if ((seen[m] ?? 0) !== c) return false;
-  return true;
 }
 
 async function main() {

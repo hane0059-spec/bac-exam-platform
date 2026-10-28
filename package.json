@@ -12,6 +12,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:backup": "tsx scripts/db-backup.ts",
+    "db:restore": "tsx scripts/db-restore.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "postinstall": "prisma generate"
