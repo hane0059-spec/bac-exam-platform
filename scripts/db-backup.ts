@@ -75,6 +75,26 @@ async function backup() {
       await new Promise((r) => setTimeout(r, 5000));
     }
   }
+  // حارس الاكتمال: عميل Prisma المولَّد قد يكون أقدم من القاعدة (لم يُشغَّل prisma generate بعد تغيير المخطط)،
+  // فيسقط من النسخة جداولُ كاملة بصمت (حدث فعلاً: ملفات الإثراء). نقارن جداول القاعدة بنماذج العميل ونرفض النسخ الناقص.
+  const known = new Set(
+    Prisma.dmmf.datamodel.models.map((m) => (m as { dbName?: string | null }).dbName ?? m.name)
+  );
+  const dbTables = (
+    await prisma.$queryRaw<{ table_name: string }[]>`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`
+  )
+    .map((r) => r.table_name)
+    .filter((n) => !n.startsWith("_")); // _prisma_migrations وجداول الربط الضمنية (تُنسخ كعلاقات)
+  const unknown = dbTables.filter((n) => !known.has(n));
+  if (unknown.length > 0) {
+    await prisma.$disconnect();
+    throw new Error(
+      `عميل Prisma قديم: في القاعدة جداول لا يعرفها (${unknown.join(", ")}) وكانت ستسقط من النسخة. ` +
+        `أوقف خادم التطوير ثم شغّل «npx prisma generate» وأعد النسخ.`
+    );
+  }
   const now = new Date();
   const p2 = (n: number) => String(n).padStart(2, "0");
   const name = `bac-backup-${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}.ndjson.gz`;
