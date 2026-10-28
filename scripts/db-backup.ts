@@ -19,6 +19,22 @@ for (const line of fs.existsSync(".env") ? fs.readFileSync(".env", "utf8").split
 
 const FORMAT = "bac-db-backup v1";
 const FILE_RE = /^bac-backup-\d{4}-\d{2}-\d{2}_\d{4}\.ndjson\.gz$/;
+// DATABASE_URL المحلي صار فرع التطوير (dev)؛ النسخ الاحتياطي يخصّ بيانات **الإنتاج** فيُفضَّل PROD_DATABASE_URL.
+// `--dev` يعكس ذلك لنسخ فرع التطوير.
+const useDev = process.argv.includes("--dev");
+if (!useDev && process.env.PROD_DATABASE_URL) process.env.DATABASE_URL = process.env.PROD_DATABASE_URL;
+// قاعدة Neon المجانية تنام عند الخمول وإيقاظها قد يتجاوز مهلة اتصال Prisma الافتراضية (5 ث) فيفشل أوّل استعلام:
+// نرفع المهلة إلى 30 ثانية ما لم تُحدَّد في الرابط، ثم نُسخّن الاتصال بإعادة محاولة قبل البدء.
+if (process.env.DATABASE_URL) {
+  try {
+    const u = new URL(process.env.DATABASE_URL);
+    if (!u.searchParams.has("connect_timeout")) u.searchParams.set("connect_timeout", "30");
+    process.env.DATABASE_URL = u.toString();
+  } catch {
+    // رابط غير قياسي: يُترك كما هو.
+  }
+}
+
 const outDir = process.env.BACKUP_DIR || path.join(os.homedir(), "bac-backups");
 const keep = Math.max(2, Number(process.env.BACKUP_KEEP) || 8);
 
@@ -45,7 +61,20 @@ function lowerFirst(s: string) {
 async function backup() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL غير موجود في .env");
   fs.mkdirSync(outDir, { recursive: true });
+  console.log(
+    `المصدر: ${new URL(process.env.DATABASE_URL).hostname.split(".")[0]} (${useDev || !process.env.PROD_DATABASE_URL ? "DATABASE_URL" : "الإنتاج"})`
+  );
   const prisma = new PrismaClient();
+  for (let i = 0; ; i++) {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      break;
+    } catch (e) {
+      if (i >= 4) throw e;
+      console.log(`القاعدة نائمة أو غير متاحة، إعادة المحاولة (${i + 1}/4) …`);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
   const now = new Date();
   const p2 = (n: number) => String(n).padStart(2, "0");
   const name = `bac-backup-${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}.ndjson.gz`;
