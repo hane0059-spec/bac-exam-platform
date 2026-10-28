@@ -1,10 +1,12 @@
 "use client";
 // src/components/teacher/CertificateMaker.tsx
 // شهادة التقدير الرسمية الملوّنة: معاينة حيّة على canvas مع تنزيل صورة (PNG) أو PDF أو طباعة.
-// يستعمله المدرّس (مع زرّ إشعار الطالب) والطالب (تنزيل/طباعة فقط) بنفس التصميم.
+// المدرّس: يختار النموذج/الشعار/الختام ويُشعر الطالب (فيُحفَظ تصميمه). الطالب (`issued`): يرى الشهادة بتصميم مدرّسه
+// دون أي أداة اختيار، مع تنزيل/طباعة فقط.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CertificateData } from "@/lib/certificate";
-import { CERT_W, CERT_H, drawCertificate, type CertFonts } from "@/lib/certificateArt";
+import type { IssuedStyle } from "@/lib/certIssue";
+import { CERT_W, CERT_H, drawCertificate, type CertFonts, type CertRenderOptions } from "@/lib/certificateArt";
 import {
   exportPdf,
   exportPng,
@@ -14,22 +16,59 @@ import {
 } from "@/lib/certificateClient";
 import CertStylePicker, { useCertStyle } from "@/components/teacher/CertStylePicker";
 
+/** أقصى حجم لشعار مرفوع يُرسَل مع الإشعار (حرفاً من data URL). */
+const MAX_LOGO_CHARS = 260_000;
+
+function loadImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 export default function CertificateMaker({
   data,
   notifyUrl,
   allowCustomClosing = false,
+  issued,
+  studentView = false,
 }: {
   data: CertificateData;
   /** مسار إشعار الطالب (للمدرّس فقط). */
   notifyUrl?: string;
   /** يسمح للمدرّس بتعديل عبارة الختام. */
   allowCustomClosing?: boolean;
+  /** عرض الطالب: لا أدوات اختيار؛ التصميم الذي أصدره المدرّس (أو الافتراضي إن لم يوجد). */
+  studentView?: boolean;
+  issued?: IssuedStyle | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fontsRef = useRef<CertFonts | null>(null);
   const [ready, setReady] = useState(false);
   const [closing, setClosing] = useState(data.closing ?? "");
-  const { ctl, renderOpts } = useCertStyle();
+  const { ctl, renderOpts: deviceOpts } = useCertStyle();
+  // عرض الطالب: ثبّت تصميم المدرّس (يحمّل شعاره المرفوع إن وُجد) ولا تقرأ تفضيلات الجهاز.
+  const [lockedOpts, setLockedOpts] = useState<CertRenderOptions | null>(null);
+  useEffect(() => {
+    if (!studentView) return;
+    let cancelled = false;
+    (async () => {
+      const logoImage = issued?.logo ? await loadImage(issued.logo) : null;
+      if (cancelled) return;
+      setLockedOpts({
+        themeId: issued?.theme ?? "emerald",
+        flagColors: issued?.flag,
+        emblem: issued?.emblem ?? null,
+        logoImage,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [studentView, issued]);
+  const renderOpts: CertRenderOptions = studentView ? lockedOpts ?? { themeId: issued?.theme ?? "emerald" } : deviceOpts;
   const [busy, setBusy] = useState<"" | "png" | "pdf" | "notify">("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -44,6 +83,7 @@ export default function CertificateMaker({
   const draw = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    if (studentView && !lockedOpts) return; // انتظر تحميل تصميم المدرّس (وشعاره) قبل الرسم
     if (!fontsRef.current) fontsRef.current = await loadCertFonts();
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -51,7 +91,7 @@ export default function CertificateMaker({
     drawCertificate(ctx, { ...data, closing }, fontsRef.current, renderOpts);
     setReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, closing, optsKey, renderOpts.logoImage]);
+  }, [data, closing, optsKey, renderOpts.logoImage, studentView, lockedOpts]);
 
   useEffect(() => {
     void draw();
@@ -77,14 +117,42 @@ export default function CertificateMaker({
     setError("");
     setMsg("");
     setBusy("notify");
-    const res = await fetch(notifyUrl, { method: "POST" });
+    // تصميم المدرّس الحالي يُحفَظ مع الإشعار ليراه الطالب كما هو (النموذج/الألوان/الشعار/الختام).
+    let logo: string | undefined;
+    let logoDropped = false;
+    if (ctl.emblemSel === "upload") {
+      try {
+        const url = localStorage.getItem("cert-logo");
+        if (url && url.length <= MAX_LOGO_CHARS) logo = url;
+        else if (url) logoDropped = true;
+      } catch {
+        // لا شعار.
+      }
+    }
+    const style = {
+      theme: renderOpts.themeId ?? "emerald",
+      flag: renderOpts.flagColors,
+      emblem: renderOpts.emblem ?? null,
+      closing: closing.trim() || undefined,
+      logo,
+    };
+    const res = await fetch(notifyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ style }),
+    });
     const d = await res.json().catch(() => ({}));
     setBusy("");
     if (!res.ok) {
       setError(d.error ?? "تعذّر إرسال الإشعار.");
       return;
     }
-    setMsg(d.alreadyNotified ? "أُشعِر الطالب بذلك سابقاً." : "تمّ إشعار الطالب — سيجد الشهادة في صفحته.");
+    const base = d.alreadyNotified
+      ? d.styleUpdated
+        ? "أُشعِر الطالب سابقاً — وحُدِّث تصميم شهادته بما تراه الآن."
+        : "أُشعِر الطالب بذلك سابقاً."
+      : "تمّ إشعار الطالب — سيجد الشهادة بهذا التصميم في صفحته.";
+    setMsg(logoDropped ? `${base} (الشعار المرفوع كبير جداً فلم يُرسَل؛ استعمل صورة أصغر.)` : base);
   }
 
   return (
@@ -100,9 +168,9 @@ export default function CertificateMaker({
         {!ready && <p className="p-3 text-center text-sm text-ink/50">جارٍ تجهيز الشهادة…</p>}
       </div>
 
-      <CertStylePicker ctl={ctl} />
+      {!studentView && <CertStylePicker ctl={ctl} />}
 
-      {allowCustomClosing && (
+      {allowCustomClosing && !studentView && (
         <label className="block max-w-xl">
           <span className="mb-1 block text-sm font-medium">عبارة الختام (اختياري)</span>
           <input

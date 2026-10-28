@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import CertificateMaker from "@/components/teacher/CertificateMaker";
 import { getBranding } from "@/lib/branding";
 import { certificateHonor } from "@/lib/certificate";
+import { loadIssuedStyle } from "@/lib/certIssue";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,8 @@ export default async function CertificatePage({
   });
   if (!me || !quiz) notFound();
   const brand = await getBranding();
+  // تصميم الشهادة كما أصدره المدرّس (بلا خيارات للطالب).
+  const issuedStyle = await loadIssuedStyle(params.quizId, session.sub);
 
   const dateStr = formatDay(best.completedAt ?? new Date());
 
@@ -94,7 +97,17 @@ export default async function CertificatePage({
           ← اختباراتي
         </Link>
       </div>
+      <div className="mb-4 print:hidden">
+        <h2 className="font-display text-xl font-bold">
+          {honor === "مشارك" ? "شهادة مشاركتك" : "شهادة تقديرك"}
+        </h2>
+        <p className="mt-1 text-sm text-ink/60">
+          أصدرها لك {quiz.creator.firstName} {quiz.creator.lastName} في «{quiz.title}». حمّلها أو اطبعها من الأزرار أدناه.
+        </p>
+      </div>
       <CertificateMaker
+        studentView
+        issued={issuedStyle}
         data={{
           studentName: `${me.firstName} ${me.lastName}`,
           female: me.gender === "FEMALE",
@@ -105,6 +118,7 @@ export default async function CertificatePage({
           dateStr,
           teacherName: `${quiz.creator.firstName} ${quiz.creator.lastName}`,
           brandName: brand.name,
+          closing: issuedStyle?.closing || undefined,
         }}
       />
     </main>
