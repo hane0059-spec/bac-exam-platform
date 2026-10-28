@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { pushEnabled } from "@/lib/push";
+import { isAllowedPushEndpoint } from "@/lib/pushPayload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,8 @@ export const dynamic = "force-dynamic";
 const MAX_PER_USER = 10;
 
 const schema = z.object({
-  endpoint: z.string().url().max(2000).startsWith("https://"),
+  // حصر العنوان في خدمات الدفع المعروفة (منع SSRF: الخادم هو من يطلب هذا العنوان).
+  endpoint: z.string().url().max(2000).refine(isAllowedPushEndpoint, "خدمة دفع غير معروفة"),
   keys: z.object({
     p256dh: z.string().min(10).max(300),
     auth: z.string().min(10).max(100),

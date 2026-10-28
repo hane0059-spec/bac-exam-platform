@@ -6,6 +6,7 @@ import {
   GENERIC_PUSH_BODY,
   PUSH_BODY_BY_TYPE,
   pushBodyForType,
+  isAllowedPushEndpoint,
 } from "./pushPayload";
 
 describe("safePushUrl", () => {
@@ -56,5 +57,31 @@ describe("pushBodyForType", () => {
     for (const body of Object.values(PUSH_BODY_BY_TYPE)) {
       expect(body).not.toMatch(/[0-9٠-٩%{}$]/);
     }
+  });
+});
+
+describe("isAllowedPushEndpoint (منع SSRF)", () => {
+  it("يقبل خدمات الدفع المعروفة", () => {
+    for (const u of [
+      "https://fcm.googleapis.com/fcm/send/abc",
+      "https://updates.push.services.mozilla.com/wpush/v2/abc",
+      "https://web.push.apple.com/QW1",
+      "https://wns2-par02p.notify.windows.com/w/?token=x",
+    ]) expect(isAllowedPushEndpoint(u)).toBe(true);
+  });
+  it("يرفض أي مضيف آخر وعناوين داخلية وخدعاً شائعة", () => {
+    for (const u of [
+      "https://evil.example.com/x",
+      "https://localhost/x",
+      "https://127.0.0.1/x",
+      "https://169.254.169.254/latest/meta-data",
+      "http://fcm.googleapis.com/x",
+      "https://fcm.googleapis.com.evil.com/x",
+      "https://evil.com/?h=fcm.googleapis.com",
+      "https://user:pw@fcm.googleapis.com/x",
+      "https://fcm.googleapis.com:8443/x",
+      "https://notpush.apple.com.evil.io/x",
+      "not a url",
+    ]) expect(isAllowedPushEndpoint(u)).toBe(false);
   });
 });

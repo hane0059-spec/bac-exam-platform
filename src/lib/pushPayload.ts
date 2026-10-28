@@ -1,6 +1,27 @@
 // src/lib/pushPayload.ts
 // دوال نقيّة لإشعارات الدفع (آمنة للعميل والخادم): الرابط الآمن، نصّ الإشعار العام، وتحويل مفتاح VAPID.
 
+/**
+ * خدمات الدفع المعروفة فقط (Chrome/Edge/Android: FCM، Firefox: Mozilla، Safari: Apple، Windows: WNS).
+ * الخادم يُرسل إلى عنوان الاشتراك الذي يدّعيه العميل، فيجب حصره في هذه المضيفات وإلا صار أداة SSRF
+ * (مستخدم مسجَّل يسجّل عنواناً داخلياً/عشوائياً فيطلبه الخادم عند كل إشعار).
+ */
+const PUSH_HOSTS = ["fcm.googleapis.com", "android.googleapis.com", "updates.push.services.mozilla.com"];
+const PUSH_SUFFIXES = [".push.services.mozilla.com", ".push.apple.com", ".notify.windows.com"];
+
+export function isAllowedPushEndpoint(raw: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== "https:" || u.username || u.password) return false;
+  if (u.port && u.port !== "443") return false;
+  const h = u.hostname.toLowerCase();
+  return PUSH_HOSTS.includes(h) || PUSH_SUFFIXES.some((x) => h.endsWith(x));
+}
+
 /** نصّ عام عمداً: الإشعار يظهر على شاشة القفل، فلا اسم طالب ولا درجة (خصوصية القُصّر). */
 export const GENERIC_PUSH_BODY = "لديك إشعار جديد — اضغط للعرض";
 
