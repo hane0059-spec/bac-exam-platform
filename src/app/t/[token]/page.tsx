@@ -9,11 +9,12 @@ import BrandLogo from "@/components/BrandLogo";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherQuizzesPublicPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default async function TeacherQuizzesPublicPage(
+  props: {
+    params: Promise<{ token: string }>;
+  }
+) {
+  const params = await props.params;
   const branding = await getBranding();
   let decoded = params.token;
   try {

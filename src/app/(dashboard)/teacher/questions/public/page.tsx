@@ -30,11 +30,12 @@ const DIFF_LABEL: Record<string, string> = {
   EXPERT: "متقدّم",
 };
 
-export default async function TeacherPublicBankPage({
-  searchParams,
-}: {
-  searchParams: { subjectId?: string; type?: string; q?: string; page?: string };
-}) {
+export default async function TeacherPublicBankPage(
+  props: {
+    searchParams: Promise<{ subjectId?: string; type?: string; q?: string; page?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

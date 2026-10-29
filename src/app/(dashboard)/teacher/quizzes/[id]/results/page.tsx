@@ -22,11 +22,12 @@ const STATUS: Record<string, string> = {
   ABANDONED: "متروك",
 };
 
-export default async function QuizResultsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function QuizResultsPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

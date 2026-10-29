@@ -21,10 +21,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  _req: Request,
-  { params }: { params: { quizId: string } }
-) {
+export async function POST(_req: Request, props: { params: Promise<{ quizId: string }> }) {
+  const params = await props.params;
   const session = await getStudentSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

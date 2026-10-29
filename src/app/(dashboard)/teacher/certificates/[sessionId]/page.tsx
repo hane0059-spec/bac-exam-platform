@@ -9,11 +9,12 @@ import CertificateMaker from "@/components/teacher/CertificateMaker";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherCertificatePage({
-  params,
-}: {
-  params: { sessionId: string };
-}) {
+export default async function TeacherCertificatePage(
+  props: {
+    params: Promise<{ sessionId: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

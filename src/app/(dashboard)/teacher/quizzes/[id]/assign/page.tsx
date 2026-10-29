@@ -16,13 +16,14 @@ import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export default async function AssignQuizPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { student?: string };
-}) {
+export default async function AssignQuizPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ student?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

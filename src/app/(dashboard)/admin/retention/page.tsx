@@ -26,11 +26,12 @@ const ROLE_LABEL: Record<string, string> = {
   PARENT: "وليّ أمر",
 };
 
-export default async function AdminRetentionPage({
-  searchParams,
-}: {
-  searchParams: { inactive?: string };
-}) {
+export default async function AdminRetentionPage(
+  props: {
+    searchParams: Promise<{ inactive?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
 

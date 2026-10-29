@@ -7,10 +7,8 @@ import { getStudentSession, getSessionReview } from "@/lib/exam";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function GET(_req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const session = await getStudentSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

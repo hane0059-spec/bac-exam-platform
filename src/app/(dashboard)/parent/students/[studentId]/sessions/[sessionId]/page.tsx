@@ -12,11 +12,12 @@ import ParentMessageBox from "@/components/parent/ParentMessageBox";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChildSessionReviewPage({
-  params,
-}: {
-  params: { studentId: string; sessionId: string };
-}) {
+export default async function ChildSessionReviewPage(
+  props: {
+    params: Promise<{ studentId: string; sessionId: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getParentSession();
   if (!session) redirect("/login");
 

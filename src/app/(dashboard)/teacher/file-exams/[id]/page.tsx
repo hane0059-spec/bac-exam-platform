@@ -12,11 +12,12 @@ import { selfRegisterEnabled } from "@/lib/selfRegister";
 
 export const dynamic = "force-dynamic";
 
-export default async function FileExamManagePage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function FileExamManagePage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

@@ -16,7 +16,8 @@ const schema = z.object({
   feedback: z.string().trim().max(1000, "الملاحظة أطول من 1000 حرف"),
 });
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
 

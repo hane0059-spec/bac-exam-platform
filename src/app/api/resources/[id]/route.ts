@@ -13,10 +13,8 @@ import { studentCanSeeTeacherEnrichment } from "@/lib/enrichment";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const wantsDownload = new URL(req.url).searchParams.get("dl") === "1";
   const ip = clientIp(req);
   // عرض الصور داخل الصفحة يحتاج حدّاً أوسع من التنزيل.

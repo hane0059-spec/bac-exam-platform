@@ -11,7 +11,8 @@ import SelfRegisterForm from "@/components/student/SelfRegisterForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function JoinPage({ params }: { params: { code: string } }) {
+export default async function JoinPage(props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const session = await getSession();
   if (session?.role === "STUDENT") {
     redirect(`/student/quizzes?join=${encodeURIComponent(params.code)}`);

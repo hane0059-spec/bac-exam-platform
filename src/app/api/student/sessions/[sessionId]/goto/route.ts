@@ -15,10 +15,8 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({ nodeId: z.string().min(1) });
 
-export async function POST(
-  req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const r = await loadReviewSession(params.sessionId);
   if ("error" in r) return r.error;
   const { exam, seed } = r;

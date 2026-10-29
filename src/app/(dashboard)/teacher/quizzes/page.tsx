@@ -20,11 +20,12 @@ const STATUS = {
 
 type Tab = "active" | "archive";
 
-export default async function TeacherQuizzesPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string };
-}) {
+export default async function TeacherQuizzesPage(
+  props: {
+    searchParams: Promise<{ tab?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

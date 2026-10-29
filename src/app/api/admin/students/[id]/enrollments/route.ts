@@ -30,10 +30,8 @@ const postSchema = z.object({
   subjectId: z.string().min(1),
 });
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sc = await studentInScope(params.id);
   if ("error" in sc) return sc.error;
   const { student } = sc;
@@ -83,10 +81,8 @@ export async function POST(
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sc = await studentInScope(params.id);
   if ("error" in sc) return sc.error;
   const { student } = sc;

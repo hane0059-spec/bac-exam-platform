@@ -15,11 +15,12 @@ const FILTERS = [
   { key: "all", label: "الكل", status: undefined },
 ] as const;
 
-export default async function TeacherReportsPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string };
-}) {
+export default async function TeacherReportsPage(
+  props: {
+    searchParams: Promise<{ tab?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

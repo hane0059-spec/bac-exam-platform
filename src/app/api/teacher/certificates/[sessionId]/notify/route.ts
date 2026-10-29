@@ -11,10 +11,8 @@ import { normalizeIssuedStyle, saveIssuedStyle } from "@/lib/certIssue";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

@@ -30,16 +30,17 @@ const DIFF_LABEL: Record<string, string> = {
   EXPERT: "متقدّم",
 };
 
-export default async function AdminQuestionsPage({
-  searchParams,
-}: {
-  searchParams: {
-    schoolId?: string;
-    subjectId?: string;
-    type?: string;
-    page?: string;
-  };
-}) {
+export default async function AdminQuestionsPage(
+  props: {
+    searchParams: Promise<{
+      schoolId?: string;
+      subjectId?: string;
+      type?: string;
+      page?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // الإشراف العام للمدير العام حصراً

@@ -27,10 +27,8 @@ async function loadParentInScope(parentId: string) {
   return { ctx, parent };
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const loaded = await loadParentInScope(params.id);
   if ("error" in loaded) return loaded.error;
   const { parent } = loaded;
@@ -71,10 +69,8 @@ export async function POST(
 
 const deleteSchema = z.object({ studentId: z.string().min(1) });
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const loaded = await loadParentInScope(params.id);
   if ("error" in loaded) return loaded.error;
   const { parent } = loaded;

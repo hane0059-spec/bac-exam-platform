@@ -14,11 +14,12 @@ import { getBranding } from "@/lib/branding";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditUserPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function EditUserPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   const session = ctx.session;

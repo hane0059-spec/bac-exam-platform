@@ -14,11 +14,12 @@ import DeleteUserButton from "@/components/admin/DeleteUserButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminEditStudentPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function AdminEditStudentPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
 

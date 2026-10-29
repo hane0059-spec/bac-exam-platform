@@ -16,11 +16,12 @@ export const dynamic = "force-dynamic";
 
 type QType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER";
 
-export default async function EditQuizPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function EditQuizPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

@@ -18,11 +18,12 @@ const NO_GRADE = "بلا صفّ";
 
 type Tab = "students" | "staff";
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string; q?: string };
-}) {
+export default async function AdminUsersPage(
+  props: {
+    searchParams: Promise<{ tab?: string; q?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   const session = ctx.session;

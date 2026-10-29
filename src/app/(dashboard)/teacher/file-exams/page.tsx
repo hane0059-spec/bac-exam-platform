@@ -16,11 +16,12 @@ const STATUS = {
   ARCHIVED: { text: "مؤرشف", cls: "bg-gold/15 text-gold" },
 } as const;
 
-export default async function FileExamsPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string };
-}) {
+export default async function FileExamsPage(
+  props: {
+    searchParams: Promise<{ tab?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

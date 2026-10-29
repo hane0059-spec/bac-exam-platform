@@ -31,18 +31,19 @@ const DIFF_LABEL: Record<string, string> = {
   EXPERT: "متقدّم",
 };
 
-export default async function TeacherQuestionsPage({
-  searchParams,
-}: {
-  searchParams: {
-    subjectId?: string;
-    unitId?: string;
-    chapterId?: string;
-    conceptId?: string;
-    tag?: string;
-    page?: string;
-  };
-}) {
+export default async function TeacherQuestionsPage(
+  props: {
+    searchParams: Promise<{
+      subjectId?: string;
+      unitId?: string;
+      chapterId?: string;
+      conceptId?: string;
+      tag?: string;
+      page?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

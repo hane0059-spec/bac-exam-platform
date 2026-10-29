@@ -12,10 +12,8 @@ import { parseFileExamSettings } from "@/lib/fileExam";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  _req: Request,
-  { params }: { params: { sessionId: string } },
-) {
+export async function POST(_req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const session = await getStudentSession();
   if (!session)
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

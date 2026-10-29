@@ -10,10 +10,8 @@ import { runExternalImport } from "@/lib/externalImportService";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

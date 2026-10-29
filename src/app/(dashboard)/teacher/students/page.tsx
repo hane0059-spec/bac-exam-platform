@@ -36,11 +36,12 @@ function searchConditions(q: string): Prisma.UserWhereInput[] {
   return or;
 }
 
-export default async function TeacherStudentsPage({
-  searchParams,
-}: {
-  searchParams: { q?: string };
-}) {
+export default async function TeacherStudentsPage(
+  props: {
+    searchParams: Promise<{ q?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

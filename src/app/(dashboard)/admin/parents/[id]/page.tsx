@@ -13,11 +13,12 @@ import { isSoloMode } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
-export default async function ParentDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ParentDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   if (await isSoloMode()) redirect("/admin"); // غير متاح في الوضع المبسّط

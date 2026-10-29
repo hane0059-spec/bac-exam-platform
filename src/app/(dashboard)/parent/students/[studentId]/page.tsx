@@ -9,11 +9,12 @@ import DashboardShell from "@/components/DashboardShell";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChildResultsPage({
-  params,
-}: {
-  params: { studentId: string };
-}) {
+export default async function ChildResultsPage(
+  props: {
+    params: Promise<{ studentId: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getParentSession();
   if (!session) redirect("/login");
 

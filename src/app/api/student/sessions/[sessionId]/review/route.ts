@@ -19,10 +19,8 @@ function snippet(content: string, max = 70): string {
   return t.length > max ? t.slice(0, max).trimEnd() + "…" : t;
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function GET(_req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const r = await loadReviewSession(params.sessionId);
   if ("error" in r) return r.error;
   const { exam, settings, seed } = r;

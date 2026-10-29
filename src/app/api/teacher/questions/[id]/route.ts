@@ -19,10 +19,8 @@ async function ownedQuestion(teacherId: string, id: string) {
   return q;
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -64,10 +62,8 @@ export async function GET(
   });
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -173,10 +169,8 @@ export async function PATCH(
   return NextResponse.json({ id: existing.id });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

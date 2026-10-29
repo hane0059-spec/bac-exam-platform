@@ -15,10 +15,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { code: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   // ضدّ الإنشاء الجماعي للحسابات: 8 تسجيلات كل ساعة لكل عنوان.
   if (!checkRateLimit(`self-register:${clientIp(req)}`, 8, 60 * 60 * 1000)) {
     return NextResponse.json(

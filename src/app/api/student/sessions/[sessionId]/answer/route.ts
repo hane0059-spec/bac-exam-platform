@@ -35,10 +35,8 @@ const bodySchema = z.object({
   textAnswer: z.string().optional(),
 });
 
-export async function POST(
-  req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const session = await getStudentSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

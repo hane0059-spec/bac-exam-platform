@@ -17,11 +17,12 @@ import { teacherCanManageStudents } from "@/lib/teacher";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditStudentPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function EditStudentPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "TEACHER") redirect("/");

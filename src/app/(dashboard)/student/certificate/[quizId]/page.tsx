@@ -17,11 +17,12 @@ function formatDay(d: Date): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
-export default async function CertificatePage({
-  params,
-}: {
-  params: { quizId: string };
-}) {
+export default async function CertificatePage(
+  props: {
+    params: Promise<{ quizId: string }>;
+  }
+) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "STUDENT") redirect("/");

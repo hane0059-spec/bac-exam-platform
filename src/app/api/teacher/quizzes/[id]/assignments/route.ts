@@ -28,10 +28,8 @@ async function enrolledStudentIds(
   return new Set(rows.map((r) => r.studentId));
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -112,10 +110,8 @@ export async function POST(
   return NextResponse.json({ assigned: targets.length });
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

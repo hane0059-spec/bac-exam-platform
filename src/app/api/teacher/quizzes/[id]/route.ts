@@ -15,10 +15,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -194,10 +192,8 @@ export async function PATCH(
   return NextResponse.json({ id: quiz.id, structural: true });
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

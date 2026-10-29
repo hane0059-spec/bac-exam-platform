@@ -16,10 +16,8 @@ const schema = z.object({
   description: z.string().trim().optional(),
 });
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx || !ctx.isSuper) {
     return NextResponse.json({ error: "متاح للمدير العام فقط" }, { status: 403 });
@@ -72,10 +70,8 @@ export async function PATCH(
   return NextResponse.json({ id: subject.id });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx || !ctx.isSuper) {
     return NextResponse.json({ error: "متاح للمدير العام فقط" }, { status: 403 });

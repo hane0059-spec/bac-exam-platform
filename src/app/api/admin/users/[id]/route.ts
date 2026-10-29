@@ -9,10 +9,8 @@ import { deleteStudentCompletely } from "@/lib/teacherStudents";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -153,10 +151,8 @@ export async function PATCH(
 // سياسة آمنة: يُسمح بحذف الحسابات الفارغة؛ ويُمنع حذف من «يملك» محتوى
 // (طلاب/أسئلة/اختبارات) مع رسالة واضحة (التعطيل بديلٌ متاح). الطالب يُحذف
 // بالكامل بدالته المختبَرة. لا يُحذف المدير العام ولا حساب المستخدم نفسه.
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
 

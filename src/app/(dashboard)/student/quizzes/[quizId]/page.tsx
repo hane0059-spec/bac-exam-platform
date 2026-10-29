@@ -17,13 +17,14 @@ import { parseFileExamSettings } from "@/lib/fileExam";
 
 export const dynamic = "force-dynamic";
 
-export default async function TakeQuizPage({
-  params,
-  searchParams,
-}: {
-  params: { quizId: string };
-  searchParams: { view?: string };
-}) {
+export default async function TakeQuizPage(
+  props: {
+    params: Promise<{ quizId: string }>;
+    searchParams: Promise<{ view?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "STUDENT") redirect("/");

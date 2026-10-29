@@ -20,10 +20,8 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({ nodeId: z.string().min(1) });
 
-export async function POST(
-  req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const session = await getStudentSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

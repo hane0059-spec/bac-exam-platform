@@ -7,10 +7,8 @@ import { loadReviewSession } from "@/lib/examReview";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  _req: Request,
-  { params }: { params: { sessionId: string } }
-) {
+export async function POST(_req: Request, props: { params: Promise<{ sessionId: string }> }) {
+  const params = await props.params;
   const r = await loadReviewSession(params.sessionId);
   if ("error" in r) return r.error;
   await finalizeSession(r.exam.id, "COMPLETED");

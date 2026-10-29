@@ -11,7 +11,8 @@ export function generateStaticParams() {
   return ROLES.map((role) => ({ role }));
 }
 
-export default function GuidePage({ params }: { params: { role: string } }) {
+export default async function GuidePage(props: { params: Promise<{ role: string }> }) {
+  const params = await props.params;
   if (!ROLES.includes(params.role as GuideRole)) notFound();
   const guide = GUIDES[params.role as GuideRole];
 

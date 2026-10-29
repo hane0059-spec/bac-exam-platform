@@ -18,16 +18,17 @@ const STATUS: Record<QuizStatus, { text: string; cls: string }> = {
   ARCHIVED: { text: "مؤرشف", cls: "bg-gold/15 text-gold" },
 };
 
-export default async function AdminQuizzesPage({
-  searchParams,
-}: {
-  searchParams: {
-    schoolId?: string;
-    subjectId?: string;
-    status?: string;
-    page?: string;
-  };
-}) {
+export default async function AdminQuizzesPage(
+  props: {
+    searchParams: Promise<{
+      schoolId?: string;
+      subjectId?: string;
+      status?: string;
+      page?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // الإشراف العام للمدير العام حصراً

@@ -9,10 +9,8 @@ import { attachmentCacheControl } from "@/lib/attachmentCache";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getSession();
   if (!session)
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

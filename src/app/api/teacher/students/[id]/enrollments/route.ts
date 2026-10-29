@@ -15,10 +15,8 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({ subjectId: z.string().min(1) });
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -77,10 +75,8 @@ export async function POST(
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });
@@ -111,10 +107,8 @@ const groupSchema = z.object({
 });
 
 /** PATCH: ضبط/مسح مجموعة الطالب داخل مادة (تنظيم عرضيّ لقائمة المدرّس). */
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getTeacherSession();
   if (!session) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

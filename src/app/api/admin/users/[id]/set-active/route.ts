@@ -14,10 +14,8 @@ const bodySchema = z.object({
   cascadeStudents: z.boolean().default(false),
 });
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) {
     return NextResponse.json({ error: "غير مخوّل" }, { status: 401 });

@@ -8,10 +8,8 @@ import { buildTeacherExport } from "@/lib/teacherExport";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx) {
     return Response.json({ error: "غير مخوّل" }, { status: 401 });

@@ -51,11 +51,12 @@ function priority(q: StudentQuizListItem): number {
   return 4;
 }
 
-export default async function StudentQuizzesPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string };
-}) {
+export default async function StudentQuizzesPage(
+  props: {
+    searchParams: Promise<{ tab?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== "STUDENT") redirect("/");

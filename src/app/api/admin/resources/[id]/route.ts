@@ -7,10 +7,8 @@ import { getAdminContext } from "@/lib/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await getAdminContext();
   if (!ctx || !ctx.isSuper)
     return NextResponse.json({ error: "غير مخوّل" }, { status: 403 });
