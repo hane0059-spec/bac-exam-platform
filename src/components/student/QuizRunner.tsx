@@ -192,6 +192,23 @@ export default function QuizRunner({
     },
     [sessionId]
   );
+  // يُزيل العلامة (إن وُجدت): عند حفظ الإجابة صراحةً بعد المراجعة لم يعد السؤال بحاجة لمراجعة.
+  const unflag = useCallback(
+    (nodeId: string) => {
+      setFlags((prev) => {
+        if (!prev.has(nodeId)) return prev;
+        const next = new Set(prev);
+        next.delete(nodeId);
+        try {
+          localStorage.setItem(`quiz-flags:${sessionId}`, JSON.stringify([...next]));
+        } catch {
+          // التخزين غير متاح: يُزال من الذاكرة فقط.
+        }
+        return next;
+      });
+    },
+    [sessionId]
+  );
   // قائمة أسئلة الجلسة (ترتيبها + الحالة) تُحمَّل في وضع المراجعة ليعمل التنقّل بالأسهم.
   const loadReviewItems = useCallback(async () => {
     if (!sessionId) return;
@@ -374,7 +391,7 @@ export default function QuizRunner({
     await loadResult(sessionId);
   }, [sessionId, loadResult]);
 
-  const submit = useCallback(async (opts?: { thenReview?: boolean; thenGoto?: string; thenFinal?: boolean }) => {
+  const submit = useCallback(async (opts?: { thenReview?: boolean; thenGoto?: string; thenFinal?: boolean; clearFlag?: boolean }) => {
     if (submitting.current || !question) return;
     submitting.current = true;
     setSkipNote("");
@@ -417,6 +434,8 @@ export default function QuizRunner({
       // علّم هذا السؤال «مُجاباً» محلياً فتتحدّث القائمة والعدّاد فوراً.
       const savedId = question.nodeId;
       setReviewItems((prev) => prev && prev.map((i) => (i.nodeId === savedId ? { ...i, answered: true } : i)));
+      // «حفظ الإجابة» الصريح يُنهي مراجعة السؤال فتزول علامته (الحفظ التلقائي بالأسهم/التسليم لا يمسحها).
+      if (opts?.clearFlag) unflag(savedId);
       if (opts?.thenFinal) {
         await finalSubmit();
         return;
@@ -453,7 +472,7 @@ export default function QuizRunner({
     setPendingFinish(Boolean(data.finished));
     setNextQuestion((data.next as Question) ?? null);
     setPhase("feedback");
-  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult, openReview, finalSubmit, gotoNode]);
+  }, [question, selected, text, ordered, blanks, matches, sessionId, loadResult, openReview, finalSubmit, gotoNode, unflag]);
 
   const goNext = useCallback(() => {
     if (pendingFinish) {
@@ -516,7 +535,8 @@ export default function QuizRunner({
       setConfirm("last");
       return;
     }
-    void submit();
+    // وضع المراجعة: الزرّ الصريح «حفظ الإجابة» يمسح علامة «للمراجعة» عن هذا السؤال.
+    void submit(reviewMode ? { clearFlag: true } : undefined);
   }
 
   // ── العرض ──
