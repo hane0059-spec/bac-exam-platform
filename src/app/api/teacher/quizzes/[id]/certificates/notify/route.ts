@@ -1,13 +1,17 @@
 // src/app/api/teacher/quizzes/[id]/certificates/notify/route.ts
 // POST: إشعار عدّة طلاب دفعةً واحدة بأنّ مدرّسهم أصدر لهم شهادة (بالتصميم نفسه الذي اختاره).
 // الحراسة: مدرّس فعّال مالك الاختبار؛ لا يُشعَر إلا من له شهادة مؤهّلة (أفضل جلسة معتمدة)، وغيرهم يُتجاهَل.
-// بلا تكرار: من أُشعِر سابقاً يُحدَّث تصميمه فقط. التصميم يُحفَظ صفّاً واحداً للاختبار (لا نسخة لكل طالب).
+// إعادة الإشعار الصريحة تصل الطالب من جديد («حدّث مدرّسك شهادتك»)، ونقرة مكرّرة خلال 10 دقائق تُحدِّث التصميم فقط. التصميم صفّ واحد للاختبار.
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { loadQuizCertificates } from "@/lib/certificateServer";
-import { certificateNotifyMessage, planCertificateNotifications } from "@/lib/certificate";
+import {
+  RENOTIFY_COOLDOWN_MS,
+  certificateNotifyMessage,
+  planCertificateNotifications,
+} from "@/lib/certificate";
 import { createNotifications } from "@/lib/notifications";
 import { normalizeIssuedStyle, saveIssuedStyleForQuiz } from "@/lib/certIssue";
 
@@ -58,14 +62,16 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       linkUrl,
       userId: { in: certs.items.map((i) => i.studentId) },
     },
-    select: { userId: true },
+    select: { userId: true, createdAt: true },
   });
+  const since = Date.now() - RENOTIFY_COOLDOWN_MS;
   const plan = planCertificateNotifications(
     certs.items,
     parsed.data.sessionIds,
-    new Set(already.map((n) => n.userId))
+    new Set(already.map((n) => n.userId)),
+    new Set(already.filter((n) => n.createdAt.getTime() >= since).map((n) => n.userId))
   );
-  const targeted = [...plan.toNotify, ...plan.restyle];
+  const targeted = [...plan.toNotify, ...plan.renotify, ...plan.restyle];
   if (targeted.length === 0) {
     return NextResponse.json({ error: "لا شهادة مؤهَّلة بين المحدَّدين." }, { status: 409 });
   }
@@ -75,18 +81,25 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     style,
     targeted.map((t) => t.studentId)
   );
-  await createNotifications(
-    plan.toNotify.map((t) => ({
+  await createNotifications([
+    ...plan.toNotify.map((t) => ({
       userId: t.studentId,
       type: "certificate_issued",
       message: certificateNotifyMessage(certs.quizTitle, t.data.percentage),
       linkUrl,
-    }))
-  );
+    })),
+    ...plan.renotify.map((t) => ({
+      userId: t.studentId,
+      type: "certificate_issued",
+      message: certificateNotifyMessage(certs.quizTitle, t.data.percentage, true),
+      linkUrl,
+    })),
+  ]);
 
   return NextResponse.json({
     ok: true,
     notified: plan.toNotify.length,
+    renotified: plan.renotify.length,
     restyled: plan.restyle.length,
     skipped: plan.skipped.length,
   });

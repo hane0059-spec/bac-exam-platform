@@ -139,6 +139,25 @@ describe("إشعار الشهادات الجماعي", () => {
     expect(certificateNotifyMessage("الأنسجة", 60)).toContain("شهادة تقدير");
   });
 
+  it("نصّ الإشعار المحدَّث يختلف عن الأوّل ويذكر التصميم الجديد", () => {
+    const upd = certificateNotifyMessage("الأنسجة", 85, true);
+    expect(upd).toContain("حدّث مدرّسك");
+    expect(upd).toContain("بتصميمها الجديد");
+    expect(certificateNotifyMessage("الأنسجة", 85)).toContain("أصدر لك مدرّسك");
+  });
+
+  it("الخطة: أُشعِر سابقاً ⇒ يُعاد إشعاره، وقبل لحظات ⇒ تصميم فقط (منع النقر المكرّر)", () => {
+    const eligible = [
+      { sessionId: "s1", studentId: "a" },
+      { sessionId: "s2", studentId: "b" },
+      { sessionId: "s3", studentId: "c" },
+    ];
+    const plan = planCertificateNotifications(eligible, ["s1", "s2", "s3"], new Set(["b", "c"]), new Set(["c"]));
+    expect(plan.toNotify.map((x) => x.studentId)).toEqual(["a"]);
+    expect(plan.renotify.map((x) => x.studentId)).toEqual(["b"]);
+    expect(plan.restyle.map((x) => x.studentId)).toEqual(["c"]);
+  });
+
   it("الخطة: جديد/تحديث تصميم/متجاهَل، بلا تكرار طالب أو جلسة", () => {
     const eligible = [
       { sessionId: "s1", studentId: "a" },
@@ -151,13 +170,15 @@ describe("إشعار الشهادات الجماعي", () => {
       new Set(["b"])
     );
     expect(plan.toNotify.map((x) => x.studentId)).toEqual(["a"]);
-    expect(plan.restyle.map((x) => x.studentId)).toEqual(["b"]);
+    expect(plan.renotify.map((x) => x.studentId)).toEqual(["b"]); // أُشعِر سابقاً (بلا «قبل لحظات»)
+    expect(plan.restyle).toEqual([]);
     expect(plan.skipped).toEqual(["ghost"]);
   });
 
   it("الخطة: جلسة غير مؤهّلة (ليست في القائمة) لا تُشعِر أحداً", () => {
     const plan = planCertificateNotifications([{ sessionId: "s1", studentId: "a" }], ["other"], new Set());
     expect(plan.toNotify).toEqual([]);
+    expect(plan.renotify).toEqual([]);
     expect(plan.restyle).toEqual([]);
     expect(plan.skipped).toEqual(["other"]);
   });

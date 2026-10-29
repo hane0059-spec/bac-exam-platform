@@ -104,26 +104,34 @@ export function certificateLines(d: CertificateData): CertificateLines {
   };
 }
 
-/** نصّ إشعار الطالب بإصدار شهادته (شهادة تقدير أو مشاركة بحسب النسبة). */
-export function certificateNotifyMessage(quizTitle: string, percentage: number): string {
+/** مهلة منع تكرار الإشعار عند نقرات متتابعة (إعادة الإشعار الصريحة بعدها تصل الطالب من جديد). */
+export const RENOTIFY_COOLDOWN_MS = 10 * 60 * 1000;
+
+/** نصّ إشعار الطالب بشهادته: جديدة (تقدير/مشاركة بحسب النسبة) أو محدَّثة إن أعاد المدرّس إشعاره. */
+export function certificateNotifyMessage(quizTitle: string, percentage: number, updated = false): string {
   const kind = percentage >= CERTIFICATE_THRESHOLD ? "شهادة تقدير" : "شهادة مشاركة";
-  return `أصدر لك مدرّسك ${kind} في اختبار «${quizTitle}» (${percentage}%) — افتحها وحمّلها.`;
+  return updated
+    ? `حدّث مدرّسك ${kind} في اختبار «${quizTitle}» (${percentage}%) — افتحها وحمّلها بتصميمها الجديد.`
+    : `أصدر لك مدرّسك ${kind} في اختبار «${quizTitle}» (${percentage}%) — افتحها وحمّلها.`;
 }
 
 /**
  * خطة الإشعار الجماعي: من بين الشهادات المؤهّلة (أفضل جلسة معتمدة لكل طالب) تُحدَّد ما طلبه المدرّس.
- * - `toNotify`: طلاب لم يُشعَروا بعدُ (إشعار + حفظ التصميم).
- * - `restyle`: أُشعِروا سابقاً (يُحدَّث تصميمهم فقط دون إشعار مكرّر).
+ * - `toNotify`: طلاب لم يُشعَروا بعدُ (إشعار جديد + حفظ التصميم).
+ * - `renotify`: أُشعِروا سابقاً وليس قبل لحظات (إشعار «حُدِّثت شهادتك» + تصميم جديد) — إعادة الإشعار الصريحة تصل الطالب.
+ * - `restyle`: أُشعِروا قبل لحظات (ضمن مهلة المنع) فيُحدَّث التصميم فقط منعاً للتكرار.
  * - `skipped`: معرّفات جلسات طُلبت وليست مؤهّلة/ليست لهذا الاختبار (تُتجاهَل بأمان).
  * مفتاح التكرار بالطالب لا بالجلسة (شهادة واحدة لكل طالب في الاختبار).
  */
 export function planCertificateNotifications<T extends { sessionId: string; studentId: string }>(
   eligible: T[],
   requestedSessionIds: string[],
-  alreadyNotifiedStudentIds: ReadonlySet<string>
-): { toNotify: T[]; restyle: T[]; skipped: string[] } {
+  alreadyNotifiedStudentIds: ReadonlySet<string>,
+  recentlyNotifiedStudentIds: ReadonlySet<string> = new Set()
+): { toNotify: T[]; renotify: T[]; restyle: T[]; skipped: string[] } {
   const bySession = new Map(eligible.map((e) => [e.sessionId, e]));
   const toNotify: T[] = [];
+  const renotify: T[] = [];
   const restyle: T[] = [];
   const skipped: string[] = [];
   const seenStudents = new Set<string>();
@@ -135,7 +143,9 @@ export function planCertificateNotifications<T extends { sessionId: string; stud
     }
     if (seenStudents.has(e.studentId)) continue; // لا يتكرّر الطالب
     seenStudents.add(e.studentId);
-    (alreadyNotifiedStudentIds.has(e.studentId) ? restyle : toNotify).push(e);
+    if (!alreadyNotifiedStudentIds.has(e.studentId)) toNotify.push(e);
+    else if (recentlyNotifiedStudentIds.has(e.studentId)) restyle.push(e);
+    else renotify.push(e);
   }
-  return { toNotify, restyle, skipped };
+  return { toNotify, renotify, restyle, skipped };
 }

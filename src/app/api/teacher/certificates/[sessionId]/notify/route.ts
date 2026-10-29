@@ -7,7 +7,7 @@ import { getTeacherSession } from "@/lib/teacher";
 import { loadTeacherCertificate } from "@/lib/certificateServer";
 import { createNotification } from "@/lib/notifications";
 import { normalizeIssuedStyle, saveIssuedStyle } from "@/lib/certIssue";
-import { certificateNotifyMessage } from "@/lib/certificate";
+import { RENOTIFY_COOLDOWN_MS, certificateNotifyMessage } from "@/lib/certificate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,17 +39,21 @@ export async function POST(req: Request, props: { params: Promise<{ sessionId: s
   }
 
   const linkUrl = `/student/certificate/${cert.quizId}`;
-  const exists = await prisma.notification.findFirst({
+  const last = await prisma.notification.findFirst({
     where: { userId: cert.studentId, type: "certificate_issued", linkUrl },
-    select: { id: true },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
   });
-  if (exists) return NextResponse.json({ ok: true, alreadyNotified: true, styleUpdated: styleSaved });
+  // أُشعِر قبل لحظات (نقرة مكرّرة): يُحدَّث التصميم فقط. وإلا تصل إعادة الإشعار الصريحة الطالبَ من جديد.
+  if (last && Date.now() - last.createdAt.getTime() < RENOTIFY_COOLDOWN_MS) {
+    return NextResponse.json({ ok: true, alreadyNotified: true, styleUpdated: styleSaved });
+  }
 
   await createNotification({
     userId: cert.studentId,
     type: "certificate_issued",
-    message: certificateNotifyMessage(cert.data.quizTitle, cert.data.percentage),
+    message: certificateNotifyMessage(cert.data.quizTitle, cert.data.percentage, Boolean(last)),
     linkUrl,
   });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, renotified: Boolean(last), styleUpdated: styleSaved });
 }

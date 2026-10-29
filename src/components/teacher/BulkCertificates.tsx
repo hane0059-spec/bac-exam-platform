@@ -102,7 +102,7 @@ export default function BulkCertificates({
     if (chosen.length === 0 || !style) return;
     if (
       !confirm(
-        `سيُشعَر ${chosen.length} طالب بأنّ شهادتهم جاهزة (بالنموذج والشعار والختام الظاهرة هنا). من أُشعِر سابقاً يُحدَّث تصميمه فقط دون إشعار مكرّر. متابعة؟`
+        `سيُشعَر ${chosen.length} طالب بأنّ شهادتهم جاهزة (بالنموذج والشعار والختام الظاهرة هنا). من أُشعِر سابقاً يصله إشعار «حُدِّثت شهادتك» (إلا من أُشعِر قبل أقلّ من 10 دقائق فيُحدَّث تصميمه فقط). متابعة؟`
       )
     )
       return;
@@ -141,7 +141,8 @@ export default function BulkCertificates({
       return;
     }
     const parts = [`أُشعِر ${d.notified} طالباً`];
-    if (d.restyled) parts.push(`وحُدِّث تصميم ${d.restyled} أُشعِروا سابقاً`);
+    if (d.renotified) parts.push(`وأُعيد إشعار ${d.renotified} بشهادتهم المحدَّثة`);
+    if (d.restyled) parts.push(`وحُدِّث تصميم ${d.restyled} أُشعِروا قبل لحظات دون إشعار مكرّر`);
     if (d.skipped) parts.push(`وتُجوهل ${d.skipped} غير مؤهَّلين`);
     setNotifyMsg(
       parts.join("، ") + "." + (logoDropped ? " (الشعار المرفوع كبير جداً فلم يُرسَل؛ استعمل صورة أصغر.)" : "")
