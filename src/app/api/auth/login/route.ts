@@ -6,14 +6,7 @@ import { codeCandidates } from "@/lib/studentCredentials";
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
-import {
-  clearThrottle,
-  getThrottle,
-  lockMessage,
-  lockRemainingMs,
-  recordFailure,
-  throttleKey,
-} from "@/lib/loginThrottle";
+import { clearThrottle, lockMessage, reserveAttempt, throttleKey } from "@/lib/loginThrottle";
 import { getBranding } from "@/lib/branding";
 import {
   createSessionToken,
@@ -123,13 +116,12 @@ export async function POST(req: Request) {
   }
   const user = resolved.user;
 
-  // حدّ المحاولات الفاشلة لكل حساب (في القاعدة، يصمد عبر نسخ الخادم). يُفحَص قبل كلمة السرّ فلا ينجح
-  // تخمينٌ أثناء القفل، ويُعامَل المُعرّف المجهول كالموجود فلا يكشف القفل وجود الحساب.
+  // حدّ المحاولات لكل حساب (في القاعدة، يصمد عبر نسخ الخادم): تُحجَز المحاولة ذرّياً **قبل** فحص كلمة السرّ فلا
+  // يتجاوز التخمين المتوازي الحدّ ولا ينجح تخمينٌ أثناء القفل، ويُعامَل المُعرّف المجهول كالموجود فلا يكشف القفل وجود الحساب.
   const tKey = throttleKey(user?.id, identifier);
-  const tState = await getThrottle(tKey);
-  const locked = lockRemainingMs(tState, Date.now());
-  if (locked > 0) {
-    return NextResponse.json({ error: lockMessage(locked) }, { status: 429 });
+  const attempt = await reserveAttempt(tKey);
+  if (!attempt.allowed) {
+    return NextResponse.json({ error: lockMessage(attempt.remainingMs) }, { status: 429 });
   }
 
   // رسالة موحّدة لتفادي كشف وجود الحساب.
@@ -138,18 +130,12 @@ export async function POST(req: Request) {
     { status: 401 }
   );
 
-  if (!user || !user.isActive) {
-    await recordFailure(tKey, tState);
-    return invalid;
-  }
+  if (!user || !user.isActive) return invalid;
 
   // الطالب: كلمة السرّ غير حسّاسة لحالة الأحرف، وتُرحَّل الحسابات القديمة عند أوّل دخول ناجح.
   const check = await verifyPasswordFor(user.role, password, user.passwordHash);
-  if (!check.ok) {
-    await recordFailure(tKey, tState);
-    return invalid;
-  }
-  if (tState) await clearThrottle(tKey); // نجاح: يُصفَّر العدّاد
+  if (!check.ok) return invalid;
+  await clearThrottle(tKey); // نجاح: يُصفَّر العدّاد
   if (check.rehash) {
     await prisma.user
       .update({ where: { id: user.id }, data: { passwordHash: check.rehash } })

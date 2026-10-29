@@ -1,7 +1,7 @@
 // src/lib/loginThrottle.ts
 // حدّ محاولات الدخول الفاشلة لكل حساب، محفوظ في قاعدة البيانات (AppSetting، بلا تغيير مخطط).
 // الحدّ في الذاكرة (rateLimit.ts) لكل نسخة خادم فقط فيضعف على Vercel؛ هذا يغلق التخمين الموزَّع
-// على عناوين متعددة لحساب واحد. المنطق نقيّ (مُختبَر)، والتخزين دوال مستقلة تفشل «مفتوحةً» (لا تمنع الدخول عند خطأ القاعدة).
+// على عناوين متعددة لحساب واحد. المنطق نقيّ (مُختبَر)، والحجز ذرّي في القاعدة ويفشل «مفتوحاً» (لا يمنع الدخول عند خطأ القاعدة).
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 
@@ -64,29 +64,40 @@ export function lockMessage(remainingMs: number): string {
   return `محاولات دخول خاطئة كثيرة على هذا الحساب — حاول بعد ${minutes} دقيقة.`;
 }
 
-/** الحالة الحالية (null إن لم توجد أو تعذّرت القراءة). */
-export async function getThrottle(key: string): Promise<ThrottleState | null> {
+/**
+ * يحجز محاولة دخول **ذرّياً قبل فحص كلمة السرّ**: داخل معاملة بقفل استشاري لكل حساب (يُسلسل الطلبات المتوازية)
+ * يُقرأ العدّاد، فإن كان الحساب مقفلاً يُرفض، وإلا تُحسب هذه المحاولة فوراً (والعاشرة تُقفل ما بعدها).
+ * بهذا لا يتجاوز التخمين المتوازي الحدّ (كان القراءة ثم الكتابة بعد الفحص تسمح بمئات المحاولات دفعةً).
+ * نجاح الدخول يمسح العدّاد (`clearThrottle`). يفشل مفتوحاً: خطأ القاعدة لا يمنع الدخول.
+ */
+export async function reserveAttempt(key: string): Promise<{ allowed: boolean; remainingMs: number }> {
   try {
-    const row = await prisma.appSetting.findUnique({ where: { key } });
-    return parseState(row?.value);
-  } catch {
-    return null;
-  }
-}
-
-export async function recordFailure(key: string, current: ThrottleState | null): Promise<void> {
-  try {
-    const next = nextStateOnFailure(current, Date.now());
-    const value = JSON.stringify(next);
-    await prisma.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
-    // تنظيف انتهازي للمهجور (نحو 1 من 25 فشلاً) ضمن نطاق مفاتيحنا فقط.
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // ::text لأنّ دالة القفل تُرجع void وPrisma لا يفكّ ترميزه.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))::text`;
+        const now = Date.now();
+        const row = await tx.appSetting.findUnique({ where: { key } });
+        const state = parseState(row?.value);
+        const remaining = lockRemainingMs(state, now);
+        if (remaining > 0) return { allowed: false, remainingMs: remaining };
+        const value = JSON.stringify(nextStateOnFailure(state, now));
+        await tx.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+        return { allowed: true, remainingMs: 0 };
+      },
+      { timeout: 10_000, maxWait: 10_000 }
+    );
+    // تنظيف انتهازي للمهجور (نحو 1 من 25 محاولة) ضمن نطاق مفاتيحنا فقط.
     if (Math.random() < 0.04) {
-      await prisma.appSetting.deleteMany({
-        where: { key: { startsWith: KEY_PREFIX }, updatedAt: { lt: new Date(Date.now() - STALE_MS) } },
-      });
+      await prisma.appSetting
+        .deleteMany({
+          where: { key: { startsWith: KEY_PREFIX }, updatedAt: { lt: new Date(Date.now() - STALE_MS) } },
+        })
+        .catch(() => {});
     }
+    return result;
   } catch {
-    /* الفشل مفتوح: لا نكسر الدخول */
+    return { allowed: true, remainingMs: 0 }; // فشل مفتوح
   }
 }
 
