@@ -15,15 +15,19 @@ import {
 } from "@/lib/certificateClient";
 import { jpegsToPdf } from "@/lib/pdfImage";
 
+const MAX_LOGO_CHARS = 260_000; // يطابق حدّ الخادم (certIssue)
+
 export interface BulkItem {
   sessionId: string;
   data: CertificateData;
 }
 
 export default function BulkCertificates({
+  quizId,
   quizTitle,
   items,
 }: {
+  quizId: string;
   quizTitle: string;
   items: BulkItem[];
 }) {
@@ -36,6 +40,8 @@ export default function BulkCertificates({
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [notifying, setNotifying] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState("");
 
   useEffect(() => {
     void readSavedCertStyle().then((s) => {
@@ -89,6 +95,57 @@ export default function BulkCertificates({
       setError(e instanceof Error ? e.message : "تعذّر إنشاء الملفّ.");
     }
     setBusy(false);
+  }
+
+  // يرسل للخادم تصميمك الحالي ويُشعر المحدَّدين: يجدون شهادتهم بهذا التصميم في صفحاتهم.
+  async function notifyChosen() {
+    if (chosen.length === 0 || !style) return;
+    if (
+      !confirm(
+        `سيُشعَر ${chosen.length} طالب بأنّ شهادتهم جاهزة (بالنموذج والشعار والختام الظاهرة هنا). من أُشعِر سابقاً يُحدَّث تصميمه فقط دون إشعار مكرّر. متابعة؟`
+      )
+    )
+      return;
+    setError("");
+    setNotifyMsg("");
+    setNotifying(true);
+    let logo: string | undefined;
+    let logoDropped = false;
+    if (style.logoImage) {
+      try {
+        const url = localStorage.getItem("cert-logo");
+        if (url && url.length <= MAX_LOGO_CHARS) logo = url;
+        else if (url) logoDropped = true;
+      } catch {
+        // لا شعار.
+      }
+    }
+    const res = await fetch(`/api/teacher/quizzes/${quizId}/certificates/notify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionIds: chosen.map((c) => c.sessionId),
+        style: {
+          theme: themeId,
+          flag: style.flagColors,
+          emblem: style.emblem,
+          closing: closing.trim() || undefined,
+          logo,
+        },
+      }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setNotifying(false);
+    if (!res.ok) {
+      setError(d.error ?? "تعذّر إرسال الإشعارات.");
+      return;
+    }
+    const parts = [`أُشعِر ${d.notified} طالباً`];
+    if (d.restyled) parts.push(`وحُدِّث تصميم ${d.restyled} أُشعِروا سابقاً`);
+    if (d.skipped) parts.push(`وتُجوهل ${d.skipped} غير مؤهَّلين`);
+    setNotifyMsg(
+      parts.join("، ") + "." + (logoDropped ? " (الشعار المرفوع كبير جداً فلم يُرسَل؛ استعمل صورة أصغر.)" : "")
+    );
   }
 
   if (items.length === 0) {
@@ -200,6 +257,14 @@ export default function BulkCertificates({
         >
           {busy ? `جارٍ الإنشاء… ${progress} / ${chosen.length}` : `تنزيل PDF (${chosen.length} شهادة)`}
         </button>
+        <button
+          type="button"
+          onClick={notifyChosen}
+          disabled={notifying || busy || chosen.length === 0 || !style}
+          className="rounded-xl border border-line px-4 py-3 text-sm font-medium hover:bg-ink/5 disabled:opacity-60"
+        >
+          {notifying ? "جارٍ الإشعار…" : `🔔 إشعار الطلاب المحدَّدين (${chosen.length})`}
+        </button>
         {busy && (
           <div className="h-2 w-48 overflow-hidden rounded-full bg-ink/10">
             <div
@@ -209,6 +274,7 @@ export default function BulkCertificates({
           </div>
         )}
       </div>
+      {notifyMsg && <p className="rounded-xl bg-primary-light p-3 text-sm text-primary-dark">{notifyMsg}</p>}
       {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     </div>
   );

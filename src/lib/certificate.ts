@@ -103,3 +103,39 @@ export function certificateLines(d: CertificateData): CertificateLines {
     signLabel: `المدرّس: ${d.teacherName}`,
   };
 }
+
+/** نصّ إشعار الطالب بإصدار شهادته (شهادة تقدير أو مشاركة بحسب النسبة). */
+export function certificateNotifyMessage(quizTitle: string, percentage: number): string {
+  const kind = percentage >= CERTIFICATE_THRESHOLD ? "شهادة تقدير" : "شهادة مشاركة";
+  return `أصدر لك مدرّسك ${kind} في اختبار «${quizTitle}» (${percentage}%) — افتحها وحمّلها.`;
+}
+
+/**
+ * خطة الإشعار الجماعي: من بين الشهادات المؤهّلة (أفضل جلسة معتمدة لكل طالب) تُحدَّد ما طلبه المدرّس.
+ * - `toNotify`: طلاب لم يُشعَروا بعدُ (إشعار + حفظ التصميم).
+ * - `restyle`: أُشعِروا سابقاً (يُحدَّث تصميمهم فقط دون إشعار مكرّر).
+ * - `skipped`: معرّفات جلسات طُلبت وليست مؤهّلة/ليست لهذا الاختبار (تُتجاهَل بأمان).
+ * مفتاح التكرار بالطالب لا بالجلسة (شهادة واحدة لكل طالب في الاختبار).
+ */
+export function planCertificateNotifications<T extends { sessionId: string; studentId: string }>(
+  eligible: T[],
+  requestedSessionIds: string[],
+  alreadyNotifiedStudentIds: ReadonlySet<string>
+): { toNotify: T[]; restyle: T[]; skipped: string[] } {
+  const bySession = new Map(eligible.map((e) => [e.sessionId, e]));
+  const toNotify: T[] = [];
+  const restyle: T[] = [];
+  const skipped: string[] = [];
+  const seenStudents = new Set<string>();
+  for (const id of new Set(requestedSessionIds)) {
+    const e = bySession.get(id);
+    if (!e) {
+      skipped.push(id);
+      continue;
+    }
+    if (seenStudents.has(e.studentId)) continue; // لا يتكرّر الطالب
+    seenStudents.add(e.studentId);
+    (alreadyNotifiedStudentIds.has(e.studentId) ? restyle : toNotify).push(e);
+  }
+  return { toNotify, restyle, skipped };
+}

@@ -7,6 +7,7 @@ import { getTeacherSession } from "@/lib/teacher";
 import { loadTeacherCertificate } from "@/lib/certificateServer";
 import { createNotification } from "@/lib/notifications";
 import { normalizeIssuedStyle, saveIssuedStyle } from "@/lib/certIssue";
+import { certificateNotifyMessage } from "@/lib/certificate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export async function POST(req: Request, props: { params: Promise<{ sessionId: s
   await createNotification({
     userId: cert.studentId,
     type: "certificate_issued",
-    message: `أصدر لك مدرّسك شهادة تقدير في اختبار «${cert.data.quizTitle}» (${cert.data.percentage}%) — افتحها وحمّلها.`,
+    message: certificateNotifyMessage(cert.data.quizTitle, cert.data.percentage),
     linkUrl,
   });
   return NextResponse.json({ ok: true });

@@ -60,12 +60,39 @@ export async function saveIssuedStyle(quizId: string, studentId: string, style: 
   await prisma.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
 }
 
-export async function loadIssuedStyle(quizId: string, studentId: string): Promise<IssuedStyle | null> {
-  const row = await prisma.appSetting.findUnique({ where: { key: issuedKey(quizId, studentId) } });
+/** تصميم موحَّد لكل طلاب الاختبار (إشعار جماعي): صفّ واحد بدل نسخ الشعار لكل طالب. */
+export const issuedAllKey = (quizId: string) => `cert-issue-all:${quizId}`;
+
+/**
+ * يحفظ تصميماً موحَّداً للاختبار ويمحو التصاميم الفردية للطلاب المذكورين (بمفاتيح صريحة من معرّفاتهم)
+ * ليسري الموحَّد عليهم. تصميم فرديّ لطالب آخر لم يُذكر يبقى له.
+ */
+export async function saveIssuedStyleForQuiz(
+  quizId: string,
+  style: IssuedStyle,
+  studentIds: string[]
+): Promise<void> {
+  const key = issuedAllKey(quizId);
+  const value = JSON.stringify(style);
+  await prisma.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+  if (studentIds.length > 0) {
+    await prisma.appSetting.deleteMany({
+      where: { key: { in: studentIds.map((id) => issuedKey(quizId, id)) } },
+    });
+  }
+}
+
+async function readStyle(key: string): Promise<IssuedStyle | null> {
+  const row = await prisma.appSetting.findUnique({ where: { key } });
   if (!row) return null;
   try {
     return normalizeIssuedStyle(JSON.parse(row.value));
   } catch {
     return null;
   }
+}
+
+/** تصميم الطالب الفردي أولاً، وإلا التصميم الموحَّد للاختبار (إن أُشعِر الطلاب جماعياً). */
+export async function loadIssuedStyle(quizId: string, studentId: string): Promise<IssuedStyle | null> {
+  return (await readStyle(issuedKey(quizId, studentId))) ?? (await readStyle(issuedAllKey(quizId)));
 }

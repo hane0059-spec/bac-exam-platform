@@ -33,7 +33,7 @@ export default async function QuizCertificatesPage(
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">شهادات الطلاب: {res.quizTitle}</h2>
       </div>
-      <BulkCertificates quizTitle={res.quizTitle} items={res.items} />
+      <BulkCertificates quizId={params.id} quizTitle={res.quizTitle} items={res.items} />
     </DashboardShell>
   );
 }

@@ -4,6 +4,8 @@ import {
   certificateLines,
   gradeInfo,
   eligibleForTeacherCertificate,
+  certificateNotifyMessage,
+  planCertificateNotifications,
   type CertificateData,
 } from "./certificate";
 import { jpegToPdf, jpegsToPdf } from "./pdfImage";
@@ -126,5 +128,37 @@ describe("jpegToPdf", () => {
     const offs = [...xref.matchAll(/(\d{10}) 00000 n/g)].map((m) => Number(m[1]));
     expect(offs).toHaveLength(11);
     offs.forEach((o, i) => expect(s.slice(o, o + `${i + 1} 0 obj\n`.length)).toBe(`${i + 1} 0 obj\n`));
+  });
+});
+
+describe("إشعار الشهادات الجماعي", () => {
+  it("نصّ الإشعار: تقدير فوق الحدّ ومشاركة دونه", () => {
+    expect(certificateNotifyMessage("الأنسجة", 85)).toContain("شهادة تقدير");
+    expect(certificateNotifyMessage("الأنسجة", 85)).toContain("(85%)");
+    expect(certificateNotifyMessage("الأنسجة", 40)).toContain("شهادة مشاركة");
+    expect(certificateNotifyMessage("الأنسجة", 60)).toContain("شهادة تقدير");
+  });
+
+  it("الخطة: جديد/تحديث تصميم/متجاهَل، بلا تكرار طالب أو جلسة", () => {
+    const eligible = [
+      { sessionId: "s1", studentId: "a" },
+      { sessionId: "s2", studentId: "b" },
+      { sessionId: "s3", studentId: "c" },
+    ];
+    const plan = planCertificateNotifications(
+      eligible,
+      ["s1", "s2", "s2", "ghost", "s1"],
+      new Set(["b"])
+    );
+    expect(plan.toNotify.map((x) => x.studentId)).toEqual(["a"]);
+    expect(plan.restyle.map((x) => x.studentId)).toEqual(["b"]);
+    expect(plan.skipped).toEqual(["ghost"]);
+  });
+
+  it("الخطة: جلسة غير مؤهّلة (ليست في القائمة) لا تُشعِر أحداً", () => {
+    const plan = planCertificateNotifications([{ sessionId: "s1", studentId: "a" }], ["other"], new Set());
+    expect(plan.toNotify).toEqual([]);
+    expect(plan.restyle).toEqual([]);
+    expect(plan.skipped).toEqual(["other"]);
   });
 });
