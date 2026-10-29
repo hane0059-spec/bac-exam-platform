@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { canAccessAttachment } from "@/lib/attachments";
+import { attachmentCacheControl } from "@/lib/attachmentCache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export async function GET(
     headers: {
       "Content-Type": att.mimeType,
       "Content-Disposition": "inline",
-      "Cache-Control": "private, no-store",
+      "Cache-Control": attachmentCacheControl(att.kind),
     },
   });
 }
