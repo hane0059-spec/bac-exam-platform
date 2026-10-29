@@ -165,6 +165,8 @@ export default function QuizRunner({
   const [finishing, setFinishing] = useState(false);
   // «علّم للمراجعة»: علامة شخصية للطالب تُحفَظ على جهازه لهذه الجلسة (لا تؤثّر في الدرجة).
   const [flags, setFlags] = useState<Set<string>>(new Set());
+  // تصفية قائمة المراجعة (عرضيّ فقط): الكل / غير المُجاب / المعلَّم.
+  const [reviewFilter, setReviewFilter] = useState<"all" | "unanswered" | "flagged">("all");
   useEffect(() => {
     if (!sessionId) return;
     try {
@@ -564,6 +566,21 @@ export default function QuizRunner({
 
   if (phase === "review" && reviewItems) {
     const unanswered = reviewItems.filter((i) => !i.answered);
+    const flaggedItems = reviewItems.filter((i) => flags.has(i.nodeId));
+    // فلتر فارغ (مثلاً أجاب عن كل ما فاته) يرجع تلقائياً إلى «الكل» بدل قائمة فارغة.
+    const activeFilter =
+      reviewFilter === "unanswered" && unanswered.length === 0
+        ? "all"
+        : reviewFilter === "flagged" && flaggedItems.length === 0
+          ? "all"
+          : reviewFilter;
+    const visibleItems =
+      activeFilter === "unanswered" ? unanswered : activeFilter === "flagged" ? flaggedItems : reviewItems;
+    const filterChips: { key: "all" | "unanswered" | "flagged"; label: string }[] = [
+      { key: "all", label: `الكل (${reviewItems.length})` },
+      ...(unanswered.length > 0 ? [{ key: "unanswered" as const, label: `غير المُجاب (${unanswered.length})` }] : []),
+      ...(flaggedItems.length > 0 ? [{ key: "flagged" as const, label: `🚩 المعلَّم (${flaggedItems.length})` }] : []),
+    ];
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between text-sm text-ink/60">
@@ -601,9 +618,37 @@ export default function QuizRunner({
                 أول سؤال غير مُجاب ({unanswered.length})
               </button>
             )}
+            {flaggedItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => void gotoNode(flaggedItems[0].nodeId)}
+                className="rounded-xl border border-line px-4 py-2 text-sm font-medium hover:bg-ink/5"
+              >
+                🚩 أول سؤال معلَّم ({flaggedItems.length})
+              </button>
+            )}
           </div>
+          {filterChips.length > 1 && (
+            <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="تصفية الأسئلة">
+              {filterChips.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={activeFilter === c.key}
+                  onClick={() => setReviewFilter(c.key)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    activeFilter === c.key
+                      ? "border-primary bg-primary-light text-primary-dark"
+                      : "border-line hover:bg-ink/5"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
           <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
-            {reviewItems.map((it) => (
+            {visibleItems.map((it) => (
               <li key={it.nodeId}>
                 <button
                   type="button"
