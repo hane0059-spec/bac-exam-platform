@@ -1,7 +1,7 @@
 // src/lib/loginThrottle.ts
 // حدّ محاولات الدخول الفاشلة لكل حساب، محفوظ في قاعدة البيانات (AppSetting، بلا تغيير مخطط).
 // الحدّ في الذاكرة (rateLimit.ts) لكل نسخة خادم فقط فيضعف على Vercel؛ هذا يغلق التخمين الموزَّع
-// على عناوين متعددة لحساب واحد. المنطق نقيّ (مُختبَر)، والحجز ذرّي في القاعدة ويفشل «مفتوحاً» (لا يمنع الدخول عند خطأ القاعدة).
+// على عناوين متعددة لحساب واحد. المنطق نقيّ (مُختبَر)، والحجز ذرّي في القاعدة ويفشل «مغلقاً» (تعذّر الحجز = لا سماح).
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { withAdvisoryLock } from "@/lib/dbLock";
@@ -69,9 +69,11 @@ export function lockMessage(remainingMs: number): string {
  * يحجز محاولة دخول **ذرّياً قبل فحص كلمة السرّ**: داخل معاملة بقفل استشاري لكل حساب (يُسلسل الطلبات المتوازية)
  * يُقرأ العدّاد، فإن كان الحساب مقفلاً يُرفض، وإلا تُحسب هذه المحاولة فوراً (والعاشرة تُقفل ما بعدها).
  * بهذا لا يتجاوز التخمين المتوازي الحدّ (كان القراءة ثم الكتابة بعد الفحص تسمح بمئات المحاولات دفعةً).
- * نجاح الدخول يمسح العدّاد (`clearThrottle`). يفشل مفتوحاً: خطأ القاعدة لا يمنع الدخول.
+ * نجاح الدخول يمسح العدّاد (`clearThrottle`). يفشل **مغلقاً** (`busy`): تعذّر الحجز لا يعني السماح.
  */
-export async function reserveAttempt(key: string): Promise<{ allowed: boolean; remainingMs: number }> {
+export async function reserveAttempt(
+  key: string
+): Promise<{ allowed: boolean; remainingMs: number; busy?: boolean }> {
   try {
     const result = await withAdvisoryLock(key, async (tx) => {
       const now = Date.now();
@@ -93,7 +95,9 @@ export async function reserveAttempt(key: string): Promise<{ allowed: boolean; r
     }
     return result;
   } catch {
-    return { allowed: true, remainingMs: 0 }; // فشل مفتوح
+    // فشل **مغلق**: عند تعذّر الحجز (طابور اتصالات مزدحم/مهلة) لا نسمح بتخمين غير محسوب؛ وإلا يكفي إغراق الاتصالات
+    // لتجاوز الحدّ. الدخول يعتمد القاعدة أصلاً فلا خسارة إن كانت متعطّلة.
+    return { allowed: false, remainingMs: 0, busy: true };
   }
 }
 

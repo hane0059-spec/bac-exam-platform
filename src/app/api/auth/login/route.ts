@@ -121,6 +121,9 @@ export async function POST(req: Request) {
   const tKey = throttleKey(user?.id, identifier);
   const attempt = await reserveAttempt(tKey);
   if (!attempt.allowed) {
+    if (attempt.busy) {
+      return NextResponse.json({ error: "الخادم مشغول — أعد المحاولة بعد لحظات." }, { status: 503 });
+    }
     return NextResponse.json({ error: lockMessage(attempt.remainingMs) }, { status: 429 });
   }
 
