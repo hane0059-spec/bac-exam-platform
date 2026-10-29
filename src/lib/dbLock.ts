@@ -6,7 +6,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function withAdvisoryLock<T>(
   key: string,
-  fn: (tx: Prisma.TransactionClient) => Promise<T>
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  /** مهلة المعاملة كلّها (تشمل انتظار القفل)؛ ارفعها حيث يُتوقَّع طابور (دفعة تسجيلات). */
+  timeoutMs = 10_000
 ): Promise<T> {
   return prisma.$transaction(
     async (tx) => {
@@ -14,6 +16,6 @@ export async function withAdvisoryLock<T>(
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))::text`;
       return fn(tx);
     },
-    { timeout: 10_000, maxWait: 10_000 }
+    { timeout: timeoutMs, maxWait: timeoutMs }
   );
 }

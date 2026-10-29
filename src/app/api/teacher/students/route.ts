@@ -13,6 +13,8 @@ import {
   studentCreateSchema,
   academicYearFor,
   nextStudentCode,
+  remainingStudentQuota,
+  withStudentCreateLock,
 } from "@/lib/teacherStudents";
 import { getFieldDefs, validateAndClean } from "@/lib/customFields";
 
@@ -140,46 +142,59 @@ export async function POST(req: Request) {
 
   // محاولة الإنشاء مع توليد رمز تسلسلي، وإعادة المحاولة عند تزامن نادر.
   for (let attempt = 0; attempt < 5; attempt++) {
-    const studentCode = await nextStudentCode();
     try {
-      const created = await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          mustChangePassword: true,
-          role: "STUDENT",
-          gender: d.gender,
-          firstName: d.firstName,
-          lastName: d.lastName,
-          phone: d.studentPhone || null,
-          schoolId: teacher?.schoolId ?? null,
-          customData: cf.data,
-          createdById: session.sub,
-          creatorNotes: d.creatorNotes || null,
-          studentProfile: {
-            create: {
-              studentCode,
-              gradeLevelId: d.gradeLevelId,
-              fatherName: d.fatherName,
-              motherName: d.motherName || null,
-              address: d.address || null,
-              parentPhone: d.parentPhone || null,
-              enrollmentYear: d.enrollmentYear,
+      // الحدّ + الرمز + الإنشاء تحت قفل بمعاملته فقط: بلا قفل تتجاوز الطلبات المتوازية الحدّ وتتصادم رموزها.
+      const created = await withStudentCreateLock(async (tx) => {
+        const left = await remainingStudentQuota(session.sub, tx);
+        if (left !== undefined && left < 1) return null;
+        const studentCode = await nextStudentCode(tx);
+        return tx.user.create({
+          data: {
+            email,
+            passwordHash,
+            mustChangePassword: true,
+            role: "STUDENT",
+            gender: d.gender,
+            firstName: d.firstName,
+            lastName: d.lastName,
+            phone: d.studentPhone || null,
+            schoolId: teacher?.schoolId ?? null,
+            customData: cf.data,
+            createdById: session.sub,
+            creatorNotes: d.creatorNotes || null,
+            studentProfile: {
+              create: {
+                studentCode,
+                gradeLevelId: d.gradeLevelId,
+                fatherName: d.fatherName,
+                motherName: d.motherName || null,
+                address: d.address || null,
+                parentPhone: d.parentPhone || null,
+                enrollmentYear: d.enrollmentYear,
+              },
+            },
+            studentEnrollments: {
+              create: [
+                {
+                  teacherId: session.sub,
+                  subjectId: d.subjectId,
+                  academicYear,
+                  groupName: d.groupName || null,
+                },
+              ],
             },
           },
-          studentEnrollments: {
-            create: [
-              {
-                teacherId: session.sub,
-                subjectId: d.subjectId,
-                academicYear,
-                groupName: d.groupName || null,
-              },
-            ],
-          },
-        },
-        select: { id: true },
+          select: { id: true },
+        });
       });
+      if (!created) {
+        return NextResponse.json(
+          {
+            error: `بلغتَ حدّ الطلاب المسموح في اشتراكك (${profile?.studentLimit}). احذف طالباً أو رقِّ اشتراكك.`,
+          },
+          { status: 403 }
+        );
+      }
       return NextResponse.json({ id: created.id }, { status: 201 });
     } catch (e) {
       // تصادم رمز الطالب الفريد → أعد التوليد. غير ذلك → اخرج.

@@ -1,7 +1,9 @@
 // src/lib/teacherStudents.ts
 // منطق إدارة المدرّس لطلابه: الحراسة (المُنشئ فقط)، توليد رمز الطالب، والتحقّق.
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { withAdvisoryLock } from "@/lib/dbLock";
 
 /** يُعيد الطالب إن كان من إنشاء هذا المدرّس فقط، وإلا null. */
 export async function ownedStudent(teacherId: string, studentId: string) {
@@ -65,33 +67,42 @@ export async function academicYearFor(
  * يُفرَض على الخادم في كل مسار ينشئ طلاباً للمدرّس.
  */
 export async function remainingStudentQuota(
-  teacherId: string
+  teacherId: string,
+  db: Prisma.TransactionClient | typeof prisma = prisma
 ): Promise<number | undefined> {
-  const profile = await prisma.teacherProfile.findUnique({
+  const profile = await db.teacherProfile.findUnique({
     where: { userId: teacherId },
     select: { isIndependent: true, studentLimit: true },
   });
   if (!profile?.isIndependent || profile.studentLimit == null) return undefined;
-  const current = await prisma.user.count({
+  const current = await db.user.count({
     where: { role: "STUDENT", createdById: teacherId },
   });
   return Math.max(0, profile.studentLimit - current);
 }
 
+/**
+ * يُسلسل إنشاء الطلاب التفاعلي (فحص حدّ الاشتراك + توليد الرمز التسلسلي + الإنشاء): بدونه تحسب الطلبات
+ * المتوازية الرمز نفسه فتتصادم وتستنفد محاولاتها (500) وتتجاوز حدّ الطلاب.
+ * **داخل الدالة استعمل عميل المعاملة `tx` فقط** (لا `prisma` العامّ): المعاملة تحتجز الاتصال، وعلى Vercel
+ * connection_limit=1 فيُعلَّق أي استعلام عامّ داخلها حتى المهلة. وخطأ تصادم الرمز يُبطل المعاملة فيُعاد القفل من الخارج.
+ */
+export function withStudentCreateLock<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  // مهلة أطول: صفٌّ كاملٌ قد يسجّل معاً فيقف الطلب في الطابور خلف عشرات المحاولات القصيرة.
+  return withAdvisoryLock("student-create", fn, 25_000);
+}
+
 /** رمز طالب تسلسلي فريد: التالي بعد الأكبر الحالي (S-1002 ...). */
-export async function nextStudentCode(): Promise<string> {
-  const codes = await prisma.studentProfile.findMany({
-    select: { studentCode: true },
-  });
-  let max = 1000;
-  for (const { studentCode } of codes) {
-    const m = studentCode.match(/(\d+)/);
-    if (m) {
-      const n = parseInt(m[1], 10);
-      if (n > max) max = n;
-    }
-  }
-  return `S-${max + 1}`;
+export async function nextStudentCode(
+  db: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<string> {
+  // أكبر رقم في الرموز (أول مجموعة أرقام في كل رمز) باستعلام تجميعي واحد بدل جلب كل الرموز: يقصّر زمن الإمساك بقفل الإنشاء.
+  const rows = await db.$queryRaw<{ max: bigint | null }[]>`
+    SELECT MAX(CAST(m AS bigint)) AS max
+    FROM (SELECT substring(student_code from '\\d+') AS m FROM student_profiles) t
+    WHERE m IS NOT NULL AND length(m) <= 15`;
+  const top = rows[0]?.max != null ? Number(rows[0].max) : 0;
+  return `S-${Math.max(1000, top) + 1}`;
 }
 
 const genderEnum = z.enum(["MALE", "FEMALE"]);

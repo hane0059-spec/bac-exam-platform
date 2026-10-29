@@ -7,7 +7,12 @@ import { hashPasswordFor } from "@/lib/passwords";
 import { prisma } from "@/lib/prisma";
 import { isWithinWindow } from "@/lib/exam";
 import { teacherCanManageStudents } from "@/lib/teacher";
-import { academicYearFor, nextStudentCode } from "@/lib/teacherStudents";
+import {
+  academicYearFor,
+  nextStudentCode,
+  remainingStudentQuota,
+  withStudentCreateLock,
+} from "@/lib/teacherStudents";
 import { createNotification } from "@/lib/notifications";
 
 /** هل فعّل المدرّس التسجيل الذاتي في إعدادات الاختبار؟ */
@@ -67,57 +72,52 @@ export async function registerStudentViaQuiz(
   }
   const teacherId = quiz.creator.id;
 
-  // حدّ الطلاب للمدرّس المستقلّ.
-  const profile = await prisma.teacherProfile.findUnique({
-    where: { userId: teacherId },
-    select: { isIndependent: true, studentLimit: true },
-  });
-  if (profile?.isIndependent && profile.studentLimit != null) {
-    const current = await prisma.user.count({
-      where: { role: "STUDENT", createdById: teacherId },
-    });
-    if (current >= profile.studentLimit) {
-      return {
-        ok: false,
-        status: 403,
-        error: "بلغ المدرّس حدّ الطلاب المسموح — تواصل معه.",
-      };
-    }
-  }
-
   const academicYear = await academicYearFor(teacherId, quiz.subject.id);
   const passwordHash = await hashPasswordFor("STUDENT", d.password);
 
   for (let attempt = 0; attempt < 5; attempt++) {
-    const studentCode = await nextStudentCode();
     try {
-      const created = await prisma.user.create({
-        data: {
-          passwordHash,
-          role: "STUDENT",
-          gender: d.gender,
-          firstName: d.firstName,
-          lastName: d.lastName,
-          phone: d.phone || null,
-          schoolId: quiz.creator.schoolId ?? null,
-          createdById: teacherId,
-          studentProfile: {
-            create: {
-              studentCode,
-              gradeLevelId: quiz.subject.gradeLevelId,
-              fatherName: d.fatherName,
-              enrollmentYear: new Date().getFullYear(),
+      // الحدّ (للمدرّس المستقلّ) + الرمز التسلسلي + الإنشاء تحت قفل بمعاملته فقط (يمنع تجاوز الحدّ وتصادم الرموز عند مسح صفٍّ كاملٍ QR معاً).
+      const created = await withStudentCreateLock(async (tx) => {
+        const left = await remainingStudentQuota(teacherId, tx);
+        if (left !== undefined && left < 1) return null;
+        const studentCode = await nextStudentCode(tx);
+        const row = await tx.user.create({
+          data: {
+            passwordHash,
+            role: "STUDENT",
+            gender: d.gender,
+            firstName: d.firstName,
+            lastName: d.lastName,
+            phone: d.phone || null,
+            schoolId: quiz.creator.schoolId ?? null,
+            createdById: teacherId,
+            studentProfile: {
+              create: {
+                studentCode,
+                gradeLevelId: quiz.subject.gradeLevelId,
+                fatherName: d.fatherName,
+                enrollmentYear: new Date().getFullYear(),
+              },
+            },
+            studentEnrollments: {
+              create: [{ teacherId, subjectId: quiz.subject.id, academicYear }],
+            },
+            assignments: {
+              create: [{ quizId: quiz.id, teacherId }],
             },
           },
-          studentEnrollments: {
-            create: [{ teacherId, subjectId: quiz.subject.id, academicYear }],
-          },
-          assignments: {
-            create: [{ quizId: quiz.id, teacherId }],
-          },
-        },
-        select: { id: true },
+          select: { id: true },
+        });
+        return { id: row.id, studentCode };
       });
+      if (!created) {
+        return {
+          ok: false,
+          status: 403,
+          error: "بلغ المدرّس حدّ الطلاب المسموح — تواصل معه.",
+        };
+      }
       await createNotification({
         userId: teacherId,
         type: "JOINED",
@@ -127,7 +127,7 @@ export async function registerStudentViaQuiz(
       return {
         ok: true,
         studentId: created.id,
-        studentCode,
+        studentCode: created.studentCode,
         firstName: d.firstName,
         lastName: d.lastName,
         gender: d.gender,
