@@ -17,7 +17,7 @@ export default async function AccountPage() {
   if (!session) redirect("/login");
 
   const forced =
-    session.role === "STUDENT"
+    session.role === "STUDENT" || session.role === "TEACHER"
       ? (
           await prisma.user.findUnique({
             where: { id: session.sub },

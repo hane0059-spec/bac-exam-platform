@@ -8,7 +8,9 @@ import UserForm, { type UserInitial } from "@/components/admin/UserForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
 import TeacherLifecyclePanel from "@/components/admin/TeacherLifecyclePanel";
+import TeacherResetCardButton from "@/components/admin/TeacherResetCardButton";
 import { getAdminContext } from "@/lib/admin";
+import { getBranding } from "@/lib/branding";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +97,15 @@ export default async function EditUserPage({
           canManageAdmins={canManageAdmins}
         />
         <PasswordResetForm endpoint={`/api/admin/users/${user.id}/password`} />
+        {/* بطاقة دخول (كلمة عشوائية + QR): للمدرّسين فقط، كحال بطاقة الطالب. */}
+        {user.role === "TEACHER" && (
+          <TeacherResetCardButton
+            userId={user.id}
+            teacherName={`${user.firstName} ${user.lastName}`}
+            brandName={(await getBranding()).name}
+            issuerName={`${session.firstName} ${session.lastName}`}
+          />
+        )}
         {/* دورة حياة الحساب (تعطيل/تفعيل + تسلسل للطلاب): للمدرّس، ليس النفس ولا المدير العام. */}
         {user.role === "TEACHER" &&
           user.id !== session.sub &&

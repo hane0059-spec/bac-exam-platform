@@ -75,4 +75,18 @@ describe("credentialCards", () => {
     expect(html).toContain("لا فرق بين الأحرف الكبيرة والصغيرة");
     expect(html).toContain("يكفي كتابة رقم الرمز (مثل 1006)");
   });
+
+  it("بطاقة المدرّس: عنوان ورمز المدرّس وتنبيه حسّاسية الأحرف، وبلا نصّ الطالب", () => {
+    const html = buildCredentialCardsHtml(
+      [{ name: "مدرّس تجريبي", studentCode: "T-12", password: "abcDE23xyz" }],
+      { ...opts, loginUrl: "https://www.itqanexam.com/login?role=TEACHER", role: "TEACHER", teacherName: "الإدارة العامّة" }
+    );
+    expect(html).toContain("بطاقة دخول مدرّس");
+    expect(html).toContain("رمز المدرّس");
+    expect(html).toContain("T-12");
+    expect(html).toContain("حسّاسة لحالة الأحرف");
+    expect(html).toContain("الإدارة: الإدارة العامّة");
+    expect(html).not.toContain("رمز الطالب");
+    expect(html).not.toContain("لا فرق بين الأحرف الكبيرة والصغيرة");
+  });
 });

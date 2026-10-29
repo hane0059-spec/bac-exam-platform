@@ -21,6 +21,8 @@ export interface CardsOptions {
   /** سطر سياق أعلى كل صفحة (مثل: الصفّ العاشر — علم الأحياء). */
   contextLine?: string;
   teacherName?: string;
+  /** TEACHER: بطاقة مدرّس (رمز المدرّس، وكلمة السرّ حسّاسة لحالة الأحرف)؛ الافتراضي طالب. */
+  role?: "TEACHER";
 }
 
 export function escapeHtml(s: string): string {
@@ -64,19 +66,25 @@ function cardHtml(c: CredentialCard, qrSvg: string, o: CardsOptions, host: strin
       ? [c.grade ? `<strong>${escapeHtml(c.grade)}</strong>` : "", c.group ? escapeHtml(c.group) : ""]
           .filter(Boolean)
           .join(" · ")
-      : "بطاقة دخول طالب"
+      : o.role === "TEACHER"
+        ? "بطاقة دخول مدرّس"
+        : "بطاقة دخول طالب"
   }</span></div>
 <div class="body">
 <div class="info">
 <div class="nm">${escapeHtml(c.name)}</div>
-<div class="row"><span>رمز الطالب</span><bdi class="v">${escapeHtml(c.studentCode)}</bdi></div>
+<div class="row"><span>${o.role === "TEACHER" ? "رمز المدرّس" : "رمز الطالب"}</span><bdi class="v">${escapeHtml(c.studentCode)}</bdi></div>
 <div class="row"><span>كلمة السرّ</span><bdi class="v">${escapeHtml(c.password)}</bdi></div>
 <div class="row"><span>الرابط</span><bdi class="u">${escapeHtml(host)}</bdi></div>
 </div>
 <div class="qr">${qrSvg}<small>امسح للدخول</small></div>
 </div>
-<div class="note"><b>كلمة السرّ مؤقّتة:</b> ستُطلب منك كلمة سرّ جديدة عند أول دخول${o.teacherName ? ` — المدرّس: ${escapeHtml(o.teacherName)}` : ""}</div>
-<div class="tip">يكفي كتابة رقم الرمز (مثل ${escapeHtml(c.studentCode.replace(/^[A-Za-z]+-?/, "") || c.studentCode)}) · لا فرق بين الأحرف الكبيرة والصغيرة في الرمز وكلمة السرّ</div>
+<div class="note"><b>كلمة السرّ مؤقّتة:</b> ستُطلب منك كلمة سرّ جديدة عند أول دخول${o.teacherName ? ` — ${o.role === "TEACHER" ? "الإدارة" : "المدرّس"}: ${escapeHtml(o.teacherName)}` : ""}</div>
+<div class="tip">${
+    o.role === "TEACHER"
+      ? "اكتب الرمز كما هو (مثل " + escapeHtml(c.studentCode) + ") أو بريدك · كلمة السرّ تُكتب بالحروف نفسها تماماً (حسّاسة لحالة الأحرف)"
+      : `يكفي كتابة رقم الرمز (مثل ${escapeHtml(c.studentCode.replace(/^[A-Za-z]+-?/, "") || c.studentCode)}) · لا فرق بين الأحرف الكبيرة والصغيرة في الرمز وكلمة السرّ`
+  }</div>
 </div>`;
 }
 
@@ -107,13 +115,13 @@ export function buildCredentialCardsHtml(cards: CredentialCard[], o: CardsOption
   const body = pages
     .map(
       (page, i) => `<section class="page">
-<header><span>${o.contextLine ? escapeHtml(o.contextLine) : "بطاقات دخول الطلاب"}</span><span>صفحة ${i + 1} من ${pageCount}</span></header>
+<header><span>${o.contextLine ? escapeHtml(o.contextLine) : o.role === "TEACHER" ? "بطاقات دخول المدرّسين" : "بطاقات دخول الطلاب"}</span><span>صفحة ${i + 1} من ${pageCount}</span></header>
 <div class="grid">${page.map((c) => cardHtml(c, qrSvg, o, host)).join("\n")}</div>
 <footer>قصّ على الخطوط المنقطة وسلّم كل بطاقة لصاحبها</footer>
 </section>`
     )
     .join("\n");
-  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>بطاقات دخول الطلاب</title>
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${o.role === "TEACHER" ? "بطاقات دخول المدرّسين" : "بطاقات دخول الطلاب"}</title>
 <style>
 @page{size:A4;margin:8mm}
 *{box-sizing:border-box}

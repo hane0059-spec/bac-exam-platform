@@ -42,7 +42,7 @@ export default async function DashboardShell({
     session.role === "STUDENT"
       ? enrichmentTeacherIdsForStudent(session.sub).catch(() => [])
       : Promise.resolve([]),
-    session.role === "STUDENT"
+    session.role === "STUDENT" || session.role === "TEACHER"
       ? prisma.user
           .findUnique({ where: { id: session.sub }, select: { mustChangePassword: true } })
           .then((u) => u?.mustChangePassword === true)
