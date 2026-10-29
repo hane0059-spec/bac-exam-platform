@@ -17,11 +17,20 @@ import {
   loadPreviousAnswer,
   nextUnansweredNodeId,
 } from "@/lib/exam";
+import { withAdvisoryLock } from "@/lib/dbLock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, props: { params: Promise<{ quizId: string }> }) {
+export async function POST(req: Request, props: { params: Promise<{ quizId: string }> }) {
+  return start(req, props, 0);
+}
+
+async function start(
+  _req: Request,
+  props: { params: Promise<{ quizId: string }> },
+  depth: number
+): Promise<NextResponse> {
   const params = await props.params;
   const session = await getStudentSession();
   if (!session) {
@@ -156,28 +165,48 @@ export async function POST(_req: Request, props: { params: Promise<{ quizId: str
     );
   }
 
-  const attempt = finishedCount + 1;
-  const seed = settings.shuffle
-    ? attemptSeed(studentId, quizId, attempt)
-    : undefined;
-  const firstNodeId = await firstQuestionNodeId(quizId, quiz.startNodeId, seed);
-  if (!firstNodeId) {
+  // التحقّق من الجلسة الجارية وعدد المحاولات ثم الإنشاء تحت قفل (طالب+اختبار): بدونه يمرّ طلبان متوازيان
+  // كلاهما قبل أن يُنشئ أيٌّ منهما جلسته فتُفتح جلستان لمحاولة واحدة (تجاوز حدّ المحاولات واستفادة من كشف الإجابات).
+  const outcome = await withAdvisoryLock(`start:${studentId}:${quizId}`, async (tx) => {
+    const open = await tx.examSession.findFirst({
+      where: { studentId, quizId, status: "IN_PROGRESS" },
+      select: { id: true },
+    });
+    if (open) return { kind: "again" as const };
+    const doneNow = await tx.examSession.count({
+      where: { studentId, quizId, status: { in: ["COMPLETED", "TIMED_OUT"] } },
+    });
+    if (doneNow >= maxAllowed) return { kind: "again" as const };
+    const attemptNo = doneNow + 1;
+    const sd = settings.shuffle ? attemptSeed(studentId, quizId, attemptNo) : undefined;
+    const first = await firstQuestionNodeId(quizId, quiz.startNodeId, sd);
+    if (!first) return { kind: "empty" as const };
+    const row = await tx.examSession.create({
+      data: {
+        studentId,
+        quizId,
+        status: "IN_PROGRESS",
+        currentNodeId: first,
+        attemptNumber: attemptNo,
+        pathTaken: [],
+      },
+    });
+    return { kind: "created" as const, row, firstNodeId: first, seed: sd };
+  });
+  if (outcome.kind === "empty") {
     return NextResponse.json(
       { error: "هذا الاختبار لا يحتوي أسئلة" },
       { status: 422 }
     );
   }
-
-  const created = await prisma.examSession.create({
-    data: {
-      studentId,
-      quizId,
-      status: "IN_PROGRESS",
-      currentNodeId: firstNodeId,
-      attemptNumber: attempt,
-      pathTaken: [],
-    },
-  });
+  if (outcome.kind === "again") {
+    // سبقه طلب متوازٍ (أُنشئت الجلسة أو استُنفدت المحاولات): أعِد المسار فيستأنف أو يعيد النتيجة.
+    if (depth >= 2) {
+      return NextResponse.json({ error: "تعذّر بدء الاختبار الآن — أعد المحاولة." }, { status: 409 });
+    }
+    return start(_req, props, depth + 1);
+  }
+  const { row: created, firstNodeId, seed } = outcome;
 
   const question = await loadSanitizedQuestion(
     firstNodeId,

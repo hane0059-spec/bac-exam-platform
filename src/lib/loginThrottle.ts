@@ -4,6 +4,7 @@
 // على عناوين متعددة لحساب واحد. المنطق نقيّ (مُختبَر)، والحجز ذرّي في القاعدة ويفشل «مفتوحاً» (لا يمنع الدخول عند خطأ القاعدة).
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { withAdvisoryLock } from "@/lib/dbLock";
 
 export const MAX_FAILURES = 10;
 export const WINDOW_MS = 15 * 60 * 1000;
@@ -72,21 +73,16 @@ export function lockMessage(remainingMs: number): string {
  */
 export async function reserveAttempt(key: string): Promise<{ allowed: boolean; remainingMs: number }> {
   try {
-    const result = await prisma.$transaction(
-      async (tx) => {
-        // ::text لأنّ دالة القفل تُرجع void وPrisma لا يفكّ ترميزه.
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))::text`;
-        const now = Date.now();
-        const row = await tx.appSetting.findUnique({ where: { key } });
-        const state = parseState(row?.value);
-        const remaining = lockRemainingMs(state, now);
-        if (remaining > 0) return { allowed: false, remainingMs: remaining };
-        const value = JSON.stringify(nextStateOnFailure(state, now));
-        await tx.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
-        return { allowed: true, remainingMs: 0 };
-      },
-      { timeout: 10_000, maxWait: 10_000 }
-    );
+    const result = await withAdvisoryLock(key, async (tx) => {
+      const now = Date.now();
+      const row = await tx.appSetting.findUnique({ where: { key } });
+      const state = parseState(row?.value);
+      const remaining = lockRemainingMs(state, now);
+      if (remaining > 0) return { allowed: false, remainingMs: remaining };
+      const value = JSON.stringify(nextStateOnFailure(state, now));
+      await tx.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+      return { allowed: true, remainingMs: 0 };
+    });
     // تنظيف انتهازي للمهجور (نحو 1 من 25 محاولة) ضمن نطاق مفاتيحنا فقط.
     if (Math.random() < 0.04) {
       await prisma.appSetting
