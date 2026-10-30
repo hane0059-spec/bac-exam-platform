@@ -6,6 +6,7 @@ import "katex/dist/katex.min.css"; // عرض المعادلات (KaTeX)
 import { getAppFont, FONT_CSS, getAppBgColor, bgColorToRgb } from "@/lib/settings";
 import { getBranding } from "@/lib/branding";
 import PwaRegister from "@/components/PwaRegister";
+import A11yLabels from "@/components/A11yLabels";
 
 // خطوط يختار المدير العام بينها؛ كلٌّ يعرّف متغيّره، والمستهلَك «--font-app».
 // Amiri/Tinos بدائل ويب للخطوط النظامية (التقليدي/تايمز) لتظهر على كل الأجهزة.
@@ -68,6 +69,8 @@ export default async function RootLayout({
     <html
       lang="ar"
       dir="rtl"
+      // السكربت المضمَّن قبل الرسم يضيف صنف الوضع الليلي وحجم النصّ للمتصفّح فقط: تفاوت متوقَّع لا خلل.
+      suppressHydrationWarning
       className={FONT_VARS}
       style={{ ["--font-app" as string]: FONT_CSS[font] }}
     >
@@ -92,6 +95,7 @@ export default async function RootLayout({
           }}
         />
         <PwaRegister />
+        <A11yLabels />
         {children}
       </body>
     </html>
