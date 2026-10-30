@@ -80,6 +80,41 @@
   }
 }
 
+/* حدّ أدنى لتباين النصوص (WCAG AA ≥ 4.5:1) — مركزيّ بدل تعديل مئات المواضع. قيس آلياً بعد مراجعة 11 صفحة:
+   النصوص الباهتة (text-ink/40|50|60) كانت ≈ 3:1، وأحمر red-500 وذهبي النصّ الصغير دون الحدّ في الفاتح،
+   وروابط primary وred-800 (رجوع) في الليلي (red-800 ← 2.19:1). تُوضَع خارج @layer فتغلب على أدوات Tailwind. */
+.text-ink\/40,
+.text-ink\/50 {
+  color: rgb(var(--ink) / 0.72);
+}
+.text-ink\/60 {
+  color: rgb(var(--ink) / 0.76);
+}
+.text-red-500 {
+  color: #991b1b;
+}
+.text-red-800 {
+  color: #7f1d1d;
+}
+.text-gold {
+  color: #8f6a1f;
+}
+.dark .text-primary {
+  color: rgb(94 207 178);
+}
+.dark .text-red-800 {
+  color: rgb(252 165 165);
+}
+.dark .hover\:text-red-900:hover {
+  color: rgb(254 202 202);
+}
+.dark .text-red-500 {
+  color: #f87171;
+}
+.dark .text-gold {
+  color: #e0b25a;
+}
+
 /* دخول خفيف (تلاشٍ + انزلاق بسيط) لعناصر صفحة الدخول عند أوّل رسم — يُحترَم
    تفضيل تقليل الحركة، ولا يتكرّر بعد التحميل (ليس Animation دائماً). */
 @keyframes fade-up {
