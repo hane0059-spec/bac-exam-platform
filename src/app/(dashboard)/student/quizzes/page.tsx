@@ -79,7 +79,7 @@ export default async function StudentQuizzesPage(
     <DashboardShell session={session}>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="font-display text-xl font-bold">اختباراتي</h2>
-        <Link href="/student" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
+        <Link href="/student" className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← العودة للوحة
         </Link>
       </div>
@@ -189,7 +189,7 @@ export default async function StudentQuizzesPage(
                           ? `/student/quizzes/${q.quizId}`
                           : `/student/quizzes/${q.quizId}?view=result`
                       }
-                      className="block text-center text-sm text-primary hover:underline"
+                      className="block py-2 text-center text-sm text-primary hover:underline"
                     >
                       عرض النتيجة
                     </Link>

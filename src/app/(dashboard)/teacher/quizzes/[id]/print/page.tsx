@@ -138,7 +138,7 @@ export default async function PrintQuizPage(
     <main className="mx-auto max-w-3xl px-4 py-8">
       <Link
         href={`/teacher/quizzes/${params.id}/edit`}
-        className="mb-4 inline-block text-base font-semibold text-red-800 hover:text-red-900 hover:underline print:hidden"
+        className="mb-2 -mt-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline print:hidden"
       >
         ← تكوين الاختبار
       </Link>

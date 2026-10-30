@@ -412,7 +412,7 @@ export default function LoginForm({
                 </span>
                 <button
                   onClick={() => setRole(null)}
-                  className="text-sm text-primary hover:underline"
+                  className="-my-2 py-2 text-sm text-primary hover:underline"
                 >
                   تغيير النافذة
                 </button>
@@ -482,7 +482,7 @@ export default function LoginForm({
                   <button
                     type="button"
                     onClick={() => setShowForgot((v) => !v)}
-                    className="text-sm text-primary hover:underline"
+                    className="-my-2 py-2 text-sm text-primary hover:underline"
                   >
                     نسيت كلمة السر؟
                   </button>

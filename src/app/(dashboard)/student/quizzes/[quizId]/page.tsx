@@ -72,7 +72,7 @@ export default async function TakeQuizPage(
     return (
       <DashboardShell session={session}>
         <div className="mb-6">
-          <Link href="/student/quizzes" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
+          <Link href="/student/quizzes" className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
             ← اختباراتي
           </Link>
         </div>
@@ -185,7 +185,7 @@ export default async function TakeQuizPage(
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
-        <Link href="/student/quizzes" className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
+        <Link href="/student/quizzes" className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← اختباراتي
         </Link>
       </div>

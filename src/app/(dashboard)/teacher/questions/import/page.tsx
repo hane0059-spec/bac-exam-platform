@@ -22,7 +22,7 @@ export default async function ImportQuestionsPage() {
         <h2 className="font-display text-xl font-bold">استيراد أسئلة من ملفّ</h2>
         <Link
           href="/teacher/questions"
-          className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
+          className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
         >
           ← بنك الأسئلة
         </Link>

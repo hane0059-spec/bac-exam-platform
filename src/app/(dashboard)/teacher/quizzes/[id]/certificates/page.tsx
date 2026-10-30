@@ -27,7 +27,7 @@ export default async function QuizCertificatesPage(
       <div className="mb-6">
         <Link
           href={`/teacher/quizzes/${params.id}/results`}
-          className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
+          className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
         >
           ← نتائج الاختبار
         </Link>

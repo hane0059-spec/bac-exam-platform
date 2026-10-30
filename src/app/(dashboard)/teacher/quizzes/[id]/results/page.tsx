@@ -112,7 +112,7 @@ export default async function QuizResultsPage(
         <div>
           <Link
             href="/teacher/results"
-            className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
+            className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
           >
             ← المتابعة والنتائج
           </Link>

@@ -82,7 +82,7 @@ export default async function EditStudentPage(
       <div className="mb-6">
         <Link
           href="/teacher/students"
-          className="text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
+          className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline"
         >
           ← طلابي
         </Link>
