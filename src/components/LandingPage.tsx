@@ -187,7 +187,7 @@ export default function LandingPage({
         </section>
 
         {/* بطاقات الدخول حسب الدور */}
-        <section id="roles" className="py-2">
+        <section id="roles" className="scroll-mt-20 py-2">
           <h2 className="mb-2 text-center text-sm font-semibold text-ink/70">
             اختر نوع حسابك للدخول
           </h2>
@@ -247,7 +247,7 @@ export default function LandingPage({
       </main>
 
       {/* Footer — سطر واحد مضغوط */}
-      <footer id="about" className="border-t border-line bg-ink/[0.02]">
+      <footer id="about" className="scroll-mt-20 border-t border-line bg-ink/[0.02]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs text-ink/60">
           <div className="flex items-center gap-1.5">
             <BrandLogo size={20} hasLogo={branding.hasLogo} />
