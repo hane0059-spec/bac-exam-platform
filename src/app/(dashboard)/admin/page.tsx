@@ -53,9 +53,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="clock" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               النشاط الحالي
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               من هو متصل الآن أو نشط خلال آخر 30 دقيقة على المنصّة.
             </p>
@@ -67,9 +67,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="chart" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               نظرة عامة وإشراف
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               إحصاءات المنصّة وتوزّعها على المؤسّسات.
             </p>
@@ -81,9 +81,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="shield" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               المدارس والمعاهد
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               إنشاء المؤسّسات وتعيين مديريها.
             </p>
@@ -95,9 +95,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="upload" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               استيراد طلاب خارجيين
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               استيراد قائمة طلاب من CSV/Excel وإسناد اختبار منشور لهم.
             </p>
@@ -108,7 +108,7 @@ export default async function AdminDashboard() {
           className="card-link p-5"
         >
           <IconBadge icon="users" />
-          <h3 className="mb-2 font-display text-lg font-semibold">المستخدمون</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">المستخدمون</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             {solo
               ? "إنشاء وإدارة المدرّسين المستقلّين وحدّ طلاب كلٍّ منهم."
@@ -121,9 +121,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="family" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               أولياء الأمور
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               إنشاء أولياء الأمور وربطهم بأبنائهم لمتابعة نتائجهم.
             </p>
@@ -135,9 +135,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="cap" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               المواد والصفوف
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               إنشاء الصفوف والمواد (وربط المدرّسين من «المستخدمون»).
             </p>
@@ -149,9 +149,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="layers" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               الحقول المخصّصة
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               تعريف حقول إضافية للمستخدمين (مدينة/مدرسة…) وضبط إجباريتها.
             </p>
@@ -163,9 +163,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="book" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               البنك العام للأسئلة
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               تصفّح أسئلة كل المؤسّسات (قراءة فقط) بفلترة ومادة ونوع.
             </p>
@@ -177,9 +177,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="check" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               الاختبارات عبر المؤسّسات
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               تصفّح اختبارات كل المؤسّسات (قراءة فقط) بفلترة وحالة.
             </p>
@@ -191,9 +191,9 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="folder" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               التخزين والمرفقات
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               مراقبة حجم المرفقات (صور/PDF) وتوزّعها على المؤسّسات.
             </p>
@@ -204,9 +204,9 @@ export default async function AdminDashboard() {
           className="card-link p-5"
         >
           <IconBadge icon="alert" tone="gold" />
-          <h3 className="mb-2 font-display text-lg font-semibold">
+          <h2 className="mb-2 font-display text-lg font-semibold">
             تفريغ مرفقات المغادرين
-          </h3>
+          </h2>
           <p className="text-sm leading-relaxed text-ink/60">
             تحرير التخزين بحذف مرفقات المستخدمين المعطّلين مع إبقاء درجاتهم.
           </p>
@@ -216,7 +216,7 @@ export default async function AdminDashboard() {
           className="card-link p-5"
         >
           <IconBadge icon="star" tone="gold" />
-          <h3 className="mb-2 font-display text-lg font-semibold">شهادة عامّة</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">شهادة عامّة</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             شهادة تقدير فارغة تعبّئها لأيّ اسم وجهة وسبب، بنماذج وزخارف إسلامية وعالمية.
           </p>
@@ -227,7 +227,7 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="star" tone="gold" />
-            <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
+            <h2 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h2>
             <p className="text-sm leading-relaxed text-ink/60">
               ملفّات PDF عامّة (بلا تسجيل دخول) للتدرّب حسب الصفّ.
             </p>
@@ -239,7 +239,7 @@ export default async function AdminDashboard() {
             className="card-link p-5"
           >
             <IconBadge icon="gear" />
-            <h3 className="mb-2 font-display text-lg font-semibold">الإعدادات</h3>
+            <h2 className="mb-2 font-display text-lg font-semibold">الإعدادات</h2>
             <p className="text-sm leading-relaxed text-ink/60">
               اختيار خطّ المنصّة المطبَّق على كل الواجهات.
             </p>

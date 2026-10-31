@@ -64,7 +64,7 @@ export default async function StudentDashboard() {
         >
           <IconBadge icon="book" />
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">اختباراتي</h3>
+            <h2 className="font-display text-lg font-semibold">اختباراتي</h2>
             {pending > 0 && (
               <span className="flex h-6 items-center justify-center gap-1 rounded-full bg-primary px-2 text-xs font-bold text-white">
                 {pending} بانتظارك
@@ -80,7 +80,7 @@ export default async function StudentDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="chart" />
-          <h3 className="mb-2 font-display text-lg font-semibold">تقدّمي</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">تقدّمي</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             نقاط قوّتك وضعفك حسب الدروس، لتعرف ما يحتاج مراجعةً.
           </p>
@@ -90,7 +90,7 @@ export default async function StudentDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="cap" />
-          <h3 className="mb-2 font-display text-lg font-semibold">مواد دراستي</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">مواد دراستي</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             المواد المسجَّل فيها ومدرّسوها.
           </p>
@@ -101,7 +101,7 @@ export default async function StudentDashboard() {
             className="card-link p-4 sm:p-5"
           >
             <IconBadge icon="star" tone="gold" />
-            <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
+            <h2 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h2>
             <p className="text-sm leading-relaxed text-ink/60">
               ملفّات وصور وإعلانات ينشرها لك مدرّسوك.
             </p>

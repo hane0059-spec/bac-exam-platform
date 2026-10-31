@@ -240,7 +240,7 @@ export function PlaceholderCard({
   return (
     <div className="card p-5">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold">{title}</h3>
+        <h2 className="font-display text-lg font-semibold">{title}</h2>
         {soon && (
           <span className="rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary-dark">
             قريباً

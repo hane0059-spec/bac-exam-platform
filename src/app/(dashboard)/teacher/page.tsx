@@ -94,7 +94,7 @@ export default async function TeacherDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="cap" />
-          <h3 className="mb-2 font-display text-lg font-semibold">موادّي</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">موادّي</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             اختر المواد التي تدرّسها وعدّلها في أي وقت.
           </p>
@@ -104,7 +104,7 @@ export default async function TeacherDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="book" />
-          <h3 className="mb-2 font-display text-lg font-semibold">بنك الأسئلة</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">بنك الأسئلة</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             إنشاء أسئلتك الخاصة وتصفيتها حسب المادة.
           </p>
@@ -114,9 +114,9 @@ export default async function TeacherDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="calculator" />
-          <h3 className="mb-2 font-display text-lg font-semibold">
+          <h2 className="mb-2 font-display text-lg font-semibold">
             لوحة المعادلات
-          </h3>
+          </h2>
           <p className="text-sm leading-relaxed text-ink/60">
             اختر رموز كل مادة من بنك الرموز لتظهر في «لوحتي» عند تأليف المعادلات.
           </p>
@@ -126,9 +126,9 @@ export default async function TeacherDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="layers" />
-          <h3 className="mb-2 font-display text-lg font-semibold">
+          <h2 className="mb-2 font-display text-lg font-semibold">
             تكوين الاختبارات
-          </h3>
+          </h2>
           <p className="text-sm leading-relaxed text-ink/60">
             بناء الاختبارات من بنك أسئلتك وضبط الدرجات والنشر.
           </p>
@@ -138,9 +138,9 @@ export default async function TeacherDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="star" tone="gold" />
-          <h3 className="mb-2 font-display text-lg font-semibold">
+          <h2 className="mb-2 font-display text-lg font-semibold">
             شهادة عامّة
-          </h3>
+          </h2>
           <p className="text-sm leading-relaxed text-ink/60">
             شهادة تقدير فارغة تعبّئها لأيّ اسم وسبب، بنماذج وزخارف إسلامية وعالمية.
           </p>
@@ -151,7 +151,7 @@ export default async function TeacherDashboard() {
             className="card-link p-4 sm:p-5"
           >
             <IconBadge icon="star" tone="gold" />
-            <h3 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h3>
+            <h2 className="mb-2 font-display text-lg font-semibold">أسئلة وإثراء</h2>
             <p className="text-sm leading-relaxed text-ink/60">
               انشر ملفّات وصوراً وإعلانات يراها طلابك المسجّلون عندك فقط.
             </p>
@@ -163,9 +163,9 @@ export default async function TeacherDashboard() {
             className="card-link p-4 sm:p-5"
           >
             <IconBadge icon="upload" tone="gold" />
-            <h3 className="mb-2 font-display text-lg font-semibold">
+            <h2 className="mb-2 font-display text-lg font-semibold">
               الاختبارات الورقية
-            </h3>
+            </h2>
             <p className="text-sm leading-relaxed text-ink/60">
               رفع ورقة اختبار ورقي وتصحيح إجابات الطلاب المرفوعة.
             </p>
@@ -176,7 +176,7 @@ export default async function TeacherDashboard() {
           className="card-link p-4 sm:p-5"
         >
           <IconBadge icon="users" />
-          <h3 className="mb-2 font-display text-lg font-semibold">طلابي</h3>
+          <h2 className="mb-2 font-display text-lg font-semibold">طلابي</h2>
           <p className="text-sm leading-relaxed text-ink/60">
             إنشاء حسابات الطلاب وتسجيلهم في موادّك وإدارتهم.
           </p>
@@ -187,9 +187,9 @@ export default async function TeacherDashboard() {
         >
           <IconBadge icon="chart" />
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">
+            <h2 className="font-display text-lg font-semibold">
               المتابعة والنتائج
-            </h3>
+            </h2>
             {needsGrading > 0 && (
               <span className="flex h-6 items-center justify-center gap-1 rounded-full bg-gold px-2 text-xs font-bold text-white">
                 {needsGrading} بانتظار التصحيح
@@ -206,7 +206,7 @@ export default async function TeacherDashboard() {
         >
           <IconBadge icon="flag" tone={openReports > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">بلاغات الأسئلة</h3>
+            <h2 className="font-display text-lg font-semibold">بلاغات الأسئلة</h2>
             {openReports > 0 && (
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                 {openReports}
@@ -223,9 +223,9 @@ export default async function TeacherDashboard() {
         >
           <IconBadge icon="alert" tone={openAppeals > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">
+            <h2 className="font-display text-lg font-semibold">
               اعتراضات التصحيح
-            </h3>
+            </h2>
             {openAppeals > 0 && (
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                 {openAppeals}
@@ -242,7 +242,7 @@ export default async function TeacherDashboard() {
         >
           <IconBadge icon="mail" tone={openParentMsgs > 0 ? "gold" : "muted"} />
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">الرسائل الواردة</h3>
+            <h2 className="font-display text-lg font-semibold">الرسائل الواردة</h2>
             {openParentMsgs > 0 && (
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                 {openParentMsgs}
