@@ -13,6 +13,7 @@ export default function QrCode({
   caption,
   captionFontCss,
   showAddress = false,
+  addressText,
 }: {
   value: string;
   size?: number;
@@ -24,6 +25,8 @@ export default function QrCode({
   captionFontCss?: string;
   /** يكتب عنوان الموقع نصّاً تحت الاسم (على الشاشة وفي الصورة) ليُدخَل يدوياً إن تلف الرمز المطبوع. */
   showAddress?: boolean;
+  /** نصّ العنوان المعروض إن اختلف عن الرابط المرمَّز (مثل الجذر دون `/login`). */
+  addressText?: string;
 }) {
   const { pixels, d } = qrPath(value, size);
   const [busy, setBusy] = useState(false);
@@ -39,7 +42,7 @@ export default function QrCode({
         downloadName,
         1000,
         caption
-          ? { text: caption, address: showAddress ? displayAddress(value) : undefined, fontCss: captionFontCss }
+          ? { text: caption, address: showAddress ? addressText ?? displayAddress(value) : undefined, fontCss: captionFontCss }
           : undefined,
       );
     } catch {
@@ -72,7 +75,7 @@ export default function QrCode({
       )}
       {caption && showAddress && (
         <p dir="ltr" className="max-w-[16rem] break-all text-center font-mono text-xs leading-tight text-ink/75">
-          {displayAddress(value)}
+          {addressText ?? displayAddress(value)}
         </p>
       )}
       {downloadName && (

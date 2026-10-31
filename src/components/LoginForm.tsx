@@ -538,6 +538,7 @@ export default function LoginForm({
               caption={branding.name}
               captionFontCss={nameFontCss}
               showAddress
+              addressText={origin.replace(/^https?:\/\//i, "")}
             />
           </div>
         )}
