@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { withAdvisoryLock } from "@/lib/dbLock";
 import {
   gradeOptionAnswer,
   gradeShortAnswer,
@@ -211,14 +212,19 @@ export async function POST(req: Request, props: { params: Promise<{ sessionId: s
   const scoreEarned =
     partialEarned != null ? partialEarned : isCorrect ? points : 0;
 
-  // عقدة السؤال التالية (أو النهاية).
-  // كتابة الإجابة وتسجيل المسار في معاملة واحدة.
-  await prisma.$transaction([
+  // كتابة الإجابة وتسجيل المسار في معاملة واحدة تحت قفل (جلسة+سؤال): إرسالان متوازيان للسؤال نفسه كانا يمرّان
+  // من فحص «أُجيب سابقاً» معاً فيُنشآن صفّين. نعيد الفحص داخل القفل (بعميل المعاملة فقط — قاعدة القفل).
+  const written = await withAdvisoryLock(`answer:${exam.id}:${nodeId}`, async (tx) => {
+    const existing = await tx.studentAnswer.findFirst({
+      where: { sessionId: exam.id, nodeId },
+      select: { id: true },
+    });
+    if (existing && !reviewMode) return "duplicate" as const;
     // تعديل إجابة سابقة (وضع المراجعة): تُحذف القديمة وتُنشأ الجديدة بدرجتها الجديدة.
-    ...(already
-      ? [prisma.studentAnswer.deleteMany({ where: { sessionId: exam.id, nodeId } })]
-      : []),
-    prisma.studentAnswer.create({
+    if (existing) {
+      await tx.studentAnswer.deleteMany({ where: { sessionId: exam.id, nodeId } });
+    }
+    await tx.studentAnswer.create({
       data: {
         sessionId: exam.id,
         questionId: q.id,
@@ -231,16 +237,18 @@ export async function POST(req: Request, props: { params: Promise<{ sessionId: s
           ? { connect: connectOptionIds.map((id) => ({ id })) }
           : undefined,
       },
-    }),
-    ...(already
-      ? []
-      : [
-          prisma.examSession.update({
-            where: { id: exam.id },
-            data: { pathTaken: { push: nodeId } },
-          }),
-        ]),
-  ]);
+    });
+    if (!existing) {
+      await tx.examSession.update({
+        where: { id: exam.id },
+        data: { pathTaken: { push: nodeId } },
+      });
+    }
+    return "ok" as const;
+  });
+  if (written === "duplicate") {
+    return NextResponse.json({ error: "أُجيب هذا السؤال سابقاً" }, { status: 409 });
+  }
 
   // بذرة الخلط (إن كان مفعّلاً) — ثابتة لهذه المحاولة.
   const seed = settings.shuffle
