@@ -96,9 +96,9 @@ const WINDOWS: RoleWindow[] = [
     icon: <FamilyIcon className="h-8 w-8" />,
     accent: "bg-primary/10 text-primary-dark ring-primary/20",
     barClass: "bg-primary-dark",
-    forgot: "راجع إدارة مؤسّسة ابنك لإعادة تعيين كلمة سرّك.",
+    forgot: "راجع إدارة مؤسّسة أبنائك لإعادة تعيين كلمة سرّك.",
     features: [
-      "متابعة نتائج ابنك أوّلاً بأوّل",
+      "متابعة نتائج أبنائك أوّلاً بأوّل",
       "التواصل المباشر مع المدرّس",
       "لا حاجة لتثبيت أي تطبيق",
     ],
