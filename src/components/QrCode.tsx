@@ -10,11 +10,17 @@ export default function QrCode({
   value,
   size = 140,
   downloadName,
+  caption,
+  captionFontCss,
 }: {
   value: string;
   size?: number;
   /** إن وُجد، يظهر زرّ «تنزيل» يحفظ الرمز بهذا الاسم كملف PNG. */
   downloadName?: string;
+  /** اسم يُكتب أسفل الرمز على الشاشة وفي الصورة المنزَّلة (مثل اسم المنصّة). */
+  caption?: string;
+  /** قيمة CSS لخطّ الاسم (مثل `var(--font-reem)`). */
+  captionFontCss?: string;
 }) {
   const { pixels, d } = qrPath(value, size);
   const [busy, setBusy] = useState(false);
@@ -25,7 +31,12 @@ export default function QrCode({
     setBusy(true);
     setError("");
     try {
-      await downloadQrPng(value, downloadName);
+      await downloadQrPng(
+        value,
+        downloadName,
+        1000,
+        caption ? { text: caption, fontCss: captionFontCss } : undefined,
+      );
     } catch {
       setError("تعذّر التنزيل، حاول مجدداً.");
     } finally {
@@ -46,6 +57,14 @@ export default function QrCode({
         <rect width={pixels} height={pixels} fill="#fff" />
         <path d={d} fill="#000" />
       </svg>
+      {caption && (
+        <p
+          className="max-w-[16rem] text-center text-base font-bold leading-tight text-ink"
+          style={captionFontCss ? { fontFamily: captionFontCss } : undefined}
+        >
+          {caption}
+        </p>
+      )}
       {downloadName && (
         <button
           type="button"

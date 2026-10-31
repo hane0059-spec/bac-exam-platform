@@ -535,6 +535,8 @@ export default function LoginForm({
               value={siteUrl}
               size={130}
               downloadName="رمز-الدخول-إلى-المنصة.png"
+              caption={branding.name}
+              captionFontCss={nameFontCss}
             />
           </div>
         )}
