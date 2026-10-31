@@ -10,6 +10,7 @@ import { parseSettings } from "@/lib/exam";
 import { canEditStructure } from "@/lib/teacherQuiz";
 import { getTeacherSubjectTree, teacherCanManageStudents } from "@/lib/teacher";
 import { selfRegisterEnabled } from "@/lib/selfRegister";
+import { getBranding } from "@/lib/branding";
 import { getTeacherKeyboard } from "@/lib/teacherKeyboard";
 
 export const dynamic = "force-dynamic";
@@ -196,6 +197,7 @@ export default async function EditQuizPage(
           selfRegister: selfRegisterEnabled(quiz.settings),
         }}
         canSelfRegister={canSelfRegister}
+        brandName={(await getBranding()).name}
       />
     </DashboardShell>
   );

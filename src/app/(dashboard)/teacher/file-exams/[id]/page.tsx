@@ -9,6 +9,7 @@ import FileExamManager from "@/components/teacher/FileExamManager";
 import { parseFileExamSettings } from "@/lib/fileExam";
 import { teacherCanManageStudents } from "@/lib/teacher";
 import { selfRegisterEnabled } from "@/lib/selfRegister";
+import { getBranding } from "@/lib/branding";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +83,7 @@ export default async function FileExamManagePage(
           selfRegister: selfRegisterEnabled(quiz.settings),
         }}
         canSelfRegister={await teacherCanManageStudents(session.sub)}
+        brandName={(await getBranding()).name}
       />
     </DashboardShell>
   );

@@ -4,7 +4,7 @@
 // اختياري يحوّله PNG — صيغة قابلة للطباعة ومشاركتها بين الهواتف.
 import { useState } from "react";
 import { qrPath } from "@/lib/qr";
-import { downloadQrPng } from "@/lib/qrDownload";
+import { displayAddress, downloadQrPng } from "@/lib/qrDownload";
 
 export default function QrCode({
   value,
@@ -12,6 +12,7 @@ export default function QrCode({
   downloadName,
   caption,
   captionFontCss,
+  showAddress = false,
 }: {
   value: string;
   size?: number;
@@ -21,6 +22,8 @@ export default function QrCode({
   caption?: string;
   /** قيمة CSS لخطّ الاسم (مثل `var(--font-reem)`). */
   captionFontCss?: string;
+  /** يكتب عنوان الموقع نصّاً تحت الاسم (على الشاشة وفي الصورة) ليُدخَل يدوياً إن تلف الرمز المطبوع. */
+  showAddress?: boolean;
 }) {
   const { pixels, d } = qrPath(value, size);
   const [busy, setBusy] = useState(false);
@@ -35,7 +38,9 @@ export default function QrCode({
         value,
         downloadName,
         1000,
-        caption ? { text: caption, fontCss: captionFontCss } : undefined,
+        caption
+          ? { text: caption, address: showAddress ? displayAddress(value) : undefined, fontCss: captionFontCss }
+          : undefined,
       );
     } catch {
       setError("تعذّر التنزيل، حاول مجدداً.");
@@ -63,6 +68,11 @@ export default function QrCode({
           style={captionFontCss ? { fontFamily: captionFontCss } : undefined}
         >
           {caption}
+        </p>
+      )}
+      {caption && showAddress && (
+        <p dir="ltr" className="max-w-[16rem] break-all text-center font-mono text-xs leading-tight text-ink/75">
+          {displayAddress(value)}
         </p>
       )}
       {downloadName && (

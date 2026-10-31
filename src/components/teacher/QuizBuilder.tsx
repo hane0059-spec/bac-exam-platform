@@ -88,6 +88,7 @@ export default function QuizBuilder({
   customKeyboard,
   templates: initialTemplates = [],
   canSelfRegister = false,
+  brandName,
   initialItems,
   initial,
 }: {
@@ -100,6 +101,8 @@ export default function QuizBuilder({
   customKeyboard?: CustomKeyboard;
   templates?: TemplateRow[];
   canSelfRegister?: boolean;
+  /** اسم المنصّة (يُكتب مع العنوان تحت رمز QR). */
+  brandName?: string;
   initialItems: Item[];
   initial: QuizBuilderInitial;
 }) {
@@ -639,6 +642,8 @@ export default function QuizBuilder({
                   value={`${origin}/join/${initial.accessCode}`}
                   size={120}
                   downloadName={`رمز-اختبار-${initial.accessCode}.png`}
+                  caption={brandName}
+                  showAddress
                 />
                 <p className="mt-1 text-xs text-ink/50">
                   {selfRegister && canSelfRegister

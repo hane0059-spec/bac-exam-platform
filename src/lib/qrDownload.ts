@@ -7,8 +7,15 @@ import { qrSvgString } from "@/lib/qr";
 export interface QrCaption {
   /** النصّ المكتوب أسفل الرمز (اسم المنصّة). */
   text: string;
+  /** عنوان يُكتب نصّاً تحت الاسم (للدخول يدوياً إن تعذّر مسح الرمز). */
+  address?: string;
   /** قيمة CSS لخطّ النصّ (مثل `var(--font-reem)`)؛ الافتراضي خطّ الصفحة. */
   fontCss?: string;
+}
+
+/** العنوان كما يُكتب في المتصفّح: بلا بروتوكول ولا شرطة أخيرة. */
+export function displayAddress(url: string): string {
+  return url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
 }
 
 /** يحلّ قيمة font-family كما يراها المتصفّح (تُفكّ متغيّرات CSS) لاستعمالها في canvas. */
@@ -46,7 +53,7 @@ export async function downloadQrPng(
     });
 
     // شريط الاسم أسفل الرمز (اختياري): يُوسَّع القماش به فيبقى الرمز مربّعاً سليماً.
-    const band = caption?.text ? Math.round(pixels * 0.17) : 0;
+    const band = caption?.text ? Math.round(pixels * (caption.address ? 0.3 : 0.17)) : 0;
     const canvas = document.createElement("canvas");
     canvas.width = pixels;
     canvas.height = pixels + band;
@@ -57,7 +64,8 @@ export async function downloadQrPng(
     ctx.drawImage(img, 0, 0, pixels, pixels);
     if (caption?.text && band) {
       const family = resolveFontFamily(caption.fontCss);
-      const size = Math.round(band * 0.56);
+      const hasAddr = !!caption.address;
+      const size = Math.round(band * (hasAddr ? 0.36 : 0.56));
       const font = `700 ${size}px ${family}`;
       try {
         await document.fonts.load(font, caption.text);
@@ -73,7 +81,21 @@ export async function downloadQrPng(
       const maxWidth = pixels * 0.9;
       const w = ctx.measureText(caption.text).width;
       if (w > maxWidth) ctx.font = `700 ${Math.floor((size * maxWidth) / w)}px ${family}`;
-      ctx.fillText(caption.text, pixels / 2, pixels + band / 2);
+      ctx.fillText(caption.text, pixels / 2, pixels + band * (hasAddr ? 0.3 : 0.5));
+      if (caption.address) {
+        // العنوان لاتينيّ يُكتب من اليسار؛ يُصغَّر ليتّسع عرض الصورة بهامش.
+        ctx.direction = "ltr";
+        let aSize = Math.round(band * 0.2);
+        const aFont = (n: number) => `600 ${n}px Consolas, "Courier New", monospace`;
+        ctx.font = aFont(aSize);
+        const aw = ctx.measureText(caption.address).width;
+        if (aw > maxWidth) {
+          aSize = Math.floor((aSize * maxWidth) / aw);
+          ctx.font = aFont(aSize);
+        }
+        ctx.fillStyle = "#374151";
+        ctx.fillText(caption.address, pixels / 2, pixels + band * 0.72);
+      }
     }
 
     const pngBlob = await new Promise<Blob | null>((resolve) =>

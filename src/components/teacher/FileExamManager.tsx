@@ -36,6 +36,8 @@ interface Props {
     selfRegister: boolean;
   };
   canSelfRegister?: boolean;
+  /** اسم المنصّة (يُكتب مع العنوان تحت رمز QR). */
+  brandName?: string;
 }
 
 export default function FileExamManager({
@@ -46,6 +48,7 @@ export default function FileExamManager({
   examFile,
   initial,
   canSelfRegister = false,
+  brandName,
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initial.title);
@@ -302,6 +305,8 @@ export default function FileExamManager({
                 value={`${origin}/join/${accessCode}`}
                 size={120}
                 downloadName={`رمز-اختبار-${accessCode}.png`}
+                caption={brandName}
+                showAddress
               />
               <p className="mt-1 text-xs text-ink/50">
                 يمسحه الطالب فينضمّ مباشرة
