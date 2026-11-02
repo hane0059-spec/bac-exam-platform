@@ -1,22 +1,25 @@
 // src/app/(dashboard)/admin/activity/page.tsx
-// المدير العام: من هو نشط حالياً على المنصّة (آخر 5 دقائق) أو مؤخراً (آخر 30 دقيقة).
+// المدير العام: من هو نشط حالياً على المنصّة (آخر 5 دقائق) أو مؤخراً (30 دقيقة) أو ضمن فترة أطول
+// (24 ساعة/أسبوع/شهر) بحسب آخر ظهور لكل مستخدم.
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import { roleLabel } from "@/lib/gender";
+import { agoArabic } from "@/lib/relativeTime";
+import {
+  ACTIVITY_LIST_CAP,
+  ACTIVITY_RANGES,
+  ONLINE_MS,
+  RECENT_MS,
+  parseActivityRange,
+} from "@/lib/activityRange";
 
 export const dynamic = "force-dynamic";
 
-const ONLINE_MS  = 5  * 60 * 1000; // 5 دقائق
-const RECENT_MS  = 30 * 60 * 1000; // 30 دقيقة
-
 function timeAgo(date: Date): string {
-  const sec = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (sec < 60)  return "منذ ثوانٍ";
-  if (sec < 3600) return `منذ ${Math.floor(sec / 60)} د`;
-  return `منذ ${Math.floor(sec / 3600)} س`;
+  return agoArabic(Date.now() - date.getTime());
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -26,15 +29,20 @@ const ROLE_COLORS: Record<string, string> = {
   PARENT:  "bg-primary/10 text-primary-dark",
 };
 
-export default async function ActivityPage() {
+export default async function ActivityPage(props: {
+  searchParams: Promise<{ range?: string | string[] }>;
+}) {
   const ctx = await getAdminContext();
   if (!ctx || !ctx.isSuper) redirect("/admin");
 
-  const since = new Date(Date.now() - RECENT_MS);
+  const range = parseActivityRange((await props.searchParams).range);
+  const since = new Date(Date.now() - range.ms);
 
+  const total = await prisma.user.count({ where: { lastSeenAt: { gte: since } } });
   const users = await prisma.user.findMany({
     where: { lastSeenAt: { gte: since } },
     orderBy: { lastSeenAt: "desc" },
+    take: ACTIVITY_LIST_CAP,
     select: {
       id: true,
       firstName: true,
@@ -50,9 +58,11 @@ export default async function ActivityPage() {
   const online = users.filter(
     (u) => now - u.lastSeenAt!.getTime() < ONLINE_MS
   );
-  const recent = users.filter(
-    (u) => now - u.lastSeenAt!.getTime() >= ONLINE_MS
-  );
+  const recent = users.filter((u) => {
+    const d = now - u.lastSeenAt!.getTime();
+    return d >= ONLINE_MS && d < RECENT_MS;
+  });
+  const earlier = users.filter((u) => now - u.lastSeenAt!.getTime() >= RECENT_MS);
 
   function editPath(u: (typeof users)[0]): string {
     if (u.role === "STUDENT") return `/admin/students/${u.id}/edit`;
@@ -81,7 +91,7 @@ export default async function ActivityPage() {
         >
           {roleLabel(u.role, u.gender)}
         </span>
-        <span className="shrink-0 text-sm text-ink/45 w-20 text-left" dir="rtl">
+        <span className="w-28 shrink-0 text-left text-sm text-ink/60" dir="rtl">
           {timeAgo(u.lastSeenAt!)}
         </span>
         <Link
@@ -100,10 +110,26 @@ export default async function ActivityPage() {
         <Link href="/admin" className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← الرئيسية
         </Link>
-        <h2 className="mt-2 font-display text-xl font-bold">النشاط الحالي</h2>
+        <h2 className="mt-2 font-display text-xl font-bold">النشاط</h2>
         <p className="mt-1 text-sm text-ink/60">
-          يتجدّد عند كل طلب يُجريه المستخدم — التحديث يدوي (أعِد تحميل الصفحة).
+          يُحدَّث آخر ظهور لكل مستخدم عند طلباته — التحديث يدوي (أعِد تحميل الصفحة).
         </p>
+        <nav aria-label="فترة النشاط" className="mt-3 flex flex-wrap gap-2">
+          {ACTIVITY_RANGES.map((r) => (
+            <Link
+              key={r.key}
+              href={`/admin/activity?range=${r.key}`}
+              aria-current={r.key === range.key ? "page" : undefined}
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
+                r.key === range.key
+                  ? "border-primary bg-primary text-white"
+                  : "border-line bg-surface text-ink hover:bg-primary/5"
+              }`}
+            >
+              {r.label}
+            </Link>
+          ))}
+        </nav>
       </div>
 
       {/* إحصاء سريع */}
@@ -117,14 +143,14 @@ export default async function ActivityPage() {
           <p className="mt-1 text-sm text-ink/60">نشط مؤخراً (5–30 د)</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-ink sm:text-3xl">{users.length}</p>
-          <p className="mt-1 text-sm text-ink/60">إجمالي آخر 30 د</p>
+          <p className="text-2xl font-bold text-ink sm:text-3xl">{total}</p>
+          <p className="mt-1 text-sm text-ink/60">ظهروا خلال {range.label}</p>
         </div>
       </div>
 
       {users.length === 0 ? (
         <div className="py-16 text-center text-ink/40">
-          لا يوجد نشاط مسجَّل خلال آخر 30 دقيقة
+          لا يوجد نشاط مسجَّل خلال {range.label}
         </div>
       ) : (
         <div className="space-y-6">
@@ -142,6 +168,12 @@ export default async function ActivityPage() {
             </section>
           )}
 
+          {total > users.length && (
+            <p className="rounded-xl border border-line bg-surface px-4 py-2 text-sm text-ink/70">
+              يُعرَض أحدث {users.length} من {total} مستخدماً — اختر فترة أقصر لرؤية الباقي.
+            </p>
+          )}
+
           {recent.length > 0 && (
             <section>
               <h3 className="mb-3 flex items-center gap-2 font-display font-semibold text-amber-600">
@@ -150,6 +182,20 @@ export default async function ActivityPage() {
               </h3>
               <div className="space-y-2">
                 {recent.map((u) => (
+                  <UserRow key={u.id} u={u} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {earlier.length > 0 && (
+            <section>
+              <h3 className="mb-3 flex items-center gap-2 font-display font-semibold text-ink/70">
+                <span className="h-2.5 w-2.5 rounded-full bg-ink/30" aria-hidden />
+                قبل ذلك (خلال {range.label})
+              </h3>
+              <div className="space-y-2">
+                {earlier.map((u) => (
                   <UserRow key={u.id} u={u} />
                 ))}
               </div>
