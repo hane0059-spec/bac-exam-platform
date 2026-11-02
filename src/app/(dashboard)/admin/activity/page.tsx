@@ -13,8 +13,13 @@ import {
   ACTIVITY_RANGES,
   ONLINE_MS,
   RECENT_MS,
+  ROLE_FILTERS,
+  activityHref,
   parseActivityRange,
+  parseRoleFilter,
+  searchTokens,
 } from "@/lib/activityRange";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -30,17 +35,40 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default async function ActivityPage(props: {
-  searchParams: Promise<{ range?: string | string[] }>;
+  searchParams: Promise<{ range?: string | string[]; role?: string | string[]; q?: string | string[] }>;
 }) {
   const ctx = await getAdminContext();
   if (!ctx || !ctx.isSuper) redirect("/admin");
 
-  const range = parseActivityRange((await props.searchParams).range);
+  const sp = await props.searchParams;
+  const range = parseActivityRange(sp.range);
+  const roleFilter = parseRoleFilter(sp.role);
+  const tokens = searchTokens(sp.q);
+  const qText = tokens.join(" ");
   const since = new Date(Date.now() - range.ms);
 
-  const total = await prisma.user.count({ where: { lastSeenAt: { gte: since } } });
+  // كل كلمة بحث يجب أن تطابق الاسم أو الكنية أو اسم الأب أو رمز الطالب/المدرّس.
+  const where: Prisma.UserWhereInput = {
+    lastSeenAt: { gte: since },
+    ...(roleFilter !== "ALL" ? { role: roleFilter } : {}),
+    ...(tokens.length
+      ? {
+          AND: tokens.map((t) => ({
+            OR: [
+              { firstName: { contains: t, mode: "insensitive" as const } },
+              { lastName: { contains: t, mode: "insensitive" as const } },
+              { studentProfile: { is: { fatherName: { contains: t, mode: "insensitive" as const } } } },
+              { studentProfile: { is: { studentCode: { contains: t, mode: "insensitive" as const } } } },
+              { teacherProfile: { is: { employeeCode: { contains: t, mode: "insensitive" as const } } } },
+            ],
+          })),
+        }
+      : {}),
+  };
+
+  const total = await prisma.user.count({ where });
   const users = await prisma.user.findMany({
-    where: { lastSeenAt: { gte: since } },
+    where,
     orderBy: { lastSeenAt: "desc" },
     take: ACTIVITY_LIST_CAP,
     select: {
@@ -136,7 +164,7 @@ export default async function ActivityPage(props: {
           {ACTIVITY_RANGES.map((r) => (
             <Link
               key={r.key}
-              href={`/admin/activity?range=${r.key}`}
+              href={activityHref({ range: r.key, role: roleFilter, q: qText })}
               aria-current={r.key === range.key ? "page" : undefined}
               className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
                 r.key === range.key
@@ -148,6 +176,45 @@ export default async function ActivityPage(props: {
             </Link>
           ))}
         </nav>
+        <nav aria-label="الدور" className="mt-2 flex flex-wrap gap-2">
+          {ROLE_FILTERS.map((r) => (
+            <Link
+              key={r.key}
+              href={activityHref({ range: range.key, role: r.key, q: qText })}
+              aria-current={r.key === roleFilter ? "page" : undefined}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                r.key === roleFilter
+                  ? "border-ink bg-ink text-white"
+                  : "border-line bg-surface text-ink hover:bg-ink/5"
+              }`}
+            >
+              {r.label}
+            </Link>
+          ))}
+        </nav>
+        <form action="/admin/activity" method="get" className="mt-3 flex max-w-md gap-2">
+          <input type="hidden" name="range" value={range.key} />
+          {roleFilter !== "ALL" && <input type="hidden" name="role" value={roleFilter} />}
+          <input
+            type="search"
+            name="q"
+            defaultValue={qText}
+            placeholder="ابحث بالاسم أو الرمز…"
+            aria-label="بحث في النشاط"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+          />
+          <button type="submit" className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium transition hover:bg-primary/5">
+            بحث
+          </button>
+          {qText && (
+            <Link
+              href={activityHref({ range: range.key, role: roleFilter, q: "" })}
+              className="inline-flex items-center rounded-xl px-2 text-sm text-red-800 hover:underline"
+            >
+              مسح
+            </Link>
+          )}
+        </form>
       </div>
 
       {/* إحصاء سريع */}
@@ -168,7 +235,9 @@ export default async function ActivityPage(props: {
 
       {users.length === 0 ? (
         <div className="py-16 text-center text-ink/40">
-          لا يوجد نشاط مسجَّل خلال {range.label}
+          {qText || roleFilter !== "ALL"
+            ? `لا نتائج مطابقة خلال ${range.label}`
+            : `لا يوجد نشاط مسجَّل خلال ${range.label}`}
         </div>
       ) : (
         <div className="space-y-6">

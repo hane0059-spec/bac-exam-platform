@@ -20,3 +20,38 @@ export function parseActivityRange(v: string | string[] | undefined) {
   const k = Array.isArray(v) ? v[0] : v;
   return ACTIVITY_RANGES.find((r) => r.key === k) ?? ACTIVITY_RANGES.find((r) => r.key === DEFAULT_ACTIVITY_RANGE)!;
 }
+
+// ── تصفية الدور والبحث (صفحة النشاط) ──
+export const ROLE_FILTERS = [
+  { key: "ALL", label: "الكل" },
+  { key: "STUDENT", label: "الطلاب" },
+  { key: "TEACHER", label: "المدرّسون" },
+  { key: "PARENT", label: "أولياء الأمور" },
+  { key: "ADMIN", label: "المدراء" },
+] as const;
+export type RoleFilterKey = (typeof ROLE_FILTERS)[number]["key"];
+
+export function parseRoleFilter(v: string | string[] | undefined): RoleFilterKey {
+  const k = Array.isArray(v) ? v[0] : v;
+  return ROLE_FILTERS.find((r) => r.key === k)?.key ?? "ALL";
+}
+
+/** كلمات البحث: تُقصّ المسافات وتُحدَّد بـ6 كلمات و60 حرفاً لكلٍّ (حماية من استعلام ضخم). */
+export function searchTokens(q: string | string[] | undefined): string[] {
+  const raw = (Array.isArray(q) ? q[0] : q) ?? "";
+  return raw
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((t) => t.slice(0, 60));
+}
+
+/** رابط الصفحة مع الحفاظ على الفترة والدور والبحث (القيم الافتراضية تُحذَف من الرابط). */
+export function activityHref(p: { range: string; role: RoleFilterKey; q: string }): string {
+  const qs = new URLSearchParams();
+  qs.set("range", p.range);
+  if (p.role !== "ALL") qs.set("role", p.role);
+  if (p.q.trim()) qs.set("q", p.q.trim());
+  return `/admin/activity?${qs.toString()}`;
+}
