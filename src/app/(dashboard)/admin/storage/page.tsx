@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
+import StorageAlert from "@/components/admin/StorageAlert";
+import { TABLE_LABELS, readDbStorage } from "@/lib/dbStorage";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,8 @@ export default async function AdminStoragePage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // إشراف على مستوى المنصّة
 
-  const [agg, byKind, atts] = await Promise.all([
+  const [db, agg, byKind, atts] = await Promise.all([
+    readDbStorage(true),
     prisma.attachment.aggregate({
       _count: { _all: true },
       _sum: { sizeBytes: true },
@@ -80,6 +83,50 @@ export default async function AdminStoragePage() {
           المرفقات (صور/PDF) مُخزَّنة داخل قاعدة البيانات. راقب الحجم.
         </p>
       </div>
+
+      {db && (
+        <section className="mb-8" aria-label="حجم قاعدة البيانات">
+          <StorageAlert s={db} />
+          <div className="card p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="font-display font-semibold">حجم قاعدة البيانات</h3>
+              <p className="text-sm text-ink/70">
+                {fmt(db.usedBytes)} من {fmt(db.limitBytes)} ({db.percent}%)
+              </p>
+            </div>
+            <div
+              className="mt-3 h-3 w-full overflow-hidden rounded-full bg-ink/10"
+              role="progressbar"
+              aria-valuenow={db.percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="نسبة استهلاك التخزين"
+            >
+              <div
+                className={`h-full rounded-full ${
+                  db.level === "critical" ? "bg-red-600" : db.level === "warn" ? "bg-amber-500" : "bg-primary"
+                }`}
+                style={{ width: `${db.percent}%` }}
+              />
+            </div>
+            {db.topTables.length > 0 && (
+              <ul className="mt-4 space-y-1.5 text-sm">
+                {db.topTables.map((t) => (
+                  <li key={t.name} className="flex items-center justify-between gap-3">
+                    <span className="text-ink/80">{TABLE_LABELS[t.name] ?? t.name}</span>
+                    <span className="shrink-0 text-ink/70">{fmt(t.bytes)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-3 text-xs text-ink/60">
+              الحدّ المفترض 512 م.ب (خطة Neon المجانية) ويُنبَّه عند 70% ثم 90%. بعد الترقية اضبط{" "}
+              <bdi dir="ltr">DB_STORAGE_LIMIT_MB</bdi> في إعدادات Vercel. ملاحظة: Neon يحتسب فروع المشروع كلّها
+              (مثل فرع التطوير) ضمن حدّ الخطة، فقد يكون استهلاكك الحقيقي أعلى قليلاً مما يظهر هنا.
+            </p>
+          </div>
+        </section>
+      )}
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="card p-4">

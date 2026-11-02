@@ -8,12 +8,16 @@ import StatBar from "@/components/StatBar";
 import IconBadge from "@/components/IconBadge";
 import UserSearchBox from "@/components/admin/UserSearchBox";
 import { isSoloMode } from "@/lib/settings";
+import { readDbStorage } from "@/lib/dbStorage";
+import StorageAlert from "@/components/admin/StorageAlert";
 
 export default async function AdminDashboard() {
   const ctx = await getAdminContext();
   if (!ctx) redirect("/login");
   const session = ctx.session;
   const solo = await isSoloMode();
+  // المدير العام فقط: تنبيه عند اقتراب القاعدة من حدّ الخطة (يظهر فقط ≥70%).
+  const storage = ctx.isSuper ? await readDbStorage() : null;
 
   // عزل المؤسّسة: المدير العام يرى المنصّة كاملةً، ومدير المدرسة مؤسّسته فقط.
   const scope = ctx.isSuper ? {} : { schoolId: ctx.schoolId };
@@ -28,6 +32,7 @@ export default async function AdminDashboard() {
 
   return (
     <DashboardShell session={session}>
+      {storage && <StorageAlert s={storage} link />}
       <StatBar
         stats={
           solo
