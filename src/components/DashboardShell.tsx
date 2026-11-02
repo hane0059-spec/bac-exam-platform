@@ -13,6 +13,8 @@ import TextSizeControl from "./TextSizeControl";
 import ThemeToggle from "./ThemeToggle";
 import BrandLogo from "./BrandLogo";
 import StudentShell from "./student/StudentShell";
+import ActivityHeartbeat from "./ActivityHeartbeat";
+import { touchLastSeen } from "@/lib/activity";
 
 export default async function DashboardShell({
   session,
@@ -42,12 +44,20 @@ export default async function DashboardShell({
     session.role === "STUDENT"
       ? enrichmentTeacherIdsForStudent(session.sub).catch(() => [])
       : Promise.resolve([]),
-    session.role === "STUDENT" || session.role === "TEACHER"
-      ? prisma.user
-          .findUnique({ where: { id: session.sub }, select: { mustChangePassword: true } })
-          .then((u) => u?.mustChangePassword === true)
-          .catch(() => false)
-      : Promise.resolve(false),
+    // كل الأدوار: يُسجَّل «آخر ظهور» عند كل عرض لوحة (الصفحات تقرأ الجلسة من الكوكي فقط، فكان تقليب الصفحات
+    // لا يُحسب نشاطاً)، والإجبار على تغيير الكلمة المؤقّتة للطالب والمدرّس فقط.
+    prisma.user
+      .findUnique({
+        where: { id: session.sub },
+        select: { mustChangePassword: true, lastSeenAt: true, isActive: true },
+      })
+      .then((u) => {
+        if (u?.isActive) touchLastSeen(session.sub, u.lastSeenAt);
+        return (
+          (session.role === "STUDENT" || session.role === "TEACHER") && u?.mustChangePassword === true
+        );
+      })
+      .catch(() => false),
   ]);
   // كلمة سرّ مؤقّتة: لا دخول للّوحة قبل تغييرها.
   if (mustChange && !allowForcedPasswordChange) redirect("/account");
@@ -72,6 +82,7 @@ export default async function DashboardShell({
         banner={banner}
         enrichmentEnabled={enrichmentTeacherIds.length > 0}
       >
+        <ActivityHeartbeat />
         {children}
       </StudentShell>
     );
@@ -79,6 +90,7 @@ export default async function DashboardShell({
 
   return (
     <div className="min-h-screen">
+      <ActivityHeartbeat />
       {banner && (
         <div
           className={`px-4 py-2 text-center text-sm font-medium leading-relaxed print:hidden ${

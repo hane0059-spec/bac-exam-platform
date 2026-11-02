@@ -51,6 +51,9 @@ export default async function ActivityPage(props: {
       gender: true,
       lastSeenAt: true,
       school: { select: { name: true } },
+      // للطالب: الاسم الكامل (بإضافة اسم الأب) والصفّ والمجموعات ليُعرَف بدقّة.
+      studentProfile: { select: { fatherName: true, gradeLevel: { select: { name: true } } } },
+      studentEnrollments: { where: { isActive: true }, select: { groupName: true } },
     },
   });
 
@@ -70,8 +73,19 @@ export default async function ActivityPage(props: {
     return `/admin/users/${u.id}/edit`;
   }
 
+  function fullName(u: (typeof users)[0]): string {
+    const father = u.studentProfile?.fatherName?.trim();
+    // لا نكرّر اسم الأب إن كان مكتوباً أصلاً داخل الاسم/الكنية.
+    const dup = father && `${u.firstName} ${u.lastName}`.includes(father);
+    return [u.firstName, father && !dup ? father : "", u.lastName].filter(Boolean).join(" ");
+  }
+
   function UserRow({ u }: { u: (typeof users)[0] }) {
     const isOnline = now - u.lastSeenAt!.getTime() < ONLINE_MS;
+    const grade = u.studentProfile?.gradeLevel.name;
+    const groups = Array.from(
+      new Set(u.studentEnrollments.map((e) => e.groupName?.trim()).filter((g): g is string => !!g))
+    );
     return (
       <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
         <span
@@ -79,11 +93,15 @@ export default async function ActivityPage(props: {
           aria-hidden
         />
         <span className="min-w-0 flex-1">
-          <span className="font-medium text-ink">
-            {u.firstName} {u.lastName}
-          </span>
-          {u.school && (
-            <span className="mr-2 text-sm text-ink/50">{u.school.name}</span>
+          <span className="font-medium text-ink">{fullName(u)}</span>
+          {(u.school || grade || groups.length > 0) && (
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-ink/60">
+              {u.school && <span>{u.school.name}</span>}
+              {grade && (
+                <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium text-ink/80">{grade}</span>
+              )}
+              {groups.length > 0 && <span>المجموعة: {groups.join("، ")}</span>}
+            </span>
           )}
         </span>
         <span
