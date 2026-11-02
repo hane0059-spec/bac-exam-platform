@@ -7,7 +7,6 @@ import { kindOfMime, RESOURCE_ACCEPT, MAX_POST_BODY } from "@/lib/resources";
 
 // الاستضافة ترفض الطلب > ~4.5MB، فالملفّات الأكبر من 3MB تُرفع على أجزاء (انظر src/lib/chunkedUpload.ts).
 const CHUNK_BYTES = 3 * 1024 * 1024;
-const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 async function errorOf(res: Response, fallback: string): Promise<string> {
@@ -44,12 +43,16 @@ export default function ResourcesManager({
     post: "/api/admin/resources/post",
     remove: "/api/admin/resources",
   },
+  maxFileMb = 15,
 }: {
   gradeLevels: GradeRow[];
+  /** حدّ ملفّات PDF/Word بالميغابايت (المدير العام 30، المدرّس 15 — يفرضه الخادم أيضاً). */
+  maxFileMb?: number;
   /** نقاط النهاية (الافتراضي: المدير العام؛ المدرّس يمرّر نقاطه الخاصّة). */
   endpoints?: { upload: string; post: string; remove: string };
 }) {
   const router = useRouter();
+  const maxFileBytes = maxFileMb * 1024 * 1024;
   const [gradeId, setGradeId] = useState(gradeLevels[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -82,8 +85,8 @@ export default function ResourcesManager({
   async function upload(file: File) {
     setError("");
     setProgress("");
-    if (file.size > MAX_FILE_BYTES) {
-      setError("حجم الملف يتجاوز 15 م.ب.");
+    if (file.size > maxFileBytes) {
+      setError(`حجم الملف يتجاوز ${maxFileMb} م.ب.`);
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -168,7 +171,7 @@ export default function ResourcesManager({
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium">ملفّ أو صورة (PDF/Word حتى 15 م.ب، صورة JPG/PNG/WebP حتى 5 م.ب)</label>
+          <label className="mb-1.5 block text-sm font-medium">ملفّ أو صورة (PDF/Word حتى {maxFileMb} م.ب، صورة JPG/PNG/WebP حتى 5 م.ب)</label>
           <input
             ref={inputRef}
             type="file"

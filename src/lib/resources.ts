@@ -45,6 +45,10 @@ const RULES: Record<string, TypeRule> = {
   },
 };
 
+/** حدّ ملفّات PDF/Word: 15MB للمدرّس، و30MB للمدير العام (الصور 5MB للجميع). */
+export const MAX_DOC_BYTES_TEACHER = 15 * MB;
+export const MAX_DOC_BYTES_SUPER = 30 * MB;
+
 export const RESOURCE_ACCEPT =
   ".pdf,.jpg,.jpeg,.png,.webp,.docx,.doc," +
   "application/pdf,image/jpeg,image/png,image/webp," +
@@ -66,13 +70,17 @@ export function validateResourceBytes(
   mime: string | null,
   size: number,
   head: Uint8Array,
+  /** يرفع حدّ ملفّات PDF/Word فقط (لا الصور)؛ الافتراضي حدّ النوع. */
+  opts?: { maxDocBytes?: number },
 ): { ok: true; mime: string; kind: ResourceKind } | { ok: false; error: string } {
   if (!mime || !RULES[mime])
     return { ok: false, error: "النوع غير مدعوم (PDF أو Word أو صورة JPG/PNG/WebP)." };
   const rule = RULES[mime];
   if (size === 0) return { ok: false, error: "ملف فارغ." };
-  if (size > rule.maxBytes)
-    return { ok: false, error: `حجم الملف يتجاوز ${rule.maxBytes / MB} ميغابايت لهذا النوع.` };
+  const maxBytes =
+    rule.kind !== "image" && opts?.maxDocBytes ? Math.max(rule.maxBytes, opts.maxDocBytes) : rule.maxBytes;
+  if (size > maxBytes)
+    return { ok: false, error: `حجم الملف يتجاوز ${maxBytes / MB} ميغابايت لهذا النوع.` };
   if (!rule.sig(head))
     return { ok: false, error: "محتوى الملفّ لا يطابق نوعه." };
   return { ok: true, mime, kind: rule.kind };
@@ -82,6 +90,24 @@ export function validateResourceBytes(
 export function kindOfMime(mime: string, kindField?: string): ResourceKind {
   if (kindField === "TEXT") return "text";
   return RULES[mime]?.kind ?? "pdf";
+}
+
+/**
+ * جسم ردّ متدفّق من بايتات في الذاكرة: استضافة Vercel تحدّ الردّ غير المتدفّق بنحو 4.5MB، فالملفّات الأكبر
+ * تُبَثّ على أجزاء بدل ردّ واحد.
+ */
+export function streamBytes(buf: Uint8Array, chunkBytes = 256 * 1024): ReadableStream<Uint8Array> {
+  let off = 0;
+  return new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (off >= buf.length) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(buf.subarray(off, off + chunkBytes));
+      off += chunkBytes;
+    },
+  });
 }
 
 export function formatFileSize(n: number): string {

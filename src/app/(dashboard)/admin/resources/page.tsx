@@ -128,6 +128,7 @@ export default async function AdminResourcesPage() {
 
       <h3 className="mb-3 font-display text-lg font-bold">محتواك العامّ</h3>
       <ResourcesManager
+        maxFileMb={30}
         gradeLevels={gradeLevels.map((g) => ({
           id: g.id,
           name: g.name,

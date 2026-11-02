@@ -6,12 +6,17 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
-import { kindOfMime, safeContentDisposition } from "@/lib/resources";
+import { kindOfMime, safeContentDisposition, streamBytes } from "@/lib/resources";
 import { getSession } from "@/lib/session";
 import { studentCanSeeTeacherEnrichment } from "@/lib/enrichment";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// تنزيل ملفّ كبير (حتى 30MB) من القاعدة وبثّه.
+export const maxDuration = 60;
+
+// فوق هذا الحجم يُبَثّ الملفّ على أجزاء (حدّ الردّ غير المتدفّق في Vercel ≈ 4.5MB)؛ ما دونه يبقى بالمسار القديم المجرَّب.
+const STREAM_ABOVE_BYTES = 4 * 1024 * 1024;
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -85,9 +90,11 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
   if (!file.data)
     return NextResponse.json({ error: "غير موجود" }, { status: 404 });
 
-  return new NextResponse(new Uint8Array(file.data), {
+  const bytes = new Uint8Array(file.data);
+  return new NextResponse(bytes.length > STREAM_ABOVE_BYTES ? streamBytes(bytes) : bytes, {
     headers: {
       "Content-Type": file.mimeType,
+      "Content-Length": String(bytes.length),
       "Content-Disposition": safeContentDisposition(
         file.title,
         inline ? "inline" : "attachment",

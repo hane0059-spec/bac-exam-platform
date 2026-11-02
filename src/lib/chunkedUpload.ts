@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 
 export const CHUNK_BYTES = 3 * 1024 * 1024; // حجم الجزء في المتصفّح
 export const MAX_CHUNK_BYTES = CHUNK_BYTES + 64 * 1024; // سقف يقبله الخادم لجزء واحد
-export const MAX_CHUNKS = 6; // 6 × 3MB ≥ أقصى ملفّ (15MB)
+export const MAX_CHUNKS = 6; // المدرّس: 6 × 3MB ≥ أقصى ملفّ (15MB)
+export const MAX_CHUNKS_SUPER = 11; // المدير العام: 11 × 3MB ≥ 30MB
 const STALE_MS = 60 * 60 * 1000; // أجزاء ناقصة تُمحى بعد ساعة
 const MAX_PENDING_PER_OWNER = 30;
 const ID_RE = /^[A-Za-z0-9-]{8,64}$/;
@@ -36,7 +37,8 @@ export async function purgeStaleChunks(now = new Date()): Promise<void> {
  */
 export async function readUploadPayload(
   form: FormData,
-  ownerId: string
+  ownerId: string,
+  maxChunks: number = MAX_CHUNKS
 ): Promise<UploadPayload> {
   const file = form.get("file");
   if (!(file instanceof File)) return { status: "error", error: "لا ملف مرفوع" };
@@ -61,7 +63,7 @@ export async function readUploadPayload(
     !Number.isInteger(index) ||
     !Number.isInteger(total) ||
     total < 2 ||
-    total > MAX_CHUNKS ||
+    total > maxChunks ||
     index < 0 ||
     index >= total
   ) {

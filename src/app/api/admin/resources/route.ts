@@ -3,11 +3,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
-import { resolveResourceMime, validateResourceBytes } from "@/lib/resources";
-import { readUploadPayload } from "@/lib/chunkedUpload";
+import { MAX_DOC_BYTES_SUPER, resolveResourceMime, validateResourceBytes } from "@/lib/resources";
+import { MAX_CHUNKS_SUPER, readUploadPayload } from "@/lib/chunkedUpload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// الجزء الأخير يجمع الأجزاء ويكتب ملفّاً حتى 30MB في القاعدة: مهلة أوسع من الافتراضية (10 ثوانٍ).
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const ctx = await getAdminContext();
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
   if (!grade) return NextResponse.json({ error: "صفّ غير موجود" }, { status: 400 });
 
   // ملفّ كامل أو جزء من رفع مجزَّأ (الاستضافة ترفض الطلبات > ~4.5MB).
-  const payload = await readUploadPayload(form, ctx.session.sub);
+  const payload = await readUploadPayload(form, ctx.session.sub, MAX_CHUNKS_SUPER);
   if (payload.status === "error") {
     return NextResponse.json({ error: payload.error }, { status: 400 });
   }
@@ -44,6 +46,7 @@ export async function POST(req: Request) {
     resolveResourceMime(payload.name, payload.type),
     buffer.length,
     buffer.subarray(0, 16),
+    { maxDocBytes: MAX_DOC_BYTES_SUPER },
   );
   if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
 
