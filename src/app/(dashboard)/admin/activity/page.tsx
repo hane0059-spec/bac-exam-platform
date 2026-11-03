@@ -9,6 +9,7 @@ import DashboardShell from "@/components/DashboardShell";
 import { roleLabel } from "@/lib/gender";
 import { agoArabic } from "@/lib/relativeTime";
 import { normalizeArabic } from "@/lib/grading";
+import AutoRefresh from "@/components/AutoRefresh";
 import {
   ACTIVITY_LIST_CAP,
   ACTIVITY_RANGES,
@@ -170,13 +171,14 @@ export default async function ActivityPage(props: {
 
   return (
     <DashboardShell session={ctx.session}>
+      <AutoRefresh />
       <div className="mb-6">
         <Link href="/admin" className="-my-2 inline-block py-2 text-base font-semibold text-red-800 hover:text-red-900 hover:underline">
           ← الرئيسية
         </Link>
         <h2 className="mt-2 font-display text-xl font-bold">النشاط</h2>
         <p className="mt-1 text-sm text-ink/60">
-          يُحدَّث آخر ظهور لكل مستخدم عند طلباته — التحديث يدوي (أعِد تحميل الصفحة).
+          آخر ظهور لكل مستخدم — تتحدّث القائمة تلقائياً كل 30 ثانية ما دامت الصفحة مفتوحة أمامك.
         </p>
         <nav aria-label="فترة النشاط" className="mt-3 flex flex-wrap gap-2">
           {ACTIVITY_RANGES.map((r) => (
