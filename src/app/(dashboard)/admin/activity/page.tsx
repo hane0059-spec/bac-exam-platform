@@ -8,9 +8,11 @@ import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
 import { roleLabel } from "@/lib/gender";
 import { agoArabic } from "@/lib/relativeTime";
+import { normalizeArabic } from "@/lib/grading";
 import {
   ACTIVITY_LIST_CAP,
   ACTIVITY_RANGES,
+  ACTIVITY_SEARCH_POOL,
   ONLINE_MS,
   RECENT_MS,
   ROLE_FILTERS,
@@ -47,43 +49,59 @@ export default async function ActivityPage(props: {
   const qText = tokens.join(" ");
   const since = new Date(Date.now() - range.ms);
 
-  // كل كلمة بحث يجب أن تطابق الاسم أو الكنية أو اسم الأب أو رمز الطالب/المدرّس.
   const where: Prisma.UserWhereInput = {
     lastSeenAt: { gte: since },
     ...(roleFilter !== "ALL" ? { role: roleFilter } : {}),
-    ...(tokens.length
-      ? {
-          AND: tokens.map((t) => ({
-            OR: [
-              { firstName: { contains: t, mode: "insensitive" as const } },
-              { lastName: { contains: t, mode: "insensitive" as const } },
-              { studentProfile: { is: { fatherName: { contains: t, mode: "insensitive" as const } } } },
-              { studentProfile: { is: { studentCode: { contains: t, mode: "insensitive" as const } } } },
-              { teacherProfile: { is: { employeeCode: { contains: t, mode: "insensitive" as const } } } },
-            ],
-          })),
-        }
-      : {}),
   };
 
-  const total = await prisma.user.count({ where });
-  const users = await prisma.user.findMany({
-    where,
-    orderBy: { lastSeenAt: "desc" },
-    take: ACTIVITY_LIST_CAP,
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      gender: true,
-      lastSeenAt: true,
-      school: { select: { name: true } },
-      // للطالب: الاسم الكامل (بإضافة اسم الأب) والصفّ والمجموعات ليُعرَف بدقّة.
-      studentProfile: { select: { fatherName: true, gradeLevel: { select: { name: true } } } },
-      studentEnrollments: { where: { isActive: true }, select: { groupName: true } },
+  const select = {
+    id: true,
+    firstName: true,
+    lastName: true,
+    role: true,
+    gender: true,
+    lastSeenAt: true,
+    school: { select: { name: true } },
+    // للطالب: الاسم الكامل (بإضافة اسم الأب) والصفّ والمجموعات ليُعرَف بدقّة.
+    studentProfile: {
+      select: { fatherName: true, studentCode: true, gradeLevel: { select: { name: true } } },
     },
-  });
+    teacherProfile: { select: { employeeCode: true } },
+    studentEnrollments: { where: { isActive: true }, select: { groupName: true } },
+  } satisfies Prisma.UserSelect;
+
+  let total: number;
+  let users: Prisma.UserGetPayload<{ select: typeof select }>[];
+  if (tokens.length === 0) {
+    total = await prisma.user.count({ where });
+    users = await prisma.user.findMany({ where, orderBy: { lastSeenAt: "desc" }, take: ACTIVITY_LIST_CAP, select });
+  } else {
+    // البحث بتطبيع عربي (همزات/تاء مربوطة/تشكيل/أرقام) لا يقدر عليه SQL مباشرةً: نجلب مرشّحي الفترة والدور
+    // (بسقف) ونصفّي في الخادم؛ كل كلمة يجب أن تطابق الاسم أو الكنية أو اسم الأب أو رمز الطالب/المدرّس.
+    const needles = tokens.map((t) => normalizeArabic(t));
+    const candidates = await prisma.user.findMany({
+      where,
+      orderBy: { lastSeenAt: "desc" },
+      take: ACTIVITY_SEARCH_POOL,
+      select,
+    });
+    const matched = candidates.filter((u) => {
+      const hay = normalizeArabic(
+        [
+          u.firstName,
+          u.lastName,
+          u.studentProfile?.fatherName,
+          u.studentProfile?.studentCode,
+          u.teacherProfile?.employeeCode,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+      return needles.every((n) => hay.includes(n));
+    });
+    total = matched.length;
+    users = matched.slice(0, ACTIVITY_LIST_CAP);
+  }
 
   const now = Date.now();
   const online = users.filter(

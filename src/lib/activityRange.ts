@@ -15,6 +15,8 @@ export type ActivityRangeKey = (typeof ACTIVITY_RANGES)[number]["key"];
 export const DEFAULT_ACTIVITY_RANGE: ActivityRangeKey = "24h";
 /** أقصى عدد صفوف يُعرَض (الإجمالي الحقيقي يُعدّ بشكل مستقلّ). */
 export const ACTIVITY_LIST_CAP = 300;
+/** أقصى مرشّحين يُجلَبون للبحث المطبَّع في الخادم (فوقه تُعرَض الأحدث فقط). */
+export const ACTIVITY_SEARCH_POOL = 5000;
 
 export function parseActivityRange(v: string | string[] | undefined) {
   const k = Array.isArray(v) ? v[0] : v;
