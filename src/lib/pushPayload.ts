@@ -50,6 +50,8 @@ export const PUSH_BODY_BY_TYPE: Record<string, string> = {
   REPORT: "بلاغ جديد عن سؤال",
   teacher_deletion_request: "طلب حذف حساب مدرّس بانتظار مراجعتك",
   enrichment_publish_request: "مدرّس يطلب نشر محتوى على الصفحة العامّة",
+  enrichment_published: "اعتمد المدير نشر محتواك على الصفحة العامّة",
+  enrichment_unpublished: "أُعيد أحد منشوراتك إلى مكتبتك الخاصّة",
 };
 
 export function pushBodyForType(type?: string | null): string {
