@@ -44,10 +44,13 @@ export default function ResourcesManager({
     remove: "/api/admin/resources",
   },
   maxFileMb = 15,
+  publishRequest,
 }: {
   gradeLevels: GradeRow[];
   /** حدّ ملفّات PDF/Word بالميغابايت (المدير العام 30، المدرّس 15 — يفرضه الخادم أيضاً). */
   maxFileMb?: number;
+  /** للمدرّس فقط: زرّ «اطلب نشره على الصفحة العامّة» لكل عنصر؛ `requestedIds` المطلوب نشره حالياً. */
+  publishRequest?: { endpointBase: string; requestedIds: string[] };
   /** نقاط النهاية (الافتراضي: المدير العام؛ المدرّس يمرّر نقاطه الخاصّة). */
   endpoints?: { upload: string; post: string; remove: string };
 }) {
@@ -57,6 +60,43 @@ export default function ResourcesManager({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [requested, setRequested] = useState<Set<string>>(new Set(publishRequest?.requestedIds ?? []));
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+
+  async function toggleRequest(id: string, title: string) {
+    if (!publishRequest) return;
+    const want = !requested.has(id);
+    if (
+      want &&
+      !confirm(
+        `سيُرسَل طلبك إلى المدير العام لاعتماد نشر «${title}» على صفحة «أسئلة وإثراء» العامّة (يراها أي زائر بلا تسجيل دخول). متابعة؟`,
+      )
+    )
+      return;
+    setRequestingId(id);
+    setError("");
+    try {
+      const res = await fetch(`${publishRequest.endpointBase}/${id}/request`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requested: want }),
+      });
+      if (!res.ok) {
+        setError(await errorOf(res, "تعذّر إرسال الطلب"));
+        return;
+      }
+      setRequested((s) => {
+        const n = new Set(s);
+        if (want) n.add(id);
+        else n.delete(id);
+        return n;
+      });
+    } catch {
+      setError("انقطع الاتصال — أعد المحاولة.");
+    } finally {
+      setRequestingId(null);
+    }
+  }
   const inputRef = useRef<HTMLInputElement>(null);
   const [postTitle, setPostTitle] = useState("");
   const [postBody, setPostBody] = useState("");
@@ -259,13 +299,38 @@ export default function ResourcesManager({
                       <span className="truncate text-xs text-ink/50">{f.body}</span>
                     )}
                   </span>
-                  <button
-                    onClick={() => remove(f.id)}
-                    disabled={deletingId === f.id}
-                    className="shrink-0 text-sm text-red-600 hover:underline disabled:opacity-50"
-                  >
-                    {deletingId === f.id ? "جارٍ الحذف…" : "حذف"}
-                  </button>
+                  <span className="flex shrink-0 flex-wrap items-center gap-3">
+                    {publishRequest &&
+                      (requested.has(f.id) ? (
+                        <span className="flex items-center gap-2 text-xs">
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-900">
+                            ⏳ بانتظار اعتماد المدير
+                          </span>
+                          <button
+                            onClick={() => toggleRequest(f.id, f.title)}
+                            disabled={requestingId === f.id}
+                            className="text-ink/70 hover:underline disabled:opacity-50"
+                          >
+                            إلغاء الطلب
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => toggleRequest(f.id, f.title)}
+                          disabled={requestingId === f.id}
+                          className="text-sm text-primary hover:underline disabled:opacity-50"
+                        >
+                          {requestingId === f.id ? "جارٍ الإرسال…" : "🌐 اطلب نشره على الصفحة العامّة"}
+                        </button>
+                      ))}
+                    <button
+                      onClick={() => remove(f.id)}
+                      disabled={deletingId === f.id}
+                      className="text-sm text-red-600 hover:underline disabled:opacity-50"
+                    >
+                      {deletingId === f.id ? "جارٍ الحذف…" : "حذف"}
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>

@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { teacherCanEnrichment } from "@/lib/teacher";
 import { teacherGradeLevels } from "@/lib/enrichment";
+import { listRequestedIds } from "@/lib/enrichmentRequest";
 import DashboardShell from "@/components/DashboardShell";
 import ResourcesManager from "@/components/admin/ResourcesManager";
 
@@ -45,6 +46,8 @@ export default async function TeacherEnrichmentPage() {
     }),
   ]);
 
+  const requestedIds = await listRequestedIds(files.map((f) => f.id));
+
   return (
     <DashboardShell session={session}>
       <div className="mb-6">
@@ -54,7 +57,8 @@ export default async function TeacherEnrichmentPage() {
         <h2 className="mt-2 font-display text-xl font-bold">أسئلة وإثراء</h2>
         <p className="mt-1 text-sm text-ink/60">
           ملفّات (PDF/Word) وصور ومنشورات نصّية تظهر <b>لطلابك المسجّلين عندك فقط</b> في
-          صفحة «أسئلة وإثراء» بلوحتهم. لا تظهر لغيرهم ولا في الصفحة العامّة.
+          صفحة «أسئلة وإثراء» بلوحتهم. لا تظهر لغيرهم ولا في الصفحة العامّة، إلا ما <b>تطلب نشره</b> بزرّ
+          «🌐 اطلب نشره على الصفحة العامّة» أمام العنصر فيعتمده المدير العام.
         </p>
       </div>
       {published.length > 0 && (
@@ -88,6 +92,10 @@ export default async function TeacherEnrichmentPage() {
         </div>
       ) : (
         <ResourcesManager
+          publishRequest={{
+            endpointBase: "/api/teacher/enrichment",
+            requestedIds: [...requestedIds],
+          }}
           endpoints={{
             upload: "/api/teacher/enrichment",
             post: "/api/teacher/enrichment/post",

@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
+import { clearRequest } from "@/lib/enrichmentRequest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export async function POST(_req: Request, props: { params: Promise<{ id: string 
       where: { id: params.id },
       data: { teacherId: null, sourceTeacherId: item.teacherId },
     });
+    await clearRequest(params.id); // الطلب تحقّق
     return NextResponse.json({ ok: true, published: true });
   }
   if (item.sourceTeacherId) {

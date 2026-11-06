@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/DashboardShell";
+import { listRequestedIds } from "@/lib/enrichmentRequest";
 import ResourcesManager from "@/components/admin/ResourcesManager";
 import TeacherEnrichmentReview, {
   type ReviewRow,
@@ -17,6 +18,7 @@ export default async function AdminResourcesPage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin");
 
+  const requestedIds = await listRequestedIds();
   const [gradeLevels, pendingRaw, publishedRaw] = await Promise.all([
     prisma.gradeLevel.findMany({
       orderBy: { orderNum: "asc" },
@@ -37,9 +39,9 @@ export default async function AdminResourcesPage() {
         },
       },
     }),
-    // محتوى مدرّسين بانتظار اعتماد المدير لنشره على الصفحة العامّة.
+    // محتوى مدرّسين **طلبوا** نشره على الصفحة العامّة (الباقي يبقى خاصّاً بمكتباتهم ولا يزحم الصفحة).
     prisma.enrichmentFile.findMany({
-      where: { teacherId: { not: null } },
+      where: { teacherId: { not: null }, id: { in: [...requestedIds] } },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

@@ -49,6 +49,7 @@ export const PUSH_BODY_BY_TYPE: Record<string, string> = {
   JOINED: "طالب انضمّ إلى اختبارك",
   REPORT: "بلاغ جديد عن سؤال",
   teacher_deletion_request: "طلب حذف حساب مدرّس بانتظار مراجعتك",
+  enrichment_publish_request: "مدرّس يطلب نشر محتوى على الصفحة العامّة",
 };
 
 export function pushBodyForType(type?: string | null): string {

@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
+import { clearRequest } from "@/lib/enrichmentRequest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,5 +19,6 @@ export async function DELETE(_req: Request, props: { params: Promise<{ id: strin
   });
   if (r.count === 0)
     return NextResponse.json({ error: "غير موجود" }, { status: 404 });
+  await clearRequest(params.id); // طلب النشر المعلّق (إن وُجد) يسقط بحذف العنصر
   return NextResponse.json({ ok: true });
 }

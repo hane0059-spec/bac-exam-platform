@@ -96,11 +96,11 @@ export default function TeacherEnrichmentReview({
           <span className="mr-2 text-sm font-normal text-ink/50">({pendingList.length})</span>
         </h3>
         <p className="mb-3 text-xs text-ink/50">
-          محتوى نشره مدرّسون في مكتباتهم الخاصّة. اعتماده ينقله مباشرةً للصفحة العامّة «أسئلة وإثراء»
-          بلا رفع نسخة جديدة — فيظهر لأي زائر بلا تسجيل دخول.
+          محتوى <b>طلب</b> مدرّسوه نشره على الصفحة العامّة (ما لم يطلبوا نشره يبقى خاصّاً بمكتباتهم ولا يظهر هنا).
+          اعتماده ينقله مباشرةً للصفحة العامّة «أسئلة وإثراء» بلا رفع نسخة جديدة — فيظهر لأي زائر بلا تسجيل دخول.
         </p>
         {pendingList.length === 0 ? (
-          <p className="text-sm text-ink/50">لا محتوى بانتظار الاعتماد حالياً.</p>
+          <p className="text-sm text-ink/50">لا طلبات نشر حالياً.</p>
         ) : (
           <ul className="space-y-2">
             {pendingList.map((item) => (
@@ -139,8 +139,8 @@ export default function TeacherEnrichmentReview({
                 actionLabel="تراجع"
                 confirmText={`سيختفي «${item.title}» عن الصفحة العامّة ويعود خاصّاً بمكتبة المدرّس ${item.teacherName}. متابعة؟`}
                 onDone={() => {
+                  // التراجع يعيده خاصّاً بالمدرّس؛ لا يعود إلى «بانتظار اعتمادك» إلا إن طلب نشره من جديد.
                   setPublishedList((l) => l.filter((x) => x.id !== item.id));
-                  setPendingList((l) => [item, ...l]);
                 }}
               />
             ))}
