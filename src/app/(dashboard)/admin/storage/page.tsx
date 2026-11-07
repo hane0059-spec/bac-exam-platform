@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminContext } from "@/lib/admin";
 import DashboardShell from "@/components/DashboardShell";
 import StorageAlert from "@/components/admin/StorageAlert";
+import LargestFiles, { type BigFileRow } from "@/components/admin/LargestFiles";
 import { TABLE_LABELS, readDbStorage } from "@/lib/dbStorage";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,24 @@ export default async function AdminStoragePage() {
   if (!ctx) redirect("/login");
   if (!ctx.isSuper) redirect("/admin"); // إشراف على مستوى المنصّة
 
-  const [db, agg, byKind, atts] = await Promise.all([
+  const [db, bigRaw, agg, byKind, atts] = await Promise.all([
     readDbStorage(true),
+    // أكبر ملفّات الإثراء (بلا بايتاتها): أغلب استهلاك القاعدة عادةً.
+    prisma.enrichmentFile.findMany({
+      where: { kind: "FILE" },
+      orderBy: { sizeBytes: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        sizeBytes: true,
+        downloadCount: true,
+        teacherId: true,
+        gradeLevel: { select: { name: true } },
+        teacher: { select: { firstName: true, lastName: true } },
+        sourceTeacher: { select: { firstName: true, lastName: true } },
+      },
+    }),
     prisma.attachment.aggregate({
       _count: { _all: true },
       _sum: { sizeBytes: true },
@@ -57,6 +74,19 @@ export default async function AdminStoragePage() {
   ]);
 
   const totalBytes = agg._sum.sizeBytes ?? 0;
+
+  const bigRows: BigFileRow[] = bigRaw.map((f) => ({
+    id: f.id,
+    title: f.title,
+    sizeBytes: f.sizeBytes,
+    gradeName: f.gradeLevel.name,
+    downloadCount: f.downloadCount,
+    ownerLabel: f.teacher
+      ? `خاصّ بالمدرّس ${f.teacher.firstName} ${f.teacher.lastName}`
+      : f.sourceTeacher
+        ? `عامّ (معتمَد من ${f.sourceTeacher.firstName} ${f.sourceTeacher.lastName})`
+        : "عامّ (من المدير العام)",
+  }));
 
   // تجميع حسب المؤسّسة (المالك: مُنشئ ملف الاختبار، أو طالب صورة الإجابة).
   const bySchool = new Map<string, { bytes: number; count: number }>();
@@ -127,6 +157,8 @@ export default async function AdminStoragePage() {
           </div>
         </section>
       )}
+
+      <LargestFiles rows={bigRows} />
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="card p-4">
