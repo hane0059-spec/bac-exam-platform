@@ -29,14 +29,36 @@ function Row({
   actionLabel,
   confirmText,
   onDone,
+  onRejected,
 }: {
   item: ReviewRow;
   actionLabel: string;
   confirmText: string;
   onDone: () => void;
+  /** إن وُجد يظهر زرّ «رفض» (لطلبات النشر المعلّقة فقط). */
+  onRejected?: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+
+  async function reject() {
+    const reason = window.prompt(
+      `رفض نشر «${item.title}» على الصفحة العامّة.\nاكتب سبباً يصل المدرّس (اختياري)، ثم اضغط موافق:`,
+      "",
+    );
+    if (reason === null) return; // إلغاء
+    setBusy(true);
+    const res = await fetch(`/api/admin/resources/${item.id}/reject`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason: reason.trim() || undefined }),
+    });
+    setBusy(false);
+    if (res.ok) {
+      onRejected?.();
+      router.refresh();
+    }
+  }
 
   async function act() {
     if (!confirm(confirmText)) return;
@@ -66,14 +88,26 @@ function Row({
         </span>
         <span className="truncate text-xs text-ink/55">المدرّس: {item.teacherName}</span>
       </span>
-      <button
-        type="button"
-        onClick={act}
-        disabled={busy}
-        className="btn-primary shrink-0 px-3 py-1.5 text-sm disabled:opacity-50"
-      >
-        {busy ? "جارٍ التنفيذ…" : actionLabel}
-      </button>
+      <span className="flex shrink-0 items-center gap-2">
+        {onRejected && (
+          <button
+            type="button"
+            onClick={reject}
+            disabled={busy}
+            className="rounded-xl border border-line px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            رفض
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={act}
+          disabled={busy}
+          className="btn-primary px-3 py-1.5 text-sm disabled:opacity-50"
+        >
+          {busy ? "جارٍ التنفيذ…" : actionLabel}
+        </button>
+      </span>
     </li>
   );
 }
@@ -150,6 +184,7 @@ export default function TeacherEnrichmentReview({
                   setPendingList((l) => l.filter((x) => x.id !== item.id));
                   setPublishedList((l) => [item, ...l]);
                 }}
+                onRejected={() => setPendingList((l) => l.filter((x) => x.id !== item.id))}
               />
             )}
           />
