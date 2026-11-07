@@ -62,6 +62,7 @@ export default function ResourcesManager({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [requested, setRequested] = useState<Set<string>>(new Set(publishRequest?.requestedIds ?? []));
   const [requestingId, setRequestingId] = useState<string | null>(null);
+  const totalFiles = gradeLevels.reduce((n, g) => n + g.files.length, 0);
 
   async function toggleRequest(id: string, title: string) {
     if (!publishRequest) return;
@@ -262,17 +263,27 @@ export default function ResourcesManager({
       </div>
 
       {gradeLevels.map((g) => (
-        <div key={g.id} className="card p-5">
-          <h3 className="mb-3 font-display font-semibold">
-            {g.name}
-            <span className="mr-2 text-sm font-normal text-ink/50">
-              ({g.files.length} ملفّ)
+        // قسم لكل صفّ قابل للطيّ: يُفتح الكلّ إن قلّ مجموع العناصر (≤8)، وإلا يُفتح صفّ الرفع المختار فقط.
+        <details
+          key={g.id}
+          open={totalFiles <= 8 || g.id === gradeId}
+          className="card group p-5"
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+            <h3 className="font-display font-semibold">
+              {g.name}
+              <span className="mr-2 text-sm font-normal text-ink/50">
+                ({g.files.length} ملفّ)
+              </span>
+            </h3>
+            <span aria-hidden className="text-ink/50 transition group-open:rotate-180">
+              ▾
             </span>
-          </h3>
+          </summary>
           {g.files.length === 0 ? (
-            <p className="text-sm text-ink/50">لا ملفّات لهذا الصفّ بعد.</p>
+            <p className="mt-3 text-sm text-ink/50">لا ملفّات لهذا الصفّ بعد.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="mt-3 space-y-2">
               {g.files.map((f) => (
                 <li
                   key={f.id}
@@ -335,7 +346,7 @@ export default function ResourcesManager({
               ))}
             </ul>
           )}
-        </div>
+        </details>
       ))}
     </div>
   );

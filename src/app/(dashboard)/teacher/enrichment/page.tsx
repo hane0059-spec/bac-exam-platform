@@ -62,12 +62,17 @@ export default async function TeacherEnrichmentPage() {
         </p>
       </div>
       {published.length > 0 && (
-        <div className="card mb-6 p-5">
-          <h3 className="mb-1 font-display font-semibold">
-            منشوراتك المعتمدة على الصفحة العامة
-            <span className="mr-2 text-sm font-normal text-ink/50">({published.length})</span>
-          </h3>
-          <p className="mb-3 text-xs text-ink/50">
+        <details open={published.length <= 5} className="card group mb-6 p-5">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+            <h3 className="font-display font-semibold">
+              منشوراتك المعتمدة على الصفحة العامة
+              <span className="mr-2 text-sm font-normal text-ink/50">({published.length})</span>
+            </h3>
+            <span aria-hidden className="text-ink/50 transition group-open:rotate-180">
+              ▾
+            </span>
+          </summary>
+          <p className="mb-3 mt-2 text-xs text-ink/50">
             اعتمدها المدير العام فصارت ظاهرة للجميع في صفحة «أسئلة وإثراء» العامّة — لم تعد في
             مكتبتك الخاصّة أدناه.
           </p>
@@ -84,7 +89,7 @@ export default async function TeacherEnrichmentPage() {
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
       {grades.length === 0 ? (
         <div className="card p-8 text-center text-ink/60">

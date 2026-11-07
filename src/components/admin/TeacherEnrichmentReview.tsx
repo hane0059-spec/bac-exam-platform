@@ -78,6 +78,42 @@ function Row({
   );
 }
 
+/** يجمع العناصر حسب المدرّس (الأسماء مرتّبة أبجدياً) ليسهل تصفّح القوائم الطويلة. */
+function groupByTeacher(items: ReviewRow[]): [string, ReviewRow[]][] {
+  const m = new Map<string, ReviewRow[]>();
+  for (const it of items) m.set(it.teacherName, [...(m.get(it.teacherName) ?? []), it]);
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], "ar"));
+}
+
+/** أقسام قابلة للطيّ، قسم لكل مدرّس؛ تُفتح كلّها إن قلّ العدد (≤8) وإلا تُطوى. */
+function TeacherGroups({
+  items,
+  renderRow,
+}: {
+  items: ReviewRow[];
+  renderRow: (item: ReviewRow) => React.ReactNode;
+}) {
+  const openAll = items.length <= 8;
+  return (
+    <div className="space-y-2">
+      {groupByTeacher(items).map(([name, rows]) => (
+        <details key={name} open={openAll} className="group rounded-xl border border-line px-3 py-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
+            <span>
+              👤 {name}
+              <span className="mr-2 text-xs font-normal text-ink/50">({rows.length})</span>
+            </span>
+            <span aria-hidden className="text-ink/50 transition group-open:rotate-180">
+              ▾
+            </span>
+          </summary>
+          <ul className="mt-2 space-y-2">{rows.map((item) => renderRow(item))}</ul>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 export default function TeacherEnrichmentReview({
   pending,
   published,
@@ -102,8 +138,9 @@ export default function TeacherEnrichmentReview({
         {pendingList.length === 0 ? (
           <p className="text-sm text-ink/50">لا طلبات نشر حالياً.</p>
         ) : (
-          <ul className="space-y-2">
-            {pendingList.map((item) => (
+          <TeacherGroups
+            items={pendingList}
+            renderRow={(item) => (
               <Row
                 key={item.id}
                 item={item}
@@ -114,25 +151,32 @@ export default function TeacherEnrichmentReview({
                   setPublishedList((l) => [item, ...l]);
                 }}
               />
-            ))}
-          </ul>
+            )}
+          />
         )}
       </div>
 
-      <div className="card p-5">
-        <h3 className="mb-1 font-display font-semibold">
-          منشور من المدرّسين
-          <span className="mr-2 text-sm font-normal text-ink/50">({publishedList.length})</span>
-        </h3>
-        <p className="mb-3 text-xs text-ink/50">
+      {/* المنشور سابقاً: مطويّ افتراضياً (القائمة تطول مع الوقت)، وداخله قسم لكل مدرّس */}
+      <details className="card group p-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+          <h3 className="font-display font-semibold">
+            منشور من المدرّسين
+            <span className="mr-2 text-sm font-normal text-ink/50">({publishedList.length})</span>
+          </h3>
+          <span aria-hidden className="text-ink/50 transition group-open:rotate-180">
+            ▾
+          </span>
+        </summary>
+        <p className="mb-3 mt-2 text-xs text-ink/50">
           عناصر اعتمدتَها سابقاً وصارت عامّة. التراجع يعيدها خاصّةً بالمدرّس صاحبها (تختفي عن
           الصفحة العامّة وتعود لمكتبته فقط).
         </p>
         {publishedList.length === 0 ? (
           <p className="text-sm text-ink/50">لا عناصر معتمَدة بعد.</p>
         ) : (
-          <ul className="space-y-2">
-            {publishedList.map((item) => (
+          <TeacherGroups
+            items={publishedList}
+            renderRow={(item) => (
               <Row
                 key={item.id}
                 item={item}
@@ -143,10 +187,10 @@ export default function TeacherEnrichmentReview({
                   setPublishedList((l) => l.filter((x) => x.id !== item.id));
                 }}
               />
-            ))}
-          </ul>
+            )}
+          />
         )}
-      </div>
+      </details>
     </div>
   );
 }
