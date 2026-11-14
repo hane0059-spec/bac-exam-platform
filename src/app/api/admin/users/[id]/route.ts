@@ -194,21 +194,26 @@ export async function DELETE(_req: Request, props: { params: Promise<{ id: strin
   }
 
   // مدرّس/مدير: يُمنع الحذف إن كان «يملك» محتوى (حمايةً للبيانات).
-  const [createdUsers, questions, quizzes] = await Promise.all([
+  const [createdUsers, questions, quizzes, hiddenQuestions, archivedQuizzes] = await Promise.all([
     prisma.user.count({ where: { createdById: target.id } }),
     prisma.question.count({ where: { creatorId: target.id } }),
     prisma.quiz.count({ where: { creatorId: target.id } }),
+    // أسئلة كُتبت داخل اختبار ولم تدخل البنك: لا تراها صاحبتها لكنها تمنع الحذف.
+    prisma.question.count({ where: { creatorId: target.id, inBank: false } }),
+    prisma.quiz.count({ where: { creatorId: target.id, status: "ARCHIVED" } }),
   ]);
   if (createdUsers > 0 || questions > 0 || quizzes > 0) {
     const parts: string[] = [];
     if (createdUsers > 0) parts.push(`${createdUsers} مستخدماً`);
-    if (questions > 0) parts.push(`${questions} سؤالاً`);
-    if (quizzes > 0) parts.push(`${quizzes} اختباراً`);
+    if (questions > 0)
+      parts.push(`${questions} سؤالاً${hiddenQuestions > 0 ? ` (منها ${hiddenQuestions} داخل اختبارات وغير ظاهر في البنك)` : ""}`);
+    if (quizzes > 0)
+      parts.push(`${quizzes} اختباراً${archivedQuizzes > 0 ? ` (منها ${archivedQuizzes} مؤرشف)` : ""}`);
     return NextResponse.json(
       {
         error: `لا يمكن حذف هذا الحساب لأنّه أنشأ: ${parts.join(
           "، "
-        )}. عطّله بدل حذفه، أو احذف محتواه أوّلاً.`,
+        )}. للمدرّسين: استعمل «حذف كامل مع كل ما أنشأه» أسفل صفحة التعديل، أو عطّل الحساب.`,
       },
       { status: 409 }
     );

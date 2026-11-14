@@ -39,8 +39,9 @@ export default function DeleteUserButton({
       <h3 className="font-display font-semibold text-red-700">حذف الحساب</h3>
       <p className="text-sm text-ink/60">
         يحذف حساب <span className="font-medium">{userName}</span> نهائياً. لا
-        يمكن حذف حساب «يملك» محتوى (طلاب/أسئلة/اختبارات) — عطّله بدل ذلك. لا
-        رجعة بعد الحذف.
+        يمكن حذف حساب «يملك» محتوى (طلاب/أسئلة/اختبارات) بهذا الزرّ؛ للمدرّس
+        استعمل «حذف كامل مع كل ما أنشأه» أعلاه، أو عطّل الحساب. لا رجعة بعد
+        الحذف.
       </p>
       {error && (
         <p className="rounded-xl bg-red-100 p-3 text-sm text-red-700">{error}</p>

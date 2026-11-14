@@ -8,6 +8,7 @@ import UserForm, { type UserInitial } from "@/components/admin/UserForm";
 import PasswordResetForm from "@/components/PasswordResetForm";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
 import TeacherLifecyclePanel from "@/components/admin/TeacherLifecyclePanel";
+import TeacherPurgePanel from "@/components/admin/TeacherPurgePanel";
 import TeacherResetCardButton from "@/components/admin/TeacherResetCardButton";
 import { getAdminContext } from "@/lib/admin";
 import { getBranding } from "@/lib/branding";
@@ -117,6 +118,10 @@ export default async function EditUserPage(
               studentCount={studentCount}
             />
           )}
+        {/* حذف كامل مع كل ما أنشأه: للمدرّسين فقط (ليس النفس ولا المدير العام). */}
+        {user.role === "TEACHER" && user.id !== session.sub && !user.isSuperAdmin && (
+          <TeacherPurgePanel userId={user.id} />
+        )}
         {/* حذف الحساب: ليس النفس ولا المدير العام للمنصّة. */}
         {user.id !== session.sub && !user.isSuperAdmin && (
           <DeleteUserButton
