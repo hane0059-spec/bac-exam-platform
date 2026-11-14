@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { computeScore } from "@/lib/grading";
 import { notifyParentsOf, parentChildUrl } from "@/lib/parentNotify";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,12 +102,19 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     },
   });
 
-  // اكتمل التصحيح لجلسة منتهية: تصل وليّ الأمر النتيجة النهائية (مرّة واحدة: عند الانتقال من «بانتظار التصحيح»).
+  // اكتمل التصحيح لجلسة منتهية: تصل الطالبَ ووليَّ أمره النتيجة النهائية (مرّة واحدة: عند الانتقال من «بانتظار التصحيح»).
   if (pendingBefore > 0 && exam.status !== "IN_PROGRESS") {
     const pendingAfter = await prisma.studentAnswer.count({
       where: { sessionId: exam.id, needsReview: true },
     });
     if (pendingAfter === 0) {
+      // الطالب: كان يرى «بانتظار التصحيح» فقط ولا يعلم متى تُعتمد نتيجته. فشل الإشعار لا يكسر التصحيح.
+      await createNotification({
+        userId: exam.studentId,
+        type: "GRADED",
+        message: `اعتمد المدرّس نتيجة اختبارك «${exam.quiz.title}» — ${score.percentage}%`,
+        linkUrl: `/student/quizzes/${exam.quizId}`,
+      }).catch(() => {});
       await notifyParentsOf([exam.studentId], (name) => ({
         type: "CHILD_RESULT",
         message: `اعتمد المدرّس نتيجة اختبار «${exam.quiz.title}» لابنك «${name}» — ${score.percentage}%.`,
