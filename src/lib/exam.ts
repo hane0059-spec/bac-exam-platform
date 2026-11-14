@@ -14,6 +14,7 @@ import {
 } from "@/lib/grading";
 import { parseFileExamSettings } from "@/lib/fileExam";
 import { createNotification } from "@/lib/notifications";
+import { notifyParentsOf, parentChildUrl } from "@/lib/parentNotify";
 import { updateStudentConceptPerformance } from "@/lib/studentProgress";
 import { isMathAnswer } from "@/lib/mathAnswer";
 import { subjectLayout, type MathLayout } from "@/components/math/keyboards";
@@ -699,6 +700,7 @@ export async function notifyFileExamSubmitted(sessionId: string): Promise<void> 
       where: { id: sessionId },
       select: {
         quizId: true,
+        studentId: true,
         quiz: { select: { creatorId: true, title: true } },
         student: { select: { firstName: true, lastName: true } },
       },
@@ -710,6 +712,11 @@ export async function notifyFileExamSubmitted(sessionId: string): Promise<void> 
       message: `سلّم «${s.student.firstName} ${s.student.lastName}» ورقة اختبار «${s.quiz.title}» — بانتظار تصحيحك.`,
       linkUrl: `/teacher/file-exams/${s.quizId}/submissions`,
     });
+    await notifyParentsOf([s.studentId], (name) => ({
+      type: "CHILD_SUBMITTED",
+      message: `سلّم ابنك «${name}» ورقة اختبار «${s.quiz.title}» — بانتظار تصحيح المدرّس، وستصلك النتيجة عند اعتمادها.`,
+      linkUrl: parentChildUrl(s.studentId),
+    }));
   } catch {
     // تجاهل أخطاء الإشعار.
   }
@@ -835,6 +842,15 @@ export async function finalizeSession(
           : `أنهى «${studentName}» اختبار «${session.quiz.title}» (${score.percentage}%).`,
         linkUrl: `/teacher/sessions/${sessionId}`,
       });
+      // وليّ الأمر: النتيجة إن كانت نهائية، وإلا «بانتظار التصحيح» دون كشف درجة لم تُعتمد بعد.
+      const ended = status === "TIMED_OUT" ? "انتهى وقت اختبار" : "أنهى ابنك اختبار";
+      await notifyParentsOf([session.studentId], (name) => ({
+        type: anyReview ? "CHILD_SUBMITTED" : "CHILD_RESULT",
+        message: anyReview
+          ? `${ended} «${session.quiz.title}» (${name}) — بانتظار تصحيح المدرّس، وستصلك النتيجة عند اعتمادها.`
+          : `${ended} «${session.quiz.title}» (${name}) — النتيجة ${score.percentage}%.`,
+        linkUrl: parentChildUrl(session.studentId),
+      }));
     } catch {
       // تجاهل أخطاء الإشعار.
     }

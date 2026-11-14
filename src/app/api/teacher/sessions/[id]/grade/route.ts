@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { computeScore } from "@/lib/grading";
+import { notifyParentsOf, parentChildUrl } from "@/lib/parentNotify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   }
   const exam = await prisma.examSession.findUnique({
     where: { id: params.id },
-    include: { quiz: { select: { creatorId: true } } },
+    include: { quiz: { select: { creatorId: true, title: true } } },
   });
   if (!exam || exam.quiz.creatorId !== session.sub) {
     return NextResponse.json({ error: "الجلسة غير موجودة" }, { status: 404 });
@@ -57,6 +58,11 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   const cancelledByNode = new Map(
     qNodes.map((n) => [n.id, n.question?.isCancelled ?? false])
   );
+
+  // هل كانت هناك إجابات بانتظار المراجعة قبل هذا التصحيح؟ (لإشعار الوليّ عند اكتمال التصحيح فقط)
+  const pendingBefore = await prisma.studentAnswer.count({
+    where: { sessionId: exam.id, needsReview: true },
+  });
 
   // تحديث كل إجابة مُصحَّحة (مع حصر الدرجة ضمن علامة السؤال).
   for (const g of parsed.data.grades) {
@@ -94,6 +100,20 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       percentage: score.percentage,
     },
   });
+
+  // اكتمل التصحيح لجلسة منتهية: تصل وليّ الأمر النتيجة النهائية (مرّة واحدة: عند الانتقال من «بانتظار التصحيح»).
+  if (pendingBefore > 0 && exam.status !== "IN_PROGRESS") {
+    const pendingAfter = await prisma.studentAnswer.count({
+      where: { sessionId: exam.id, needsReview: true },
+    });
+    if (pendingAfter === 0) {
+      await notifyParentsOf([exam.studentId], (name) => ({
+        type: "CHILD_RESULT",
+        message: `اعتمد المدرّس نتيجة اختبار «${exam.quiz.title}» لابنك «${name}» — ${score.percentage}%.`,
+        linkUrl: parentChildUrl(exam.studentId),
+      }));
+    }
+  }
 
   return NextResponse.json({ percentage: score.percentage });
 }

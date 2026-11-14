@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { ownedQuiz } from "@/lib/teacherQuiz";
 import { createNotifications } from "@/lib/notifications";
+import { notifyParentsOf, parentChildUrl } from "@/lib/parentNotify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,6 +107,12 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       linkUrl: `/student/quizzes/${quiz.id}`,
     })),
   );
+  // وأولياء أمورهم (لكل ابن إشعار؛ لا تكرار عند تحديث الموعد لأنّ newStudents للجدد فقط).
+  await notifyParentsOf(newStudents, (name, sid) => ({
+    type: "CHILD_ASSIGNED",
+    message: `أُسنِد لابنك «${name}» اختبار «${quiz.title}»`,
+    linkUrl: parentChildUrl(sid),
+  }));
 
   return NextResponse.json({ assigned: targets.length });
 }

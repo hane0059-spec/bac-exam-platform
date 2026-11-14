@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTeacherSession } from "@/lib/teacher";
 import { gradeFileSchema, parseFileExamSettings } from "@/lib/fileExam";
-import { createNotification, createNotifications } from "@/lib/notifications";
+import { createNotification } from "@/lib/notifications";
+import { notifyParentsOf, parentChildUrl } from "@/lib/parentNotify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -86,19 +87,11 @@ export async function POST(req: Request, props: { params: Promise<{ sessionId: s
       linkUrl: `/student/quizzes/${exam.quizId}`,
     });
 
-    const parents = await prisma.parentLink.findMany({
-      where: { studentId: exam.studentId },
-      select: { parentId: true },
-    });
-    const childName = `${exam.student.firstName} ${exam.student.lastName}`;
-    await createNotifications(
-      parents.map((p) => ({
-        userId: p.parentId,
-        type: "GRADED",
-        message: `تم تصحيح اختبار ${childName} «${exam.quiz.title}» — ${percentage}%`,
-        linkUrl: `/parent/students/${exam.studentId}`,
-      })),
-    );
+    await notifyParentsOf([exam.studentId], (name) => ({
+      type: "CHILD_RESULT",
+      message: `تم تصحيح اختبار ${name} «${exam.quiz.title}» — ${percentage}%`,
+      linkUrl: parentChildUrl(exam.studentId),
+    }));
   }
 
   return NextResponse.json({ ok: true });
