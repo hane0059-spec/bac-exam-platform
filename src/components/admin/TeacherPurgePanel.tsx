@@ -28,6 +28,7 @@ export default function TeacherPurgePanel({ userId }: { userId: string }) {
   const router = useRouter();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [typed, setTyped] = useState("");
+  const [backupOk, setBackupOk] = useState(false); // أقرّ المدير أنه نزّل نسخة أو لا يحتاجها
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [total, setTotal] = useState<Progress | null>(null);
@@ -131,6 +132,25 @@ export default function TeacherPurgePanel({ userId }: { userId: string }) {
             </p>
           )}
 
+          <div className="rounded-xl border border-line p-3 text-sm">
+            <a
+              href={`/api/admin/users/${userId}/export`}
+              className="font-semibold text-primary underline"
+            >
+              ⬇️ تنزيل نسخة كاملة من بيانات هذا المدرّس (JSON) قبل الحذف
+            </a>
+            <label className="mt-2 flex cursor-pointer items-start gap-2">
+              <input
+                type="checkbox"
+                checked={backupOk}
+                onChange={(e) => setBackupOk(e.target.checked)}
+                disabled={busy}
+                className="mt-1"
+              />
+              <span>نزّلتُ النسخة، أو لا أحتاج إلى أي نسخة من هذه البيانات.</span>
+            </label>
+          </div>
+
           <div>
             <label htmlFor="purge-confirm" className="mb-1.5 block text-sm font-medium">
               للتأكيد اكتب اسم الحساب كما يظهر: <bdi className="font-bold">{preview.name}</bdi>
@@ -147,7 +167,7 @@ export default function TeacherPurgePanel({ userId }: { userId: string }) {
           <button
             type="button"
             onClick={run}
-            disabled={busy || !typed.trim()}
+            disabled={busy || !typed.trim() || !backupOk}
             className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
           >
             {busy ? "جارٍ الحذف… لا تغلق الصفحة" : "حذف نهائي كامل"}
