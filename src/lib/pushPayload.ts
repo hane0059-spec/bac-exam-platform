@@ -57,6 +57,7 @@ export const PUSH_BODY_BY_TYPE: Record<string, string> = {
   CHILD_RESULT: "نتيجة جديدة لاختبار ابنك",
   enrichment_unpublished: "أُعيد أحد منشوراتك إلى مكتبتك الخاصّة",
   enrichment_rejected: "ردّ المدير على طلب نشر محتواك",
+  enrichment_deleted: "حذف المدير أحد عناصر مكتبتك",
 };
 
 export function pushBodyForType(type?: string | null): string {
