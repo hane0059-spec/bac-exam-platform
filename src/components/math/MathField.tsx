@@ -13,6 +13,9 @@ let lastFocusedField: unknown = null;
 // وهو يقيس ارتفاعها فوراً ولا يعيد ربط مراقب الحجم بالعنصر الجديد، فتبقى اللوحة مُزاحةً بارتفاع خاطئ
 // (تظهر ناقصة من الأسفل). لذا لا نُسنِد إلا عند تغيّر المجموعة فعلاً، ومن لوحة مخفيّة.
 let appliedLayoutsKey = "";
+// عدد حقول المعادلات المركّبة الآن: اللوحة مشتركة، وإن اختفى آخر حقل (إلغاء/إدراج المعادلة) وبقيت ظاهرة
+// صارت «يتيمة» بلا أي زرّ لإغلاقها (الزرّ العائم يتبع المكوّن)، فنُخفيها عند آخر إزالة.
+let mountedFields = 0;
 
 export default function MathField({
   value,
@@ -36,6 +39,8 @@ export default function MathField({
   // هذه النسخة هي التي فتحت اللوحة (اللوحة واحدة مشتركة؛ زرّ الإغلاق العائم وحارس الرجوع لصاحبتها فقط).
   const [opened, setOpened] = useState(false);
   const [kbHeight, setKbHeight] = useState(0);
+  const openedRef = useRef(false);
+  openedRef.current = opened;
   const layoutRef = useRef({ layout, customSymbols });
   layoutRef.current = { layout, customSymbols };
 
@@ -63,6 +68,7 @@ export default function MathField({
 
   useEffect(() => {
     let disposed = false;
+    mountedFields++;
     (async () => {
       const mod = await import("mathlive");
       const MathfieldElement = mod.MathfieldElement;
@@ -96,7 +102,19 @@ export default function MathField({
     })();
     return () => {
       disposed = true;
-      mfRef.current?.remove();
+      const mf = mfRef.current;
+      mountedFields = Math.max(0, mountedFields - 1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const vk = (window as any).mathVirtualKeyboard;
+      // أُغلقت لوحة المعادلات (إلغاء/إدراج) واللوحة مفتوحة: أخفِها إن كانت لهذا الحقل أو لم يبقَ أي حقل.
+      if (vk?.visible && (openedRef.current || (mf && lastFocusedField === mf) || mountedFields === 0)) {
+        try {
+          vk.hide();
+        } catch {
+          /* تجاهل */
+        }
+      }
+      mf?.remove();
       mfRef.current = null;
     };
     // يُنشأ مرّةً؛ القيمة تُزامَن في useEffect منفصل.
