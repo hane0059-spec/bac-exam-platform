@@ -3,6 +3,7 @@
 // باني الاختبار: بيانات + إعدادات + نافذة توقيت + اختيار/ترتيب أسئلة + تجاوز علامة + نشر.
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedGuard } from "@/lib/backGuard";
 import Link from "next/link";
 import MathText from "@/components/MathText";
 import DateTimeField from "@/components/DateTimeField";
@@ -180,6 +181,14 @@ export default function QuizBuilder({
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // حماية من فقدان العمل: تغييرات الباني غير المحفوظة تُنبَّه عند زرّ الرجوع/إغلاق الصفحة.
+  const snapshot = JSON.stringify([
+    title, description, codeJoin, selfRegister, noLimit, minutes, maxAttempts, reveal, shuffle, from, until,
+    items.map((it) => [it.questionId, it.pointsOverride]),
+  ]);
+  const [baseline, setBaseline] = useState(snapshot);
+  useUnsavedGuard(snapshot !== baseline);
+
   // قوالب الإعدادات (بلا أسئلة) — حفظ/تحميل/حذف.
   const [templates, setTemplates] = useState<TemplateRow[]>(initialTemplates);
   const [newTemplateName, setNewTemplateName] = useState("");
@@ -355,6 +364,7 @@ export default function QuizBuilder({
   }
 
   async function save() {
+    const sentSnapshot = snapshot;
     setError("");
     setSaved(false);
     setBusy(true);
@@ -388,6 +398,7 @@ export default function QuizBuilder({
       return;
     }
     setSaved(true);
+    setBaseline(sentSnapshot); // ما حُفظ صار الخط الأساس؛ أيّ تعديل بعده يُعتبر غير محفوظ
     router.refresh();
   }
 

@@ -1,8 +1,9 @@
 "use client";
 // src/components/teacher/QuestionForm.tsx
 // نموذج إنشاء/تعديل سؤال: اختيار من متعدد / صح-خطأ / إجابة قصيرة.
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedGuard } from "@/lib/backGuard";
 import { countBlanks } from "@/lib/grading";
 import ImageUploadField from "@/components/ImageUploadField";
 import MathText from "@/components/MathText";
@@ -168,6 +169,17 @@ export default function QuestionForm({
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // حماية من فقدان العمل: أيّ تغيير عن الحالة الأولى يجعل النموذج «غير محفوظ» حتى الحفظ.
+  const [saved, setSaved] = useState(false);
+  const snapshot = JSON.stringify([
+    type, subjectId, chapterId, conceptId, content, difficulty, points, explanation, tags, mathAnswer,
+    options, tfCorrect, acceptedAnswers, fillBlanks, pairs, calcValue, calcTolerance, diagramBlanks,
+    pendingImage ? pendingImage.name + pendingImage.size : "",
+  ]);
+  const initialSnapshot = useRef(snapshot);
+  const dirty = !saved && snapshot !== initialSnapshot.current;
+  useUnsavedGuard(dirty);
 
   const subject = useMemo(
     () => subjects.find((s) => s.id === subjectId),
@@ -340,6 +352,7 @@ export default function QuestionForm({
       setError(data.error ?? "تعذّر الحفظ.");
       return;
     }
+    setSaved(true); // الحفظ نجح: أوقف حارس التغييرات غير المحفوظة قبل أي تنقّل
     // تعديل: أعلِم باني الاختبار (إن كان مفتوحاً في تبويب آخر) ليحدّث السؤال فوراً.
     if (mode === "edit" && questionId) {
       const p = buildPayload();
@@ -1104,7 +1117,11 @@ export default function QuestionForm({
           {submitting ? "جارٍ الحفظ…" : mode === "create" ? "حفظ السؤال" : "حفظ التعديلات"}
         </button>
         <button
-          onClick={() => router.push("/teacher/questions")}
+          onClick={() => {
+            if (dirty && !window.confirm("لديك تغييرات غير محفوظة ستضيع. هل تريد الإلغاء؟")) return;
+            setSaved(true);
+            router.push("/teacher/questions");
+          }}
           className="rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5"
         >
           إلغاء
