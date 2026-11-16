@@ -3,6 +3,7 @@
 // إنشاء/تعديل حساب مدرّس أو مدير (مع ربط المواد للمدرّس).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 import type { FieldDef } from "@/lib/customFields";
 import CustomFieldsInput from "@/components/CustomFieldsInput";
 import CreatorNotesField from "@/components/CreatorNotesField";
@@ -93,6 +94,13 @@ export default function UserForm({
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // حماية من فقدان البيانات عند الرجوع/الإغلاق قبل الحفظ.
+  const snapshot = JSON.stringify([
+    schoolId, customData, role, superAdmin, firstName, lastName, gender, email, password, qualification,
+    isActive, subjectIds, canFileExams, canEnrichment, canManageStudents, creatorNotes, isIndependent, studentLimit,
+  ]);
+  const { dirty, markSaved } = useUnsavedChanges(snapshot);
+
   const isTeacher = role === "TEACHER";
   const roleOptions: ["TEACHER" | "ADMIN", string][] = canManageAdmins
     ? [
@@ -108,6 +116,7 @@ export default function UserForm({
   }
 
   async function submit() {
+    const sentSnapshot = snapshot;
     setError("");
     setSaved(false);
     setBusy(true);
@@ -166,6 +175,7 @@ export default function UserForm({
       setError(data.error ?? "تعذّر الحفظ.");
       return;
     }
+    markSaved(sentSnapshot);
     if (mode === "create") {
       router.push("/admin/users");
       router.refresh();
@@ -470,7 +480,11 @@ export default function UserForm({
           {busy ? "…" : mode === "create" ? "إنشاء الحساب" : "حفظ التعديلات"}
         </button>
         <button
-          onClick={() => router.push("/admin/users")}
+          onClick={() => {
+            if (dirty && !window.confirm("لديك تغييرات غير محفوظة ستضيع. هل تريد المغادرة؟")) return;
+            markSaved();
+            router.push("/admin/users");
+          }}
           className="rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5"
         >
           رجوع

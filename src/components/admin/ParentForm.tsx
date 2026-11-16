@@ -3,6 +3,7 @@
 // المدير: نموذج إنشاء ولي أمر وربطه بطلاب بلصق رموزهم.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 import CreatorNotesField from "@/components/CreatorNotesField";
 
 function splitCodes(text: string): string[] {
@@ -29,7 +30,11 @@ export default function ParentForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const snapshot = JSON.stringify([firstName, lastName, gender, email, password, codes, schoolId, creatorNotes]);
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   async function submit() {
+    const sentSnapshot = snapshot;
     setError("");
     setBusy(true);
     const res = await fetch("/api/admin/parents", {
@@ -52,6 +57,7 @@ export default function ParentForm({
       setError(data.error ?? "تعذّر الإنشاء.");
       return;
     }
+    markSaved(sentSnapshot);
     router.push("/admin/parents");
     router.refresh();
   }

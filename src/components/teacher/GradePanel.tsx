@@ -3,6 +3,7 @@
 // تصحيح المدرّس للإجابات القصيرة/المقالية (تعديل الدرجة + صحيح/خطأ).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 import MathText from "@/components/MathText";
 import { questionLang, paragraphDir } from "@/lib/textDir";
 
@@ -41,6 +42,10 @@ export default function GradePanel({
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
 
+  // درجات عُدِّلت ولم تُحفَظ تضيع عند الرجوع الخاطئ ← نحميها.
+  const snapshot = JSON.stringify(Array.from(grades.entries()));
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   function setScore(nodeId: string, points: number, value: number) {
     const score = Math.min(Math.max(0, value), points);
     setGrades((prev) => {
@@ -62,6 +67,7 @@ export default function GradePanel({
   }
 
   async function save() {
+    const sentSnapshot = snapshot;
     setError("");
     setSaved(false);
     setBusy(true);
@@ -81,6 +87,7 @@ export default function GradePanel({
       setError(d.error ?? "تعذّر الحفظ.");
       return;
     }
+    markSaved(sentSnapshot);
     setSaved(true);
     router.refresh();
   }

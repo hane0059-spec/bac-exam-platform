@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 import ImageUploadField from "@/components/ImageUploadField";
 import ConfirmButton from "@/components/ConfirmButton";
 import DateTimeField from "@/components/DateTimeField";
@@ -65,12 +66,17 @@ export default function FileExamManager({
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
 
+  // حماية تفاصيل الاختبار الورقي من الرجوع/الإغلاق قبل الحفظ.
+  const snapshot = JSON.stringify([title, description, maxScore, minutes, from, until, codeJoin, selfRegister]);
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   function flash(m: string) {
     setMsg(m);
     setError("");
   }
 
   async function saveDetails() {
+    const sentSnapshot = snapshot;
     setBusy(true);
     setError("");
     setMsg("");
@@ -94,6 +100,7 @@ export default function FileExamManager({
       setError(data.error ?? "تعذّر الحفظ.");
       return;
     }
+    markSaved(sentSnapshot);
     flash("تم الحفظ.");
     router.refresh();
   }

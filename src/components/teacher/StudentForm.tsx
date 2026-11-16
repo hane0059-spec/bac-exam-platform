@@ -4,6 +4,7 @@
 // رمز الطالب يُولَّد تلقائياً (غير قابل للتعديل).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 import type { FieldDef } from "@/lib/customFields";
 import CustomFieldsInput from "@/components/CustomFieldsInput";
 import CreatorNotesField from "@/components/CreatorNotesField";
@@ -82,11 +83,19 @@ export default function StudentForm({
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // حماية من فقدان البيانات عند الرجوع/الإغلاق قبل الحفظ.
+  const snapshot = JSON.stringify([
+    customData, email, password, firstName, lastName, fatherName, motherName, gender, gradeLevelId,
+    address, studentPhone, parentPhone, enrollmentYear, subjectId, groupName, isActive, creatorNotes,
+  ]);
+  const { dirty, markSaved } = useUnsavedChanges(snapshot);
+
   function copyParentToStudent() {
     setStudentPhone(parentPhone);
   }
 
   async function submit() {
+    const sentSnapshot = snapshot;
     setError("");
     setSaved(false);
     setBusy(true);
@@ -128,6 +137,7 @@ export default function StudentForm({
       setError(data.error ?? "تعذّر الحفظ.");
       return;
     }
+    markSaved(sentSnapshot);
     if (mode === "create") {
       router.push(redirectTo);
       router.refresh();
@@ -330,7 +340,11 @@ export default function StudentForm({
           {busy ? "…" : mode === "create" ? "إنشاء الطالب" : "حفظ التعديلات"}
         </button>
         <button
-          onClick={() => router.push(redirectTo)}
+          onClick={() => {
+            if (dirty && !window.confirm("لديك تغييرات غير محفوظة ستضيع. هل تريد المغادرة؟")) return;
+            markSaved();
+            router.push(redirectTo);
+          }}
           className="rounded-xl border border-line px-5 py-3 font-medium hover:bg-ink/5"
         >
           رجوع

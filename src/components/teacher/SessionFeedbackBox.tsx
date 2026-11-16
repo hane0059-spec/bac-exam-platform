@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 
 const QUICK = [
   "أحسنت! نتيجة ممتازة، استمرّ على هذا المستوى 👏",
@@ -26,7 +27,10 @@ export default function SessionFeedbackBox({
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
 
+  const { markSaved } = useUnsavedChanges(text);
+
   async function save() {
+    const sentSnapshot = text;
     setBusy(true);
     setError("");
     setSaved(false);
@@ -41,6 +45,7 @@ export default function SessionFeedbackBox({
       setError(d.error ?? "تعذّر الحفظ.");
       return;
     }
+    markSaved(sentSnapshot);
     setSaved(true);
     router.refresh();
   }

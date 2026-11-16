@@ -3,6 +3,7 @@
 // المدرّس: تصحيح محاولة ورقية واحدة (درجة + ملاحظة) — قابل للتعديل دائماً.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 import ImageAnnotator, { type Pin } from "@/components/ImageAnnotator";
 
 interface Upload {
@@ -37,7 +38,11 @@ export default function FileGradePanel({
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
 
+  const snapshot = JSON.stringify([score, feedback]);
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   async function save() {
+    const sentSnapshot = snapshot;
     setBusy(true);
     setError("");
     setMsg("");
@@ -55,6 +60,7 @@ export default function FileGradePanel({
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setError(data.error ?? "تعذّر الحفظ.");
+    markSaved(sentSnapshot);
     setMsg("تم الحفظ.");
     router.refresh();
   }

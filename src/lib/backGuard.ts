@@ -4,7 +4,7 @@
 // بدل مغادرة الصفحة، ونقرّر نحن: إغلاق لوحة مفتوحة، أو سؤال المستخدم، أو السماح بالمغادرة.
 // المدخلات الوهمية المتروكة («ميّتة») تُتخطّى تلقائياً حين يضغط المستخدم الرجوع، فلا تعلق خطوة زائدة.
 // ملاحظة: كلّ المنطق في المتصفّح فقط (لا يُستدعى أثناء SSR).
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** نتيجة معالجة الرجوع: stay = ابقَ مع إبقاء الحارس، done = انتهى الحارس وابقَ، leave = غادر الصفحة فعلاً. */
 export type BackResult = "stay" | "done" | "leave";
@@ -37,33 +37,53 @@ function pushEntry(id: number) {
   window.history.pushState({ __guard: id }, "");
 }
 
+/**
+ * مغادرة الصفحة فعلاً: كل ما تبقّى من مدخلات وهمية يُلغى دفعةً واحدة (فيكفي تأكيد واحد حتى لو تعدّدت النماذج غير المحفوظة).
+ * `sitting` = عدد المدخلات الوهمية التي نقف عليها الآن فوق مدخل الصفحة الحقيقي.
+ */
+function leaveNow() {
+  let sitting = 0;
+  while (stack.length > 0) {
+    stack.pop();
+    sitting++;
+  }
+  // نقف فوق `sitting` مدخلاً وهمياً، وتحتها مدخل الصفحة ثم الصفحة السابقة.
+  window.history.go(-(sitting + 1));
+}
+
 function onPop() {
   if (ignore > 0) {
     ignore--;
     return;
   }
-  while (stack.length > 0) {
-    const g = stack[stack.length - 1];
-    if (g.dead || g.popped) {
-      // مدخل ميّت: المستخدم يريد الرجوع فعلاً ← نتخطّاه إلى ما قبله.
-      stack.pop();
-      if (stack.length === 0) {
-        window.history.back();
-        return;
-      }
-      continue;
-    }
-    g.popped = true; // استهلك زرّ الرجوع مدخلَه
-    const res = g.onBack();
-    if (res === "stay") {
-      g.popped = false;
-      pushEntry(g.id); // أعِد الحماية
-      return;
-    }
+  if (stack.length === 0) return;
+  const g = stack[stack.length - 1];
+  if (g.dead || g.popped) {
+    // مدخل ميّت (نموذج انتهى أو تنقّل بعده): المستخدم يريد الرجوع فعلاً ← نتخطّاه مع كل ميّت يليه في خطوة واحدة.
     stack.pop();
-    if (res === "leave") window.history.back();
+    // نقف الآن على المدخل الذي تحت المدخل المستهلَك: إن كان ميّتاً تخطّيناه أيضاً.
+    let skips = 0;
+    while (stack.length > 0 && stack[stack.length - 1].dead) {
+      stack.pop();
+      skips++;
+    }
+    if (stack.length === 0) {
+      window.history.go(-(skips + 1)); // خرجنا من كل الحرّاس ← غادر الصفحة
+    } else if (skips > 0) {
+      ignore++; // سنهبط على مدخل حارس حيّ؛ لا نعالج popstate هذه الهبطة
+      window.history.go(-skips);
+    }
     return;
   }
+  g.popped = true; // استهلك زرّ الرجوع مدخلَه
+  const res = g.onBack();
+  if (res === "stay") {
+    g.popped = false;
+    pushEntry(g.id); // أعِد الحماية
+    return;
+  }
+  stack.pop();
+  if (res === "leave") leaveNow();
 }
 
 function register(onBack: () => BackResult, pop: boolean): Guard {
@@ -120,4 +140,18 @@ export function useUnsavedGuard(dirty: boolean, message = "لديك تغييرا
     window.addEventListener("beforeunload", h);
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
+}
+
+/**
+ * غلاف مريح للنماذج: مرّر لقطة نصّية (JSON) لحالة الحقول؛ يُعتبَر النموذج «غير محفوظ» متى اختلفت عن الخطّ الأساس.
+ * `markSaved(لقطة?)` بعد نجاح الحفظ (أو قبل مغادرة مؤكَّدة) يجعل الحالة الحالية هي الخطّ الأساس.
+ */
+export function useUnsavedChanges(snapshot: string) {
+  const [baseline, setBaseline] = useState(snapshot);
+  const dirty = snapshot !== baseline;
+  useUnsavedGuard(dirty);
+  return {
+    dirty,
+    markSaved: (snap?: string) => setBaseline(snap ?? snapshot),
+  };
 }
