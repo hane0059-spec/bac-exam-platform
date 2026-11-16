@@ -9,6 +9,10 @@ import { useBackGuard } from "@/lib/backGuard";
 
 // آخر حقل معادلات نال التركيز (الأيقونة داخل الحقل تُفقده التركيز لحظة فتح اللوحة فلا يصلح hasFocus).
 let lastFocusedField: unknown = null;
+// آخر مجموعة تبويبات طُبِّقت على اللوحة المشتركة. إعادة إسناد `vk.layouts` تُعيد بناء عنصر اللوحة (`rebuild()`)
+// وهو يقيس ارتفاعها فوراً ولا يعيد ربط مراقب الحجم بالعنصر الجديد، فتبقى اللوحة مُزاحةً بارتفاع خاطئ
+// (تظهر ناقصة من الأسفل). لذا لا نُسنِد إلا عند تغيّر المجموعة فعلاً، ومن لوحة مخفيّة.
+let appliedLayoutsKey = "";
 
 export default function MathField({
   value,
@@ -40,10 +44,21 @@ export default function MathField({
     const vk = (window as any).mathVirtualKeyboard;
     if (!vk) return;
     const { layout: l, customSymbols: cs } = layoutRef.current;
+    const key = `${l}|${cs && cs.length > 0 ? JSON.stringify(cs) : ""}`;
+    if (key === appliedLayoutsKey) return; // لا تغيير ← لا إعادة بناء
     const tabs = layoutsFor(l);
     // تبويب «لوحتي» (رموز المدرّس) أوّلاً إن وُجد.
     if (cs && cs.length > 0) tabs.unshift(customTab(cs));
+    if (vk.visible) {
+      // اللوحة ظاهرة بمجموعة أخرى: أخفِها ثم أسنِد ثم أظهرها فيُبنى العنصر ويُراقَب من جديد.
+      vk.hide();
+      vk.layouts = tabs;
+      appliedLayoutsKey = key;
+      vk.show();
+      return;
+    }
     vk.layouts = tabs;
+    appliedLayoutsKey = key;
   }
 
   useEffect(() => {
@@ -132,6 +147,13 @@ export default function MathField({
     const measure = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vk = (window as any).mathVirtualKeyboard;
+      // تصحيح ذاتي: إن قيس ارتفاع اللوحة مبكراً (قبل اكتمال الخطوط/التخطيط) أو فقد المراقب عنصرها ظهرت ناقصة؛
+      // إعادة القياس تُصحّح إزاحتها فتظهر كاملة.
+      try {
+        vk?.adjustBoundingRect?.();
+      } catch {
+        /* تجاهل */
+      }
       const el = document.querySelector(".ML__keyboard, .MLK__layer, .ML__keyboard-container") as HTMLElement | null;
       const h = Math.round(vk?.boundingRect?.height || el?.getBoundingClientRect().height || 0);
       setKbHeight((prev) => (prev === h ? prev : h));
