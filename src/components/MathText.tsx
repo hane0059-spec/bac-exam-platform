@@ -5,13 +5,16 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 import katex from "katex";
 import "katex/dist/contrib/mhchem.js"; // دعم \ce{...} للكيمياء (mhchem)
+import { mathliveMacros, normalizeMathliveTex } from "@/lib/mathliveTex";
 
 function renderTex(tex: string, displayMode: boolean): string | null {
   try {
-    return katex.renderToString(tex, {
+    // أوامر MathLive الخاصّة (\placeholder، \imaginaryI، \exponentialE…) لا يعرفها KaTeX فكانت تظهر نصّاً أحمر.
+    return katex.renderToString(normalizeMathliveTex(tex), {
       displayMode,
       throwOnError: false,
       output: "html",
+      macros: mathliveMacros(),
     });
   } catch {
     return null;
