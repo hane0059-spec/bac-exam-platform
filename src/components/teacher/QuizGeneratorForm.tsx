@@ -4,6 +4,7 @@
 // كلية + عدد النماذج، مع معاينة حيّة لعدد الأسئلة المتاحة لكل نوع ضمن النطاق.
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 
 const QUESTION_TYPES = [
   "MULTIPLE_CHOICE",
@@ -114,7 +115,14 @@ export default function QuizGeneratorForm({ subjects }: { subjects: Subject[] })
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ id: string; title: string }[] | null>(null);
 
+  // حماية إعدادات التوليد (قد تستغرق وقتاً) من الرجوع/الإغلاق قبل التوليد.
+  const snapshot = JSON.stringify([
+    subjectId, scopeLevel, unitId, chapterId, conceptId, reqCounts, title, targetTotal, modelsCount,
+  ]);
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   async function submit() {
+    const sentSnapshot = snapshot;
     setError("");
     setResult(null);
     const requirements = QUESTION_TYPES.filter((t) => reqCounts[t] > 0).map((t) => ({
@@ -148,6 +156,7 @@ export default function QuizGeneratorForm({ subjects }: { subjects: Subject[] })
       setError(data.error ?? "تعذّر التوليد.");
       return;
     }
+    markSaved(sentSnapshot);
     setResult(data.quizzes);
     router.refresh();
   }

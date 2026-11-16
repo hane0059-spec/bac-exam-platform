@@ -3,6 +3,7 @@
 // إنشاء اختبار جديد (عنوان + مادة) ثم الانتقال إلى الباني.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 
 export default function NewQuizForm({
   subjects,
@@ -15,7 +16,12 @@ export default function NewQuizForm({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // حماية العنوان المكتوب من الرجوع/الإغلاق قبل الإنشاء.
+  const snapshot = JSON.stringify([title, subjectId]);
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   async function submit() {
+    const sentSnapshot = snapshot;
     setError("");
     setBusy(true);
     const res = await fetch("/api/teacher/quizzes", {
@@ -29,6 +35,7 @@ export default function NewQuizForm({
       setError(data.error ?? "تعذّر الإنشاء.");
       return;
     }
+    markSaved(sentSnapshot);
     router.push(`/teacher/quizzes/${data.id}/edit`);
   }
 

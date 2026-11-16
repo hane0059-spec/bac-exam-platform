@@ -3,6 +3,7 @@
 // المدرّس: إنشاء اختبار ورقي/مرفوع (يُرفَع ملفه لاحقاً من صفحة الإدارة).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/backGuard";
 
 export default function FileExamForm({
   subjects,
@@ -18,7 +19,12 @@ export default function FileExamForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // حماية ما كُتب من الرجوع/الإغلاق قبل الإنشاء.
+  const snapshot = JSON.stringify([title, subjectId, description, maxScore, minutes]);
+  const { markSaved } = useUnsavedChanges(snapshot);
+
   async function submit() {
+    const sentSnapshot = snapshot;
     setError("");
     setBusy(true);
     const res = await fetch("/api/teacher/file-exams", {
@@ -38,6 +44,7 @@ export default function FileExamForm({
       setError(data.error ?? "تعذّر الإنشاء.");
       return;
     }
+    markSaved(sentSnapshot);
     router.push(`/teacher/file-exams/${data.id}`);
     router.refresh();
   }
