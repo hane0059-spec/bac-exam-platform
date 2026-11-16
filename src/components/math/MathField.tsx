@@ -7,6 +7,9 @@ import { layoutsFor, customTab, type MathLayout } from "./keyboards";
 import type { BankSymbol } from "./symbolBank";
 import { useBackGuard } from "@/lib/backGuard";
 
+// آخر حقل معادلات نال التركيز (الأيقونة داخل الحقل تُفقده التركيز لحظة فتح اللوحة فلا يصلح hasFocus).
+let lastFocusedField: unknown = null;
+
 export default function MathField({
   value,
   onChange,
@@ -29,6 +32,19 @@ export default function MathField({
   // هذه النسخة هي التي فتحت اللوحة (اللوحة واحدة مشتركة؛ زرّ الإغلاق العائم وحارس الرجوع لصاحبتها فقط).
   const [opened, setOpened] = useState(false);
   const [kbHeight, setKbHeight] = useState(0);
+  const layoutRef = useRef({ layout, customSymbols });
+  layoutRef.current = { layout, customSymbols };
+
+  function applyLayouts() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vk = (window as any).mathVirtualKeyboard;
+    if (!vk) return;
+    const { layout: l, customSymbols: cs } = layoutRef.current;
+    const tabs = layoutsFor(l);
+    // تبويب «لوحتي» (رموز المدرّس) أوّلاً إن وُجد.
+    if (cs && cs.length > 0) tabs.unshift(customTab(cs));
+    vk.layouts = tabs;
+  }
 
   useEffect(() => {
     let disposed = false;
@@ -55,6 +71,11 @@ export default function MathField({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mf as any).mathVirtualKeyboardPolicy = "manual";
       mf.addEventListener("input", () => onChangeRef.current(mf.value));
+      // أيّ طريق لفتح اللوحة (زرّنا أو أيقونة لوحة المفاتيح داخل الحقل نفسه) يعرض لوحة المادة.
+      mf.addEventListener("focusin", () => {
+        lastFocusedField = mf;
+        applyLayouts();
+      });
       hostRef.current.appendChild(mf);
       mfRef.current = mf;
     })();
@@ -89,6 +110,7 @@ export default function MathField({
       setKbOpen(visible);
       setKbHeight(visible ? Math.round(vk.boundingRect?.height ?? 0) : 0);
       if (!visible) setOpened(false);
+      else if (lastFocusedField && lastFocusedField === mfRef.current) setOpened(true);
     };
     vk.addEventListener("geometrychange", handler);
     return () => vk.removeEventListener("geometrychange", handler);
@@ -150,12 +172,7 @@ export default function MathField({
       setOpened(false);
       return;
     }
-    const tabs = layoutsFor(layout);
-    // تبويب «لوحتي» (رموز المدرّس) أوّلاً إن وُجد.
-    if (customSymbols && customSymbols.length > 0) {
-      tabs.unshift(customTab(customSymbols));
-    }
-    vk.layouts = tabs;
+    applyLayouts();
     mfRef.current?.focus();
     vk.show();
     setKbOpen(true);
