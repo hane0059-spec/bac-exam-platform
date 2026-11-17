@@ -29,3 +29,29 @@ export function normalizeMathliveTex(tex: string): string {
     content && content.trim() ? `\\boxed{${content}}` : "\\square",
   );
 }
+
+/** هل في المعادلة خانة `\placeholder` فارغة (مربّع أزرق لم يُملأ)؟ — لا معنى لها عند الطالب. */
+export function hasEmptyPlaceholder(tex: string): boolean {
+  if (!tex.includes("\\placeholder")) return false;
+  for (const m of tex.matchAll(PLACEHOLDER_RE)) {
+    if (!m[1] || !m[1].trim()) return true;
+  }
+  return false;
+}
+
+/**
+ * مسارات الحقول النصّية (داخل كائن/مصفوفة متداخلة) التي فيها خانة فارغة، مثل `options.1.content`.
+ * يُستعمل قبل حفظ السؤال لتنبيه المدرّس بدقّة إلى موضع الخانة.
+ */
+export function emptyPlaceholderPaths(value: unknown, path = ""): string[] {
+  if (typeof value === "string") return hasEmptyPlaceholder(value) ? [path] : [];
+  if (Array.isArray(value)) {
+    return value.flatMap((v, i) => emptyPlaceholderPaths(v, path ? `${path}.${i}` : String(i)));
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).flatMap(([k, v]) =>
+      emptyPlaceholderPaths(v, path ? `${path}.${k}` : k),
+    );
+  }
+  return [];
+}

@@ -4,6 +4,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUnsavedGuard } from "@/lib/backGuard";
+import { emptyPlaceholderPaths } from "@/lib/mathliveTex";
 import { countBlanks } from "@/lib/grading";
 import ImageUploadField from "@/components/ImageUploadField";
 import MathText from "@/components/MathText";
@@ -334,8 +335,26 @@ export default function QuestionForm({
     router.refresh();
   }
 
+  // اسم الموضع بالعربية لمسار حقل (مثل options.1.content ← «الخيار 2»).
+  function placeholderLabel(path: string): string {
+    const parts = path.split(".");
+    if (parts[0] === "content") return "نصّ السؤال";
+    if (parts[0] === "explanation") return "الشرح";
+    if (parts[0] === "options") return `الخيار ${Number(parts[1]) + 1}`;
+    if (parts[0] === "acceptedAnswers") return "الإجابة المقبولة";
+    if (parts[0] === "matchingPairs") return `زوج المطابقة ${Number(parts[1]) + 1}`;
+    return "أحد الحقول";
+  }
+
   async function submit() {
     setError("");
+    // خانة معادلة فارغة (مربّع أزرق لم يُملأ) تظهر للطالب مربّعاً بلا معنى ← نمنع الحفظ ونحدّد الموضع.
+    const bad = emptyPlaceholderPaths(buildPayload());
+    if (bad.length > 0) {
+      const where = Array.from(new Set(bad.map(placeholderLabel))).join("، ");
+      setError(`في (${where}) معادلة فيها مربّع فارغ. افتح المعادلة واملأ المربّع، أو احذفها، ثم احفظ.`);
+      return;
+    }
     setSubmitting(true);
     const url =
       mode === "create"

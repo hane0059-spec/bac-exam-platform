@@ -11,6 +11,7 @@ import {
   type MathLayout,
 } from "./keyboards";
 import type { CustomKeyboard } from "./symbolBank";
+import { hasEmptyPlaceholder } from "@/lib/mathliveTex";
 
 export default function MathTextInput({
   value,
@@ -42,7 +43,11 @@ export default function MathTextInput({
   const [layoutOverride, setLayoutOverride] = useState<MathLayout | null>(null);
   const layout: MathLayout = layoutOverride ?? subjLayout ?? "math";
 
+  // مربّع أزرق فارغ في المعادلة (مثل قالب التكامل/الكسر دون ملئه) لا معنى له عند الطالب: نمنع إدراجه.
+  const emptyBox = hasEmptyPlaceholder(latex);
+
   function insert() {
+    if (emptyBox) return;
     const snippet = `$${latex.trim()}$`;
     const el = ref.current;
     if (el && el.selectionStart != null) {
@@ -128,11 +133,16 @@ export default function MathTextInput({
             layout={layout}
             customSymbols={customKeyboard?.[layout]}
           />
+          {emptyBox && (
+            <p className="rounded-lg bg-amber-100 p-2 text-sm text-amber-900">
+              ⚠️ في المعادلة مربّع أزرق فارغ. اضغط عليه واكتب فيه، أو احذف المعادلة وأعد كتابتها، ثم أدرجها.
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={insert}
-              disabled={!latex.trim()}
+              disabled={!latex.trim() || emptyBox}
               className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
             >
               إدراج المعادلة
