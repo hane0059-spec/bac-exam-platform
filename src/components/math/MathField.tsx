@@ -135,19 +135,39 @@ export default function MathField({
 
   // مزامنة حالة اللوحة مع أحداث MathLive (إغلاق خارجي).
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const vk = (window as any).mathVirtualKeyboard;
-    if (!vk) return;
-    const handler = () => {
-      const visible = !!vk.visible;
-      setKbOpen(visible);
-      setKbHeight(visible ? Math.round(vk.boundingRect?.height ?? 0) : 0);
-      if (!visible) setOpened(false);
-      else if (lastFocusedField && lastFocusedField === mfRef.current) setOpened(true);
+    let off: (() => void) | null = null;
+    let dead = false;
+    const attach = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const vk = (window as any).mathVirtualKeyboard;
+      if (!vk || dead || off) return;
+      const handler = () => {
+        const visible = !!vk.visible;
+        setKbOpen(visible);
+        setKbHeight(visible ? Math.round(vk.boundingRect?.height ?? 0) : 0);
+        if (!visible) setOpened(false);
+        else if (lastFocusedField && lastFocusedField === mfRef.current) setOpened(true);
+      };
+      vk.addEventListener("geometrychange", handler);
+      off = () => vk.removeEventListener("geometrychange", handler);
     };
-    vk.addEventListener("geometrychange", handler);
-    return () => vk.removeEventListener("geometrychange", handler);
+    attach();
+    // MathLive تُحمَّل ديناميكياً وتُعرِّف `window.mathVirtualKeyboard` عند اكتمال التحميل؛ في أوّل فتح للمحرّر
+    // في الصفحة لا تكون جاهزة وقت التركيب، فكان المستمع لا يُربَط أبداً (فلا زرّ عائم ولا حارس رجوع
+    // حين تُفتح اللوحة من الأيقونة داخل الحقل). ننتظر تحميلها ثم نربط.
+    if (!off) import("mathlive").then(attach).catch(() => {});
+    return () => {
+      dead = true;
+      off?.();
+    };
   }, []);
+
+  // تبديل المادة (رياضيات/فيزياء/كيمياء) واللوحة مفتوحة: تُحدَّث تبويباتها فوراً، لا عند النقر التالي على الحقل
+  // (كانت تبقى تبويبات المادة القديمة ظاهرة حتى يُعاد التركيز على الحقل).
+  useEffect(() => {
+    if (openedRef.current) applyLayouts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout, customSymbols]);
 
   // زرّ الرجوع في الهاتف يُغلق اللوحة بدل مغادرة الصفحة (كان يضيّع النموذج كلّه).
   useBackGuard(

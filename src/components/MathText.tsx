@@ -4,7 +4,10 @@
 // الخادم والعميل معاً. عند فشل صيغة المعادلة يبقى النصّ كما كُتب (لا ينكسر).
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 import katex from "katex";
-import "katex/dist/contrib/mhchem.js"; // دعم \ce{...} للكيمياء (mhchem)
+// دعم \ce{...} للكيمياء (mhchem). **يجب** الاستيراد عبر مسار الحزمة (`katex/contrib/mhchem` ← النسخة .mjs)
+// لا عبر `katex/dist/contrib/mhchem.js` (UMD يستورد `katex` الـCJS): كان ذلك يسجّل الإضافة على نسخة KaTeX
+// مختلفة عن التي نرسم بها فيظهر `\ce{H2O}` نصّاً أحمر في المتصفّح.
+import "katex/contrib/mhchem";
 import { mathliveMacros, normalizeMathliveTex } from "@/lib/mathliveTex";
 
 function renderTex(tex: string, displayMode: boolean): string | null {
