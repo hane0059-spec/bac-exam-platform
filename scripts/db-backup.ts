@@ -12,8 +12,47 @@ import zlib from "zlib";
 import { once } from "events";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { FILE_RE, FORMAT, loadEnv, lowerFirst, readBackup, serializeRow } from "./backupFormat";
+import { isStalePartFile, isTransientDbError, retryDelayMs } from "../src/lib/backupResilience";
 
 loadEnv();
+
+// الملفّ المؤقّت الجاري كتابته: يُحذف إن قُطعت العملية (إغلاق النافذة/إيقاف الجهاز/Ctrl+C) فلا يبقى `.part` ناقص
+// (حدث 2026-11-16: العملية قُطعت وبقي جزء 3.8MB). الإنهاء بقتل قسريّ لا يمكن التقاطه فيُنظَّف عند التشغيل التالي.
+let currentTmp: string | null = null;
+function cleanupCurrent() {
+  if (currentTmp) {
+    try {
+      fs.rmSync(currentTmp, { force: true });
+    } catch {
+      /* تجاهل */
+    }
+    currentTmp = null;
+  }
+}
+process.on("exit", cleanupCurrent);
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"] as const) {
+  process.on(sig, () => {
+    console.error(`✘ قُطع النسخ (${sig}) — حُذف الملفّ الناقص.`);
+    cleanupCurrent();
+    process.exit(130);
+  });
+}
+
+/** يحذف أجزاء `.part` المهجورة (أقدم من 30 دقيقة) من مجلد النسخ؛ لا يمسّ سواها. */
+function removeStaleParts(dir: string) {
+  const now = Date.now();
+  for (const f of fs.readdirSync(dir)) {
+    const p = path.join(dir, f);
+    try {
+      if (isStalePartFile(f, fs.statSync(p).mtimeMs, now)) {
+        fs.rmSync(p, { force: true });
+        console.log(`   حُذف جزء نسخة ناقص مهجور: ${f}`);
+      }
+    } catch {
+      /* ملفّ اختفى أو مقفل: تجاهل */
+    }
+  }
+}
 
 // DATABASE_URL المحلي صار فرع التطوير (dev)؛ النسخ الاحتياطي يخصّ بيانات **الإنتاج** فيُفضَّل PROD_DATABASE_URL.
 // `--dev` يعكس ذلك لنسخ فرع التطوير.
@@ -63,6 +102,7 @@ function m2mRelations(): { model: string; field: string }[] {
 async function backup() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL غير موجود في .env");
   fs.mkdirSync(outDir, { recursive: true });
+  removeStaleParts(outDir);
   console.log(
     `المصدر: ${new URL(process.env.DATABASE_URL).hostname.split(".")[0]} (${useDev || !process.env.PROD_DATABASE_URL ? "DATABASE_URL" : "الإنتاج"})`
   );
@@ -102,6 +142,7 @@ async function backup() {
   const name = `bac-backup-${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}.ndjson.gz`;
   const tmp = path.join(outDir, name + ".part");
   const final = path.join(outDir, name);
+  currentTmp = tmp;
 
   const gz = zlib.createGzip({ level: 6 });
   const ws = fs.createWriteStream(tmp);
@@ -185,6 +226,7 @@ async function backup() {
   }
 
   fs.renameSync(tmp, final);
+  currentTmp = null;
   const verified = await verify(final);
   const mb = (fs.statSync(final).size / 1024 / 1024).toFixed(1);
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -229,7 +271,26 @@ async function main() {
     process.exitCode = ok ? 0 : 1;
     return;
   }
-  await backup();
+  // انقطاع اتصال عابر في منتصف النسخ (شبكة/Neon) ← أعد النسخ من البداية (حتى 3 محاولات بمهل تصاعدية)؛
+  // الأخطاء الدائمة (عميل Prisma قديم، رابط ناقص…) تُرمى فوراً بلا إعادة.
+  const maxAttempts = Math.max(1, Number(process.env.BACKUP_ATTEMPTS) || 3);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await backup();
+      return;
+    } catch (e) {
+      cleanupCurrent();
+      if (attempt >= maxAttempts || !isTransientDbError(e)) throw e;
+      const wait = retryDelayMs(attempt);
+      console.error(
+        `✘ انقطع الاتصال أثناء النسخ (المحاولة ${attempt}/${maxAttempts}): ${
+          e instanceof Error ? e.message.split("\n").map((s) => s.trim()).filter((s) => s && !s.startsWith("Invalid"))[0] ?? "" : e
+        }`
+      );
+      console.error(`   إعادة المحاولة بعد ${Math.round(wait / 1000)} ثانية …`);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
 }
 
 main().catch((e) => {
